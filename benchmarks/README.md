@@ -9,4 +9,7 @@ Also: https://pickspeng.github.io/SimuQ/
 _________
 Pasqal Pulser: https://quantum-journal.org/papers/q-2022-01-24-629/pdf/
 
+They also have a drag-and-drop studio: https://pulserstudio.pasqal.cloud/
+
 Also: https://pulser.readthedocs.io/en/stable/#
+
