@@ -3,7 +3,7 @@
 Here is the list of tools and their papers gathered here:
 --------------
 
-SimuQ: https://arxiv.org/pdf/2303.02775
+[SimuQ]: https://arxiv.org/pdf/2303.02775
 
 Also: https://pickspeng.github.io/SimuQ/
 _________
@@ -13,3 +13,6 @@ They also have a drag-and-drop studio: https://pulserstudio.pasqal.cloud/
 
 Also: https://pulser.readthedocs.io/en/stable/#
 
+________
+QuEra Bloqade: https://queracomputing.github.io/Bloqade.jl/dev/
+_______
