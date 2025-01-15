@@ -3,7 +3,7 @@
 Here is the list of tools and their papers gathered here:
 --------------
 
-[SimuQ]: https://arxiv.org/pdf/2303.02775
+SimuQ: https://arxiv.org/pdf/2303.02775
 
 Also: https://pickspeng.github.io/SimuQ/
 _________
