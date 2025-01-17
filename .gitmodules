@@ -1,0 +1,4 @@
+[submodule "benchmarks/Bloqade"]
+	path = benchmarks/Bloqade
+	url = https://github.com/QuEraComputing/Bloqade.jl
+
