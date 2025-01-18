@@ -1,0 +1,3 @@
+[submodule "benchmarks/benchmarks/SimuQ"]
+	path = benchmarks/benchmarks/SimuQ
+	url = https://github.com/PicksPeng/SimuQ
