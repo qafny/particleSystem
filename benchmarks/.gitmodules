@@ -6,5 +6,6 @@
 	path = benchmarks/SimuQ
 	url = https://github.com/PicksPeng/SimuQ
 
-
-
+[submodule "benchmarks/Pulser"]
+	path = benchmarks/Pulser
+	url = https://github.com/pasqal-io/Pulser
