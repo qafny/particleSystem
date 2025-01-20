@@ -2,5 +2,8 @@
 	path = benchmarks/Bloqade
 	url = https://github.com/QuEraComputing/Bloqade.jl
 
+[submodule "benchmarks/SimuQ"]
+	path = benchmarks/SimuQ
+	url = https://github.com/PicksPeng/SimuQ
 
 
