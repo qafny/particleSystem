@@ -6,4 +6,4 @@
 	url = https://github.com/PicksPeng/SimuQ
 [submodule "benchmarks/Bloqade"]
 	path = benchmarks/Bloqade
-	url = https://queracomputing.github.io/Bloqade.jl/stable/
+	url = https://queracomputing.github.io/Bloqade.jl
