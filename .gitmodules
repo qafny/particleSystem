@@ -1,3 +1,6 @@
 [submodule "benchmarks/Pulser"]
 	path = benchmarks/Pulser
 	url = https://github.com/pasqal-io/Pulser
+[submodule "benchmarks/SimuQ"]
+	path = benchmarks/SimuQ
+	url = https://github.com/PicksPeng/SimuQ
