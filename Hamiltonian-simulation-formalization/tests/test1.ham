@@ -1,0 +1,9 @@
+Site
+    fock "F1"    
+    qubit "Q1"
+    qubit "Q2"
+    qubit "Q3" ;
+Hamiltonian
+    ( "H1" : R1 , "Q1" > X * "Q2" > Z + "Q3" > Y )
+    ( "H2" : R1 , "Q2" > Y )
+    ( "H3" : R1 , "F1" > c )
