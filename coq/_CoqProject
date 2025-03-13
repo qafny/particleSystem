@@ -1,5 +1,6 @@
 -R . Top
 
+QBlueSyntax.v
 MuQSyntax.v
 MuQSem.v
 MuQType.v
