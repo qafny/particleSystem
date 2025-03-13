@@ -1,0 +1,20 @@
+*.glob
+*.aux
+*~
+*.vo
+*.vos
+*.vok
+extra/*
+*.bak
+*.v.d
+.lia.cache
+compile_coq.*
+
+# Ignore coq_makefile-generated files
+.coqdeps.d
+CoqMakefile
+CoqMakefile.conf
+
+.CoqMakefile.d
+.nia.cache
+.nra.cache
