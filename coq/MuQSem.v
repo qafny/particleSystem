@@ -4,7 +4,7 @@ Require Import QuantumLib.Complex.
 Require Import QuantumLib.Permutations.
 Require Import QuantumLib.VectorStates.
 Require Import Lists.ListSet.
-Require Import MuQSyntax.
+Require Import QBlue.MuQSyntax.
 
 Local Open Scope nat_scope.
 

@@ -7,6 +7,9 @@
 extra/*
 *.bak
 *.v.d
+*.d
+*.vscode
+*.conf
 .lia.cache
 compile_coq.*
 
