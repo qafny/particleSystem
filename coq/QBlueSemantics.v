@@ -44,7 +44,7 @@ Fixpoint combine (phi1 phi2: phi) : phi:=
 Definition appendList (a b : phi) : phi :=
   match a, b with 
   (* for tensor operation, the two inputs must be kets with the same amplitudes *)
-  | [(z1, al)], [(z2, bl)] => [(z1, al ++ bl)]
+  | [(z1, al)], [(z2, bl)] => [(Cmult z1 z2, al ++ bl)]
   | _, _ => []
   end.
 
