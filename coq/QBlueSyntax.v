@@ -12,37 +12,33 @@ Local Open Scope nat_scope.
 (* Define m, n, j, k as natural numbers; z as complex numbers *)
 
 (* single particle basis vector with at most m states, eta = |k> *)
-Definition eta (m : nat) := { k : nat | k < m }.
+Definition eta := nat.
 
-(* n particle ket state: w ::= z · TENSOR η_k *)
-Definition ket (m n : nat) := list (eta m). 
-Definition ket_state (m n : nat) := (C * ket m n)%type.
+(* n particle ket state: w ::= z · TENSOR eta_k *)
+Definition ket := (C * list eta) %type.
 
 (* Quantum state phi ::= SUM w_j | O *)
-Inductive qstate (m n : nat) : Set :=
-  | QSuperpos : list (ket_state m n) -> qstate m n
-  | QZero : qstate m n.
+Definition phi := list ket. 
+(* OK to neglect O? *)
 
 (* Quantum State type l ::= t(m) | l TENSOR l *)
-
 Definition stype := nat.
-
-Inductive iota : Set :=
-  | QtBase : stype -> iota        (* t(m): a single-particle state *)
-  | QtTensor : iota -> iota -> iota.  (* l TENSOR l *)
+(* t(m) is a list with single element *)
+Definition iota : Set := list stype.
 
 (* Data Type Flag *)
-Inductive zeta := 
+Inductive xi := 
   | p (* Ordinary matrix *)
   | h. (* Hermitian matrix *)
 
 (* Quantum Operation Type *)
-Inductive tau : Type := F: zeta -> iota -> tau.
+Definition tau : Type := xi * iota.
 
 (* Hamiltonion expression *)
 Inductive H : Type :=
-  | HAnni : C -> zeta -> stype -> H             (* z · F^f(t(m)) *)
+  | HAnni : C -> xi -> stype -> H             (* z · F^f(t(m)) *)
   | HDag : H -> H                             (* e+ *)
   | HTensor : H -> H -> H                     (* e T e *)
   | HAdd : H -> H -> H                        (* e + e *)
   | HApp : H -> H -> H.                       (* e e *)
+
