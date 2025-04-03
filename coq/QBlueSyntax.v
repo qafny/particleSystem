@@ -42,3 +42,14 @@ Inductive H : Type :=
   | HAdd : H -> H -> H                        (* e + e *)
   | HApp : H -> H -> H.                       (* e e *)
 
+(* To make sure all programs are in canonical forms *)
+(* Dont understand if this can prevent (e1e2)+ *)
+Inductive canonicalCheck : bool -> H -> Prop := 
+  | canonicalCheckHDag: forall e, canonicalCheck true e 
+    -> canonicalCheck true (HDag e)
+  | canonicalCheckHTensor: forall e1 e2, canonicalCheck true e1 -> canonicalCheck true e2
+    -> canonicalCheck true (HTensor e1 e2)
+  | canonicalCheckHAdd: forall e1 e2, canonicalCheck false e1 -> canonicalCheck false e2
+    -> canonicalCheck false (HAdd e1 e2)
+  | canonicalCheckHApp: forall e1 e2, canonicalCheck true e1 -> canonicalCheck true e2
+    -> canonicalCheck true (HApp e1 e2).
