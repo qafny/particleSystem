@@ -48,22 +48,24 @@ Definition appendList (a b : phi) : phi :=
   | _, _ => []
   end.
 
-
 Inductive sem : H -> phi -> phi -> Prop :=
   (* s_move *)
   | s_move_anni: forall z zeta m j, sem (HAnni z zeta m) ([(z,[j])]) (single_sem false z j m)
   | s_move_crea: forall z zeta m j, sem (HDag (HAnni z zeta m)) ([(z,[j])]) (single_sem true z j m)
   (* s_sum *)
   | s_sum: forall e1 e2 phi phi1 phi2, sem e1 phi phi1 -> sem e2 phi phi2 -> 
-            sem (HAdd e1 e2) phi (combine phi1 phi2)
+            sem (HPlus e1 e2) phi (combine phi1 phi2)
   (* s_par *)
   | s_par: forall e phi1 phi1' phi2 phi2', sem e phi1 phi1' -> sem e phi2 phi2' ->
-            sem e (combine phi1 phi2) (combine phi1' phi2')
+            sem e (phi1 ++ phi2) (combine phi1' phi2')
   (* s_app *)
   | s_app: forall e1 e2 phi phi' phi'', sem e2 phi phi' -> sem e1 phi' phi'' ->
             sem (HApp e1 e2) phi phi''
   (* s_tensor *)
   | s_tensor: forall e1 e2 w w' phi phi', sem e1 w phi -> sem e2 w' phi' ->
-            sem (HTensor e1 e2) (appendList w w') (appendList phi phi').
+            sem (HTensor e1 e2) (w ++ w') (appendList phi phi').
+(* Q: For s_par and s_tensor, is it right to use just (phi1 ++ phi2)?*)
+
+
 
 

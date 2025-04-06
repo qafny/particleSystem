@@ -3,7 +3,6 @@ Require Import Psatz.
 Require Import QuantumLib.Complex.
 Local Open Scope nat_scope.
 
-
 (* This document contains the syntax of QBlue, which is an extension of Lambda/mu calculus 
    with second quantization.
    The inductive relation equiv defines the expression equivalence relations.
@@ -19,7 +18,6 @@ Definition ket := (C * list eta) %type.
 
 (* Quantum state phi ::= SUM w_j | O *)
 Definition phi := list ket. 
-(* OK to neglect O? *)
 
 (* Quantum State type l ::= t(m) | l TENSOR l *)
 Definition stype := nat.
@@ -39,17 +37,21 @@ Inductive H : Type :=
   | HAnni : C -> xi -> stype -> H             (* z · F^f(t(m)) *)
   | HDag : H -> H                             (* e+ *)
   | HTensor : H -> H -> H                     (* e T e *)
-  | HAdd : H -> H -> H                        (* e + e *)
+  | HPlus : H -> H -> H                        (* e + e *)
   | HApp : H -> H -> H.                       (* e e *)
 
-(* To make sure all programs are in canonical forms *)
-(* Dont understand if this can prevent (e1e2)+ *)
+(* To make sure all programs are in canonical forms
+e.g., only the followings are allowed:
+a, a+, (any e1) + (any e2),
+(e1 e2)⊗e3, e1(e2⊗e3) *)
 Inductive canonicalCheck : bool -> H -> Prop := 
-  | canonicalCheckHDag: forall e, canonicalCheck true e 
-    -> canonicalCheck true (HDag e)
-  | canonicalCheckHTensor: forall e1 e2, canonicalCheck true e1 -> canonicalCheck true e2
-    -> canonicalCheck true (HTensor e1 e2)
-  | canonicalCheckHAdd: forall e1 e2, canonicalCheck false e1 -> canonicalCheck false e2
-    -> canonicalCheck false (HAdd e1 e2)
-  | canonicalCheckHApp: forall e1 e2, canonicalCheck true e1 -> canonicalCheck true e2
-    -> canonicalCheck true (HApp e1 e2).
+  | canonicalCheckAnni: forall c s m f, canonicalCheck f (HAnni c s m)
+  | canonicalCheckHDag: forall c s m f, canonicalCheck f (HDag (HAnni c s m)) 
+  (* within dagger only HAnni is allowed. *)
+  | canonicalCheckHTensor: forall e1 e2 f, canonicalCheck true e1 -> canonicalCheck true e2
+    -> canonicalCheck f (HTensor e1 e2)
+  | canonicalCheckHPlus: forall e1 e2 f, canonicalCheck f e1 -> canonicalCheck f e2
+    -> canonicalCheck false (HPlus e1 e2)
+  | canonicalCheckHApp: forall e1 e2 f, canonicalCheck true e1 -> canonicalCheck true e2
+    -> canonicalCheck f (HApp e1 e2)
+  .
