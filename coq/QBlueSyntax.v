@@ -53,5 +53,4 @@ Inductive canonicalCheck : bool -> H -> Prop :=
   | canonicalCheckHPlus: forall e1 e2 f, canonicalCheck f e1 -> canonicalCheck f e2
     -> canonicalCheck false (HPlus e1 e2)
   | canonicalCheckHApp: forall e1 e2 f, canonicalCheck true e1 -> canonicalCheck true e2
-    -> canonicalCheck f (HApp e1 e2)
-  .
+    -> canonicalCheck f (HApp e1 e2).

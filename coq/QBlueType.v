@@ -100,7 +100,7 @@ Inductive typing : H -> tau -> Prop :=
     typing e (h, l).
 
 
-(* . *)
+(* Check if expression e is canonical *)
 Fixpoint is_canonical (f : bool) (e : H) : bool :=
   match e with
   | HAnni _ _ _ => true
@@ -134,7 +134,7 @@ Definition is_type (tp : tau) (qphi : phi) : bool :=
     forallb (fun k => ket_matches_iota k i) qphi.
 
 
-(*  Theorem type soundness *)
+(* Theorem: type soundness *)
 Theorem type_progress: forall (e: H) (tp: tau) (qphi: phi), 
 (typing e tp) -> (is_type tp qphi=true) -> (is_canonical true e = true) 
 -> exists qphi', sem e qphi qphi'.
