@@ -99,3 +99,50 @@ Inductive typing : H -> tau -> Prop :=
     rewrites_recur (HDag e) e ->
     typing e (h, l).
 
+
+(* . *)
+Fixpoint is_canonical (f : bool) (e : H) : bool :=
+  match e with
+  | HAnni _ _ _ => true
+
+  | HDag e' =>
+      match e' with
+      | HAnni _ _ _ => true
+      | _ => false
+      end
+
+  | HTensor e1 e2 =>
+      if f then
+        is_canonical true e1 && is_canonical true e2
+      else false
+
+  | HApp e1 e2 =>
+      if f then
+        is_canonical true e1 && is_canonical true e2
+      else false
+
+  | HPlus e1 e2 =>
+      is_canonical f e1 && is_canonical f e2
+  end.
+
+Definition ket_matches_iota (k : ket) (i : iota) : bool :=
+    let '(_, particles) := k in
+    Nat.eqb (length particles) (length i).
+  
+Definition is_type (tp : tau) (qphi : phi) : bool :=
+    let '(_, i) := tp in
+    forallb (fun k => ket_matches_iota k i) qphi.
+
+
+(*  Theorem type soundness *)
+Theorem type_progress: forall (e: H) (tp: tau) (qphi: phi), 
+(typing e tp) -> (is_type tp qphi=true) -> (is_canonical true e = true) 
+-> exists qphi', sem e qphi qphi'.
+Proof.
+Admitted.  
+
+Theorem type_preservation: forall (e: H) (tp: tau) (qphi: phi) (qphi': phi), 
+(typing e tp) -> (is_type tp qphi=true) -> (is_canonical true e = true) 
+-> sem e qphi qphi' -> (is_type tp qphi'=true). 
+Proof.
+Admitted.
