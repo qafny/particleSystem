@@ -101,7 +101,7 @@ Inductive typing : H -> tau -> Prop :=
 
 
 (* Check if expression e is canonical *)
-Fixpoint is_canonical (f : bool) (e : H) : bool :=
+(* Fixpoint is_canonical (f : bool) (e : H) : bool :=
   match e with
   | HAnni _ _ _ => true
 
@@ -123,7 +123,7 @@ Fixpoint is_canonical (f : bool) (e : H) : bool :=
 
   | HPlus e1 e2 =>
       is_canonical f e1 && is_canonical f e2
-  end.
+  end.*)
 
 Definition ket_matches_iota (k : ket) (i : iota) : bool :=
     let '(_, particles) := k in
@@ -136,13 +136,13 @@ Definition is_type (tp : tau) (qphi : phi) : bool :=
 
 (* Theorem: type soundness *)
 Theorem type_progress: forall (e: H) (tp: tau) (qphi: phi), 
-(typing e tp) -> (is_type tp qphi=true) -> (is_canonical true e = true) 
+(typing e tp) -> (is_type tp qphi=true) -> (canonicalCheck false e) 
 -> exists qphi', sem e qphi qphi'.
 Proof.
 Admitted.  
 
 Theorem type_preservation: forall (e: H) (tp: tau) (qphi: phi) (qphi': phi), 
-(typing e tp) -> (is_type tp qphi=true) -> (is_canonical true e = true) 
+(typing e tp) -> (is_type tp qphi=true) -> (canonicalCheck false e) 
 -> sem e qphi qphi' -> (is_type tp qphi'=true). 
 Proof.
 Admitted.
