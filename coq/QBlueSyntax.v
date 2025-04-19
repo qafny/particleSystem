@@ -3,6 +3,8 @@ Require Import Psatz.
 Require Import QuantumLib.Complex.
 Local Open Scope nat_scope.
 
+Coercion INR : nat >-> R.
+
 (* This document contains the syntax of QBlue, which is an extension of Lambda/mu calculus 
    with second quantization.
    The inductive relation equiv defines the expression equivalence relations.
@@ -59,26 +61,61 @@ Inductive canonicalCheck : bool -> H -> Prop :=
 Inductive paulimat: Type :=
 | paulix : C -> paulimat            (* X = c*[[0;1]; [1;0] ] *)
 | pauliy : C -> paulimat            (* Y = c*[[0;-i]; [i;0]] *)
-| pauliz : C -> paulimat.           (* Z = c*[[1;0]; [0;-1]] *)
+| pauliz : C -> paulimat           (* Z = c*[[1;0]; [0;-1]] *)
+| paulii : paulimat.
 
-(* Hamiltonian type after transformation
-nested structure: (plus (tensor (app))) *)
+(* Hamiltonian type after transformation.
+Nested structure: (plus (tensor (app))) *)
 Definition lowprog := list (list (list paulimat)).
 
 (* ladder operator *)
-Definition ladder_anni (n: nat) (hx hy: paulimat) : lowprog:=
-[[[paulix C1]]; [[pauliy (-Ci)%C]]].  
+Definition ladder_anni (coef : R) : lowprog:=
+[[[paulix (Cmult C1 (RtoC ((1/2) * coef)))]]; [[pauliy ((Cmult (-Ci) (RtoC ((1/2) * coef))))%C]]].  
 
-Definition ladder_creator (n: nat) (hx hy: paulimat) : lowprog:=
-[[[paulix C1]; [pauliy (Ci)%C]]].  
+Definition ladder_creator (coef : R) : lowprog:=
+[[[paulix (Cmult C1 (RtoC ((1/2) * coef)))]]; [[pauliy ((Cmult Ci (RtoC ((1/2) * coef))))%C]]].  
+
 
 (* Boson-qubit mapping *)
-(* I_i = I_0 x I_1 ... x I_Nb  *)
-Definition ladder_anni (s:H) : lowprog:=
-  match s with 
-  | HAnni c x t => [[HX C1]; [HY (-Ci)%C]] 
-  | _ => [[]; []]  
-  end. 
+(* I_i = I_0 x I_1 ... x I_Nb *)
+Fixpoint I (Nb: nat): lowprog :=
+  match Nb with 
+  | 0 => [[[paulii]]]
+  | S n => [[[paulii]]] ++ (I n)
+  end.
 
+(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
+Fixpoint boson_anni (Nb : nat) : lowprog:= 
+  let qbit (idx : nat) := 
+    let pre := if idx =? 0 then [] else I (idx-1) in
+    let post := if idx =? (Nb-1) then [] else I (Nb-idx-2) in
+    pre ++ (ladder_anni 1) ++ (ladder_creator (sqrt (idx+1))) ++ post
+  in 
+  match Nb with 
+  | 0 => []
+  | S n => (boson_anni n) ++ (qbit n)
+  end.
+
+(* b_i = SUM_{1 to Nb} sqrt(n) I_0 x ... x (-)_(n-1) x (+)_(n) ... x I_Nb *)
+Fixpoint boson_creator (Nb : nat) : lowprog :=
+  let qbit (idx : nat) :=
+    if idx =? 0 then [] else (* start from n=1 *)
+    let pre := if idx <? 2 then [] else I (idx - 2) in
+    let post := if idx =? Nb then [] else I (Nb - idx - 1) in
+    pre ++ (ladder_creator 1) ++ (ladder_anni (sqrt (idx))) ++ post
+  in
+  match Nb with
+  | 0 => []
+  | S n => (boson_creator n) ++ (qbit n)
+  end.
+
+Definition op_mult (a b : lowprog) : lowprog :=
+  flat_map (fun x =>
+    map (fun y => x ++ y) b
+  ) a.
+
+(* number operator: ni = b_i^+ b_i *)
+Definition boson_n (Nb : nat) : lowprog :=
+  op_mult (boson_anni Nb) (boson_creator Nb).
 
 (* Jordan-Wigner transformation for fermions *)
