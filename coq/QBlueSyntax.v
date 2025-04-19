@@ -54,3 +54,31 @@ Inductive canonicalCheck : bool -> H -> Prop :=
     -> canonicalCheck false (HPlus e1 e2)
   | canonicalCheckHApp: forall e1 e2 f, canonicalCheck true e1 -> canonicalCheck true e2
     -> canonicalCheck f (HApp e1 e2).
+
+(* Pauli string *)
+Inductive paulimat: Type :=
+| paulix : C -> paulimat            (* X = c*[[0;1]; [1;0] ] *)
+| pauliy : C -> paulimat            (* Y = c*[[0;-i]; [i;0]] *)
+| pauliz : C -> paulimat.           (* Z = c*[[1;0]; [0;-1]] *)
+
+(* Hamiltonian type after transformation
+nested structure: (plus (tensor (app))) *)
+Definition lowprog := list (list (list paulimat)).
+
+(* ladder operator *)
+Definition ladder_anni (n: nat) (hx hy: paulimat) : lowprog:=
+[[[paulix C1]]; [[pauliy (-Ci)%C]]].  
+
+Definition ladder_creator (n: nat) (hx hy: paulimat) : lowprog:=
+[[[paulix C1]; [pauliy (Ci)%C]]].  
+
+(* Boson-qubit mapping *)
+(* I_i = I_0 x I_1 ... x I_Nb  *)
+Definition ladder_anni (s:H) : lowprog:=
+  match s with 
+  | HAnni c x t => [[HX C1]; [HY (-Ci)%C]] 
+  | _ => [[]; []]  
+  end. 
+
+
+(* Jordan-Wigner transformation for fermions *)
