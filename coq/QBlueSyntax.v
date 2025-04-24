@@ -76,33 +76,36 @@ Definition ladder_anni (coef : R) : lowprog :=
 Definition ladder_creator (coef : R) : lowprog :=
 [[[paulix (Cmult C1 (RtoC ((1/2) * coef)))]]; [[pauliy ((Cmult Ci (RtoC ((1/2) * coef))))%C]]].  
 
-(* projection operator |1><1| *)
-Definition projection_op (coef : R): lowprog :=
-[[[paulii (Cmult C1 (RtoC ((1/2) * coef)))]]; [pauliz (Cmult (-C1) (RtoC ((1/2) * coef)))]].
+(* projection operator |1><1| *) 
+Definition projection_op (coef : R): lowprog :=  
+[[[paulii (Cmult C1 (RtoC ((1/2) * coef)))]]; [[pauliz ((Cmult (-C1) (RtoC ((1/2) * coef))))%C]]].
 
 (* Boson-qubit mapping *)
 (* 1st, id for sum; 2nd id for tensor *)
-Definition posi := nat * nat. 
+Definition posi: Type := nat * nat. 
 
-(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
+(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb 
+loop pos from (0,0) to (Nb-1, Nb) when in application
+*)
 Definition boson_creator (pos : posi) : lowprog :=
-  let (p1, p2) = pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
+  let (p1, p2) := pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
   if p1 =? p2 then ladder_anni (1)
   else if p1 + 1 =? p2 then ladder_creator (sqrt (p2))
-  else [[[paulii]]]
+  else [[[paulii (1)]]].
 
-(* b_i = SUM_{1 to Nb} sqrt(n) I_0 x ... x (-)_(n-1) x (+)_(n) ... x I_Nb *)
+(* b_i = SUM_{1 to Nb} sqrt(n) I_0 x ... x (-)_(n-1) x (+)_(n) ... x I_Nb
+loop pos from (0,0) to (Nb-1, Nb) when in application *)
 Definition boson_anni (pos : posi) : lowprog :=
-  let (p1, p2) = pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
+  let (p1, p2) := pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
   if p1 =? p2 then ladder_creator (1)
   else if p1 + 1 =? p2 then ladder_anni (sqrt (p2))
-  else [[[paulii]]]
+  else [[[paulii (1)]]].
 
 (* n_i = SUM_{0 to Nb} n_i I_0 x ... |1><1|_ni ... x I_Nb *)
 Definition boson_n (pos : posi) : lowprog := 
-  let (p1, p2) = pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
+  let (p1, p2) := pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
   if p1 =? p2 then projection_op (p2)
-  else [[[paulii]]]
+  else [[[paulii (1)]]].
 
 (* I_i = I_0 x I_1 ... x I_Nb *)
 (*
@@ -148,4 +151,17 @@ Definition boson_n (Nb : nat) : lowprog :=
 *)
 
 (* Jordan-Wigner transformation for fermions *)
+(* a_n^+ = Z_1 x Z_2 ... Z_n-1 x (-)_n 
+loop from (a 1 tid) to (a n tid) *)
+Definition fermion_creator (site target : nat) : lowprog :=
+  (* pos is the id of the term in tensor *)
+  if site <? target then [[[pauliz (1)]]]
+  else if site =? target then ladder_creator (1)
+  else [[[paulii (1)]]].
 
+(* a_n = Z_1 x Z_2 ... Z_n-1 x (+)_n *)
+Definition fermion_anni (site target : nat) : lowprog :=
+  (* pos is the id of the term in tensor *)
+  if site <? target then [[[pauliz (1)]]]
+  else if site =? target then ladder_anni (1)
+  else [[[paulii (1)]]].
