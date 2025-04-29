@@ -13,155 +13,59 @@ Coercion INR : nat >-> R.
 (* Define m, n, j, k as natural numbers; z as complex numbers *)
 
 (* single particle basis vector with at most m states, eta = |k> *)
-Definition eta := nat.
-
-(* n particle ket state: w ::= z · TENSOR eta_k *)
-Definition ket := (C * list eta) %type.
-
-(* Quantum state phi ::= SUM w_j | O *)
-Definition phi := list ket. 
-
-(* Quantum State type l ::= t(m) | l TENSOR l *)
-Definition stype := nat.
-(* t(m) is a list with single element *)
-Definition iota : Set := list stype.
-
-(* Data Type Flag *)
-Inductive xi := 
-  | p (* Ordinary matrix *)
-  | h. (* Hermitian matrix *)
-
-(* Quantum Operation Type *)
-Definition tau : Type := xi * iota.
 
 (* Hamiltonion expression *)
 Inductive H : Type :=
-  | HAnni : C -> xi -> stype -> H             (* z · F^f(t(m)) *)
-  | HDag : H -> H                             (* e+ *)
-  | HTensor : H -> H -> H                     (* e T e *)
-  | HPlus : H -> H -> H                        (* e + e *)
-  | HApp : H -> H -> H.                       (* e e *)
-
-(* To make sure all programs are in canonical forms
-e.g., only the followings are allowed:
-a, a+, (any e1) + (any e2),
-(e1 e2)⊗e3, e1(e2⊗e3) *)
-Inductive canonicalCheck : bool -> H -> Prop := 
-  | canonicalCheckAnni: forall c s m f, canonicalCheck f (HAnni c s m)
-  | canonicalCheckHDag: forall c s m f, canonicalCheck f (HDag (HAnni c s m)) 
-  (* within dagger only HAnni is allowed. *)
-  | canonicalCheckHTensor: forall e1 e2 f, canonicalCheck true e1 -> canonicalCheck true e2
-    -> canonicalCheck f (HTensor e1 e2)
-  | canonicalCheckHPlus: forall e1 e2 f, canonicalCheck f e1 -> canonicalCheck f e2
-    -> canonicalCheck false (HPlus e1 e2)
-  | canonicalCheckHApp: forall e1 e2 f, canonicalCheck true e1 -> canonicalCheck true e2
-    -> canonicalCheck f (HApp e1 e2).
-
+  | HAnni 
+  | HCreator.
+  
 (* Pauli string *)
 Inductive paulimat: Type :=
-| paulix : C -> paulimat            (* X = c*[[0;1]; [1;0] ] *)
-| pauliy : C -> paulimat            (* Y = c*[[0;-i]; [i;0]] *)
-| pauliz : C -> paulimat           (* Z = c*[[1;0]; [0;-1]] *)
-| paulii : C -> paulimat.
+| paulix             (* X = [[0;1]; [1;0] ] *)
+| pauliy             (* Y = [[0;-i]; [i;0]] *)
+| pauliz             (* Z = [[1;0]; [0;-1]] *)
+| paulii.
+
+Definition lowprog_app := list paulimat.
+Definition lowprog_ten := (nat * (nat -> lowprog_app)) %type.
+Definition lowprog := (C * (list lowprog_ten)) %type.
+
+(* (a x b) x (c x d), all items are tensor *)
+Definition ten_ten_ten (p1 p2: lowprog_ten) : lowprog_ten :=
+  let (m, f) := p1 in
+  let (n, g) := p2 in   
+  (m+n, fun x => if x <? m then f x else g (x-m)). 
+
+(* (a + b) x (c + d) *)
+Fixpoint plus_ten_plus (p1: list lowprog_ten) (p2: list lowprog_ten) : list lowprog_ten := 
+  match p1 with [] => p2
+  | x::ax => let fix helper (t: lowprog_ten) (tl: list lowprog_ten) : list lowprog_ten:=
+    (match tl with [] => []
+    | y::ay => (ten_ten_ten t y) :: (helper t ay) 
+    end) in
+  (helper x p2) ++ (plus_ten_plus ax p2)
+  end.
+
+(* (a x b) o (c x d) *)
+Fixpoint ten_app_ten_helper (m: nat) (f: nat -> lowprog_app) (p2: lowprog_ten) : lowprog_ten :=
+  match m with
+  | 0 => p2
+  | S m' =>
+    let fix helper1 (a: lowprog_app) (b: lowprog_ten) : lowprog_ten :=  
+      (match b with
+      | (0, g) => (0, g)
+      | (n, g) => (n, fun x => a ++ (g x))
+      end) in  
+      ten_ten_ten (ten_app_ten_helper m' f p2) (helper1 (f m') p2)
+    end.
+
+Definition ten_app_ten (p1 p2: lowprog_ten) : lowprog_ten :=
+  match p1 with
+  | (m, f) => ten_app_ten_helper m f p2
+  end.
+        
 
 
-(* Hamiltonian type after transformation.
-Nested structure: (plus (tensor (app )))) *)
-Definition lowprog := list (list (list paulimat)).
-
-(* ladder operator *)
-Definition ladder_anni (coef : R) : lowprog :=
-[[[paulix (Cmult C1 (RtoC ((1/2) * coef)))]]; [[pauliy ((Cmult (-Ci) (RtoC ((1/2) * coef))))%C]]].  
-
-Definition ladder_creator (coef : R) : lowprog :=
-[[[paulix (Cmult C1 (RtoC ((1/2) * coef)))]]; [[pauliy ((Cmult Ci (RtoC ((1/2) * coef))))%C]]].  
-
-(* projection operator |1><1| *) 
-Definition projection_op (coef : R): lowprog :=  
-[[[paulii (Cmult C1 (RtoC ((1/2) * coef)))]]; [[pauliz ((Cmult (-C1) (RtoC ((1/2) * coef))))%C]]].
-
-(* Boson-qubit mapping *)
-(* 1st, id for sum; 2nd id for tensor *)
-Definition posi: Type := nat * nat. 
-
-(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb 
-loop pos from (0,0) to (Nb-1, Nb) when in application
+(* transformation for boson qubit mapping 
+Definition boson_mapping (hexp : list (nat -> list H)) : list (nat -> list paulimat) :=
 *)
-Definition boson_creator (pos : posi) : lowprog :=
-  let (p1, p2) := pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
-  if p1 =? p2 then ladder_anni (1)
-  else if p1 + 1 =? p2 then ladder_creator (sqrt (p2))
-  else [[[paulii (1)]]].
-
-(* b_i = SUM_{1 to Nb} sqrt(n) I_0 x ... x (-)_(n-1) x (+)_(n) ... x I_Nb
-loop pos from (0,0) to (Nb-1, Nb) when in application *)
-Definition boson_anni (pos : posi) : lowprog :=
-  let (p1, p2) := pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
-  if p1 =? p2 then ladder_creator (1)
-  else if p1 + 1 =? p2 then ladder_anni (sqrt (p2))
-  else [[[paulii (1)]]].
-
-(* n_i = SUM_{0 to Nb} n_i I_0 x ... |1><1|_ni ... x I_Nb *)
-Definition boson_n (pos : posi) : lowprog := 
-  let (p1, p2) := pos in (* p1 is the id of the term in sum, p2 the one in tensor *)
-  if p1 =? p2 then projection_op (p2)
-  else [[[paulii (1)]]].
-
-(* I_i = I_0 x I_1 ... x I_Nb *)
-(*
-Fixpoint I (Nb: nat): lowprog :=
-  match Nb with 
-  | 0 => [[[[paulii]]]]
-  | S n => [[[paulii]]]] :: (I n)
-  end.
-
-(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
-Fixpoint boson_anni (Nb : nat) : lowprog:= 
-  let qbit (idx : nat) := 
-    let pre := if idx =? 0 then [] else I (idx-1) in
-    let post := if idx =? (Nb-1) then [] else I (Nb-idx-2) in
-    pre ++ (ladder_anni 1) ++ (ladder_creator (sqrt (idx+1))) ++ post
-  in 
-  match Nb with 
-  | 0 => []
-  | S n => (boson_anni n) ++ (qbit n)
-  end.
-
-(* b_i = SUM_{1 to Nb} sqrt(n) I_0 x ... x (-)_(n-1) x (+)_(n) ... x I_Nb *)
-Fixpoint boson_creator (Nb : nat) : lowprog :=
-  let qbit (idx : nat) :=
-    if idx =? 0 then [] else (* start from n=1 *)
-    let pre := if idx <? 2 then [] else I (idx - 2) in
-    let post := if idx =? Nb then [] else I (Nb - idx - 1) in
-    pre ++ (ladder_creator 1) ++ (ladder_anni (sqrt (idx))) ++ post
-  in
-  match Nb with
-  | 0 => []
-  | S n => (boson_creator n) ++ (qbit n)
-  end.
-
-Definition op_mult (a b : lowprog) : lowprog :=
-  flat_map (fun x =>
-    map (fun y => x ++ y) b
-  ) a.
-
-(* number operator: ni = b_i^+ b_i *)
-Definition boson_n (Nb : nat) : lowprog :=
-  op_mult (boson_anni Nb) (boson_creator Nb).
-*)
-
-(* Jordan-Wigner transformation for fermions *)
-(* a_n^+ = Z_1 x Z_2 ... Z_n-1 x (-)_n 
-loop from (a 1 tid) to (a n tid) *)
-Definition fermion_creator (site target : nat) : lowprog :=
-  (* pos is the id of the term in tensor *)
-  if site <? target then [[[pauliz (1)]]]
-  else if site =? target then ladder_creator (1)
-  else [[[paulii (1)]]].
-
-(* a_n = Z_1 x Z_2 ... Z_n-1 x (+)_n *)
-Definition fermion_anni (site target : nat) : lowprog :=
-  (* pos is the id of the term in tensor *)
-  if site <? target then [[[pauliz (1)]]]
-  else if site =? target then ladder_anni (1)
-  else [[[paulii (1)]]].
