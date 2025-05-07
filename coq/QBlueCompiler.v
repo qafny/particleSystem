@@ -2,14 +2,213 @@
 Require Import Reals.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
-Local Open Scope R_scope.
 Require Import QBlue.QBlueSyntax.
 
 Require Import List.
 Import ListNotations.
 
 
+(* Pauli string *)
+Inductive paulimat: Type :=
+| paulix             (* X = [[0;1]; [1;0] ] *)
+| pauliy             (* Y = [[0;-i]; [i;0]] *)
+| pauliz             (* Z = [[1;0]; [0;-1]] *)
+| paulii.
 
+(* lowprog_ten: (amplitude, length, f: index -> element *)
+Definition lowprog_ten := (C * nat * (nat -> paulimat)) %type.
+Definition lowprog := list lowprog_ten.
+
+Definition app_pauli (s1 s2 : paulimat) : (C * paulimat) :=
+  match s1, s2 with
+  | paulii, x => (C1, x)
+  | x, paulii => (C1, x)
+  | paulix, paulix => (C1, paulii)
+  | pauliy, pauliy => (C1, paulii)
+  | pauliz, pauliz => (C1, paulii)
+  | paulix, pauliy => (Ci, pauliz)
+  | pauliy, paulix => (Copp Ci, pauliz)
+  | pauliy, pauliz => (Ci, paulix)
+  | pauliz, pauliy => (Copp Ci, paulix)
+  | pauliz, paulix => (Ci, pauliy)
+  | paulix, pauliz => (Copp Ci, pauliy)
+  end.
+
+
+(* (a x b) x (c x d), all items are tensor *)
+Definition ten_ten_ten (p1 p2: lowprog_ten) : lowprog_ten :=
+  let '((z1, m), f) := p1 in
+  let '((z2, n), g) := p2 in   
+  (Cmult z1 z2, Nat.add m n, fun x => if x <? m then f x else g (Nat.sub x m)). 
+
+(* (a + b) x (c + d) *)
+Fixpoint plus_ten_plus (p1: lowprog) (p2: lowprog) : lowprog := 
+  match p1 with [] => p2
+  | x::ax => let fix helper (t: lowprog_ten) (tl: lowprog) : lowprog:=
+    (match tl with [] => []
+    | y::ay => (ten_ten_ten t y) :: (helper t ay) 
+    end) in
+  (helper x p2) ++ (plus_ten_plus ax p2)
+  end.
+
+(* (a x b) o (c x d), left and right must have equal number of terms *)
+Definition ten_app_ten_helper (z1 : C) (m: nat) (f: nat -> paulimat) (p2: lowprog_ten) : lowprog_ten :=
+  match p2 with (z2, m, g) => (* p2 must have the same length as m. *)
+    let fix helper (idx : nat) : C * (nat -> paulimat) :=
+      let (zz, pp) := app_pauli (f idx) (g idx) in
+      match idx with 
+      | 0 => (zz, fun x => pp)
+      | S m' =>
+        let (z_rec, h_rec) := helper m' in
+        (Cmult zz z_rec,
+        fun x => if x =? idx then pp else h_rec x)
+      end
+    in
+    let (zcom, fcom) := helper m in
+    (Cmult z1 (Cmult z2 zcom), m, fcom)
+  end.
+
+Definition ten_app_ten (p1 p2: lowprog_ten) : lowprog_ten :=
+  match p1 with
+  | (z, m, f) => ten_app_ten_helper z m f p2
+  end.
+        
+Fixpoint plus_app_plus (p1 p2: lowprog) : lowprog :=
+  match p1 with [] => p2
+  | x::ax => let fix helper (a : lowprog_ten) (l : lowprog) : lowprog :=  
+    (match l with [] => []
+    | b :: bx => (ten_app_ten a b) :: (helper a bx)
+    end) in
+  (helper x p2) ++ (plus_app_plus ax p2)
+  end.
+
+Definition plus_plus_plus (p1 p2: lowprog) : lowprog := p1 ++ p2.
+
+
+(* transformation for boson qubit mapping *)
+(* ladder operator *)
+Definition ladder_anni : lowprog :=
+  let x := fun x => paulix in
+  let y := fun x => pauliy in
+  [(RtoC (1/2), 1%nat, x); (Cmult Ci (RtoC (1/2)), 1%nat, y)].
+
+Definition ladder_creator : lowprog :=
+  let x := fun x => paulix in
+  let y := fun x => pauliy in
+[(RtoC (1/2), 1%nat, x); (Cmult (-Ci) (RtoC (1/2)), 1%nat, y)].
+
+(* ∣1⟩⟨1∣= 1/2(I−Z) *)
+Definition projector : lowprog :=
+  let x := fun x => paulii in
+  let y := fun x => pauliz in
+[(RtoC (1/2), 1%nat, x); (Cmult (-C1) (RtoC (1/2)), 1%nat, y)]. 
+
+
+(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb 
+loop pos from (0,0) to (Nb-1, Nb) when in application
+*)
+
+Fixpoint mult_ampli_hplus (z : C) (p : lowprog) : lowprog :=
+  let helper (t : lowprog_ten) : lowprog_ten := 
+    match t with (z1, m, f) => (Cmult z z1, m, f) end in
+  match p with [] => []
+  | x :: ax => (helper x) :: (mult_ampli_hplus z ax)
+  end.
+
+(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
+Definition boson_creator (Nb : nat) : lowprog :=
+  let term (n : nat) : lowprog :=
+    let amp := RtoC (sqrt (INR (n + 1))) in
+    let left : lowprog := [(C1, n, fun x => paulii)] in
+    let right : lowprog := [(C1, Nat.sub Nb (Nat.add n 1), fun x => paulii)] in 
+    let mid : lowprog := (plus_ten_plus ladder_anni ladder_creator) in
+    let mid1 : lowprog := mult_ampli_hplus amp mid in
+    plus_plus_plus (plus_plus_plus left mid1) right 
+  in
+  let fix helper (n : nat) : lowprog :=
+    match n with
+    | 0 => term 0%nat
+    | S k => plus_plus_plus (term n) (helper k)
+    end
+  in if Nb =? 0 then [] else helper (Nat.sub Nb 1).
+
+(* b_i = SUM_{1 to Nb} sqrt(n) I_0 x ... x (-)_(n-1) x (+)_(n) ... x I_Nb *)
+Definition boson_annihilator (Nb : nat) : lowprog :=
+  let term (n : nat) : lowprog :=
+    let amp := RtoC (sqrt (INR n)) in
+    let left : lowprog := [(C1, Nat.sub n 1, fun _ => paulii)] in
+    let right : lowprog := [(C1, Nat.sub Nb n, fun _ => paulii)] in
+    let mid : lowprog := plus_ten_plus ladder_creator ladder_anni in
+    let mid1 : lowprog := mult_ampli_hplus amp mid in
+    plus_ten_plus (plus_ten_plus left mid1) right
+  in
+  let fix helper (n : nat) : lowprog :=
+    match n with
+    | 0 => []
+    | 1 => term 1%nat
+    | S k => plus_plus_plus (term n) (helper k)
+    end
+  in if Nb <? 1 then [] else helper Nb.
+  
+(* n_i = SUM_{0 to Nb} n_i I_0 x ... |1><1|_ni ... x I_Nb *)
+Definition boson_numerator (Nb : nat) : lowprog :=
+  let term (n : nat) : lowprog :=
+    let amp := RtoC (INR n) in
+    let left : lowprog := [(C1, n, fun _ => paulii)] in
+    let right : lowprog := [(C1, Nat.sub Nb n, fun _ => paulii)] in
+    let mid : lowprog := mult_ampli_hplus amp projector in
+    plus_ten_plus (plus_ten_plus left mid) right
+  in
+  let fix helper (n : nat) : lowprog :=
+    match n with
+    | 0 => term 0 %nat
+    | S k => plus_plus_plus (term n) (helper k)
+    end
+  in if Nb <? 0 then [] else helper Nb.
+
+
+(* Jordan-Wigner transformation for fermions *)
+(* a_n^+ = Z_1 x Z_2 ... Z_n-1 x (-)_n *)
+Definition fermion_creator (n : nat) : lowprog :=
+  let left : lowprog := [(C1, Nat.sub n 1, fun _ => pauliz)] in
+  plus_ten_plus left ladder_creator.
+
+Definition fermion_anni (n : nat) : lowprog :=
+  let left : lowprog := [(C1, Nat.sub n 1, fun _ => pauliz)] in
+  plus_ten_plus left ladder_anni.
+  
+(* Transform highprog to lowprog. *)
+Definition boson_map_h0 (input : hsnd) : lowprog := 
+  match input with 
+  | anni Nb b => boson_annihilator Nb
+  | creator Nb b => boson_creator Nb
+  (*| anni _ f => fermion_anni *)
+  end.
+
+(* transform e1 o e2 *)
+Fixpoint boson_map_h1 (input : list hsnd) : lowprog :=
+  match input with [] => []
+  | x :: ax => plus_app_plus (boson_map_h0 x) (boson_map_h1 ax) end.
+
+(* transform e1 x e2 *)
+Definition boson_map_h2 (input : highprog_ten) : lowprog :=
+  match input with (z, m, f) =>
+  let fix helper (id: nat) : lowprog :=
+    match id with 0 => []
+    | S m' => plus_ten_plus (boson_map_h1 (f id)) (helper m')
+    end
+    in mult_ampli_hplus z (helper m)
+  end.
+
+(* transform e1 + e2 *)
+Fixpoint boson_map (input : highprog) : lowprog :=
+  match input with [] => []
+  | x :: ax => plus_plus_plus (boson_map_h2 x) (boson_map ax)
+  end.
+  
+
+
+(* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
 Definition commutator (h1 h2 : lowprog) : lowprog :=
   plus_plus_plus (plus_app_plus h1 h2) (mult_ampli_hplus (-C1)%C (plus_app_plus h2 h1)).
@@ -20,7 +219,7 @@ Parameter norm : lowprog -> R.
 Parameter expH : R -> lowprog -> lowprog.
 
 
-(* Drop first n elements. *)
+(* Drop first n elements of a list. *)
 Fixpoint drop_nth {A : Set} (n : nat) (l : list A) : list A :=
   match n, l with
   | 0, _ => l
