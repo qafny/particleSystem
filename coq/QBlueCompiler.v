@@ -3,6 +3,7 @@ Require Import Reals.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
 Require Import QBlue.QBlueSyntax.
+Local Open Scope nat_scope.
 
 Require Import List.
 Import ListNotations.
@@ -37,8 +38,8 @@ Definition app_pauli (s1 s2 : paulimat) : (C * paulimat) :=
 
 (* (a x b) x (c x d), all items are tensor *)
 Definition ten_ten_ten (p1 p2: lowprog_ten) : lowprog_ten :=
-  let '((z1, m), f) := p1 in
-  let '((z2, n), g) := p2 in   
+  let '(z1, m, f) := p1 in
+  let '(z2, n, g) := p2 in   
   (Cmult z1 z2, Nat.add m n, fun x => if x <? m then f x else g (Nat.sub x m)). 
 
 (* (a + b) x (c + d) *)
@@ -104,10 +105,7 @@ Definition projector : lowprog :=
 [(RtoC (1/2), 1%nat, x); (Cmult (-C1) (RtoC (1/2)), 1%nat, y)]. 
 
 
-(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb 
-loop pos from (0,0) to (Nb-1, Nb) when in application
-*)
-
+(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
 Fixpoint mult_ampli_hplus (z : C) (p : lowprog) : lowprog :=
   let helper (t : lowprog_ten) : lowprog_ten := 
     match t with (z1, m, f) => (Cmult z z1, m, f) end in
@@ -178,35 +176,72 @@ Definition fermion_anni (n : nat) : lowprog :=
   plus_ten_plus left ladder_anni.
   
 (* Transform highprog to lowprog. *)
-Definition boson_map_h0 (input : hsnd) : lowprog := 
+(* Get the number of qubits in each site. *)
+(* Fixpoint get_nqbit (input : list hsnd) : list nat :=
+  match input with [] => []
+  | x :: ax => 
+    match x with 
+    | creator (_, Nb) => Nb :: (get_nqbit ax)
+    | anni (_, Nb) => Nb :: (get_nqbit ax) end
+  end. *)
+
+(* count the number of qubits before and after the target site *)
+Fixpoint sum_pre_qubits (input : list nat) (sid : nat) : nat :=
+  match input, sid with
+  | [], _ => 0
+  | _, 0 => 0
+  | x :: xs, S sid' => x + sum_pre_qubits xs sid'
+  end.
+
+Fixpoint sum_post_qubits (input : list nat) (sid : nat) : nat :=
+  match input, sid with
+  | [], _ => 0
+  | _ :: xs, 0 => fold_left Nat.add xs 0%nat
+  | _ :: xs, S sid' => sum_post_qubits xs sid'
+  end.
+
+(* Compute sum_pre_qubits [3; 5; 2; 7] 1.
+Compute sum_post_qubits [3; 5; 2; 7] 1. *)
+
+(* Transform a creator / annhialator. sid: its site id. qbits: # of qubits in each site *)
+Definition snd_map_h0 (input : hsnd) (sid : nat) (qbits : list nat) : lowprog := 
+  let prebits := sum_pre_qubits qbits sid in
+  let postbits := sum_post_qubits qbits sid in
+  let left := [(C1, prebits, fun x => paulii)] in 
+  let right := [(C1, postbits, fun x => paulii)] in 
   match input with 
-  | anni Nb b => boson_annihilator Nb
-  | creator Nb b => boson_creator Nb
-  (*| anni _ f => fermion_anni *)
+  | anni (bos, Nb) => plus_ten_plus (plus_ten_plus left (boson_annihilator Nb)) right 
+  | creator (bos, Nb) => plus_ten_plus (plus_ten_plus left (boson_creator Nb)) right 
+  | anni (fermi, Nb) => plus_ten_plus (fermion_anni sid) right
+  | creator (fermi, Nb) => plus_ten_plus (fermion_creator sid) right
   end.
 
 (* transform e1 o e2 *)
-Fixpoint boson_map_h1 (input : list hsnd) : lowprog :=
+Fixpoint snd_map_h1 (input : list (nat * hsnd)) (qbits : list nat) : lowprog :=
   match input with [] => []
-  | x :: ax => plus_app_plus (boson_map_h0 x) (boson_map_h1 ax) end.
+    | (sid, x) :: ax => plus_app_plus (snd_map_h0 x sid qbits) (snd_map_h1 ax qbits) end.
 
 (* transform e1 x e2 *)
-Definition boson_map_h2 (input : highprog_ten) : lowprog :=
+Definition snd_map_h2 (input : highprog_ten) (qbits : list nat) : lowprog :=
   match input with (z, m, f) =>
   let fix helper (id: nat) : lowprog :=
     match id with 0 => []
-    | S m' => plus_ten_plus (boson_map_h1 (f id)) (helper m')
+    | S m' => plus_ten_plus (snd_map_h1 (f id) qbits) (helper m')
     end
     in mult_ampli_hplus z (helper m)
   end.
 
 (* transform e1 + e2 *)
-Fixpoint boson_map (input : highprog) : lowprog :=
-  match input with [] => []
-  | x :: ax => plus_plus_plus (boson_map_h2 x) (boson_map ax)
+Fixpoint snd_map_h3 (input : list highprog_ten) (qbits : list nat) : lowprog :=
+  match input with 
+  | [] => []
+  | x :: ax => plus_plus_plus (snd_map_h2 x qbits) (snd_map_h3 ax qbits)
   end.
-  
 
+Definition snd_map (input : highprog) : lowprog :=
+  let (qubits, progl) := input in
+  snd_map_h3 progl qubits.
+  
 
 (* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
@@ -230,6 +265,7 @@ Fixpoint drop_nth {A : Set} (n : nat) (l : list A) : list A :=
 (* Eval compute in drop_nth 2 [10; 20; 30; 40]. 
 Returns [30; 40] *)
 
+(*
 (* sum_{γ2=γ1+1}^Γ [H_{γ2}, H_{γ1}] *)
 Definition comm_sums (gamma1 : nat) (hlist : list lowprog) : lowprog :=
     let subl := drop_nth gamma1 hlist in
@@ -275,3 +311,5 @@ Theorem lie_trotter_error_bound :
     trotter_error_bound t hlist.
 
 Proof. Admitted.
+
+*)

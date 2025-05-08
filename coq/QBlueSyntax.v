@@ -1,9 +1,9 @@
 Require Import Reals.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
-(* Local Open Scope nat_scope. *)
+(* Local Open Scope nat_scope. 
 
-Coercion INR : nat >-> R.
+Coercion INR : nat >-> R. *)
 
 (* This document contains the syntax of QBlue, which is an extension of Lambda/mu calculus 
    with second quantization.
@@ -14,18 +14,19 @@ Coercion INR : nat >-> R.
 
 (* single particle basis vector with at most m states, eta = |k> *)
 
-(* Hamiltonion expression *)
-Definition stype := nat.
-
 (* Particle Type Flag *)
-Inductive xi := 
-  | f (* fermion *)
-  | b. (* boson *)
+Inductive particle : Set := 
+  | fermi (* fermion *)
+  | bos. (* boson *)
+
+Definition stype := (particle * nat) %type.
 
 Inductive hsnd : Type :=
-  | anni: stype -> xi -> hsnd
-  | creator: stype -> xi -> hsnd.
+  | anni: stype -> hsnd
+  | creator: stype -> hsnd.
   
 (* highprog_ten: (amplitude, length, f: index -> (site_id, hsnd) *)
 Definition highprog_ten := (C * nat * (nat -> list (nat * hsnd))) %type.
-Definition highprog := list highprog_ten.
+
+(* (# of qubits of each site) * (e1 x e2 ..) *)
+Definition highprog := ((list nat) * (list highprog_ten)) %type.
