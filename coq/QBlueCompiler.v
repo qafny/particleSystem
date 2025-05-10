@@ -85,6 +85,17 @@ Fixpoint plus_app_plus (p1 p2: lowprog) : lowprog :=
 
 Definition plus_plus_plus (p1 p2: lowprog) : lowprog := p1 ++ p2.
 
+Fixpoint plus_app_ten (h1l : lowprog) (h2 : lowprog_ten) : lowprog :=
+  match h1l with 
+  | [] => []
+  | h1 :: rem => (ten_app_ten h1 h2) :: (plus_app_ten rem h2) 
+  end.
+
+Fixpoint ten_app_plus (h1 : lowprog_ten) (h2l : lowprog) : lowprog :=
+  match h2l with 
+  | [] => []
+  | h2 :: rem => (ten_app_ten h1 h2) :: (ten_app_plus h1 rem) 
+  end.
 
 (* transformation for boson qubit mapping *)
 (* ladder operator *)
@@ -245,8 +256,18 @@ Definition snd_map (input : highprog) : lowprog :=
 
 (* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
-Definition commutator (h1 h2 : lowprog_ten) : lowprog :=
+Definition commutator_tt (h1 h2 : lowprog_ten) : lowprog :=
   [ten_app_ten h1 h2] ++ (mult_ampli_hplus (-C1)%C [ten_app_ten h2 h1]).
+
+Definition commutator_st (h1 : lowprog) (h2 : lowprog_ten) : lowprog :=
+  let l1 := plus_app_ten h1 h2 in
+  let l2 := mult_ampli_hplus (-C1) (ten_app_plus h2 h1) in
+  plus_plus_plus l1 l2.
+
+Definition commutator_ts (h1 : lowprog_ten) (h2 : lowprog) : lowprog :=
+  let l1 := ten_app_plus h1 h2 in
+  let l2 := mult_ampli_hplus (-C1) (plus_app_ten h2 h1) in
+  plus_plus_plus l1 l2.
 
 (* Norm of H matrix *)
 Parameter norm : lowprog -> R.
@@ -265,19 +286,11 @@ Fixpoint drop_nth {A : Set} (n : nat) (l : list A) : list A :=
 (* Eval compute in drop_nth 2 [10; 20; 30; 40]. 
 Returns [30; 40] *)
 
-
-(* sum_{γ2=γ1+1}^Γ [H_{γ2}, H_{γ1}] *)
-Fixpoint comm_sums_helper (h2l : lowprog) (h1 : lowprog_ten) : lowprog :=
-  match h2l with 
-  | [] => []
-  | h2 :: rem => plus_plus_plus (commutator h2 h1) (comm_sums_helper rem h1) 
-  end.
-
 Definition comm_sums (gamma1 : nat) (hlist : lowprog) : lowprog :=
   let subl := drop_nth gamma1 hlist in
   match subl with 
   | [] => []
-  | h :: rem => comm_sums_helper rem h
+  | h :: rem => commutator_st rem h
   end.
 
 (* Outer sum: ∑_{γ1=1}^Γ || ∑_{γ2=γ1+1}^Γ [Hγ2, Hγ1] || *)
@@ -298,7 +311,8 @@ Fixpoint e_split (t : R) (hlist : lowprog) : lowprog :=
     | h :: ht => plus_app_plus (expH (Cmult (-Ci) t) [h]) (e_split t ht)
     end.
 
-(* theorem: Tight error bound for the  rst-order Lie-Trotter formula *)
+(* theorem: Tight error bound for the first-order Lie-Trotter formula *)
+(* A Theory of Trotter Error, by Andrew M. Childs etc *)
 Theorem lie_trotter_error_bound :
   forall (t : R) (hlist : lowprog),
   let approx := e_split t hlist in
@@ -309,3 +323,39 @@ Theorem lie_trotter_error_bound :
 Proof. Admitted.
 
 
+(* Tight error bound for the second-order Suzuki formula. *)
+Definition commutator_ss (h1 : lowprog) (h2 : lowprog) : lowprog :=
+  let l1 := plus_app_plus h1 h2 in
+  let l2 := mult_ampli_hplus (-C1) (plus_app_plus h2 h1) in
+  plus_plus_plus l1 l2.
+
+Definition suzuki_comm_sum_helper (hlist : lowprog) : (lowprog * lowprog) :=
+  match hlist with 
+  | [] => ([], [])
+  | x :: rem => 
+    let t1 := commutator_ss rem (commutator_st rem x) in
+    let t2 := commutator_ts x (commutator_ts x rem) in (t1, t2)
+    end.
+
+Fixpoint suzuki_error_bound (t: R) (hlist : lowprog) : R :=
+  match hlist with
+  | [] => 0
+  | x :: ax => let (term1, term2) := suzuki_comm_sum_helper hlist in
+      Rplus (Rplus (Rdiv ((norm term1) * (pow t 3)) 12)
+                   (Rdiv ((norm term2) * (pow t 3)) 24))
+            (suzuki_error_bound t ax)
+  end.
+
+Definition e_split_suzuki (t : R) (hlist : lowprog) : lowprog := 
+  let term1 : lowprog := e_split t (rev hlist) in
+  let term2 : lowprog := e_split t hlist in
+  plus_app_plus term1 term2.
+
+Theorem suzuki_second_order_error_bound :
+  forall (t : R) (hlist : lowprog),
+  let approx := e_split_suzuki t hlist in
+  let gold := expH (Cmult (-Ci) t) hlist in
+  Rle (norm (plus_plus_plus approx (mult_ampli_hplus (-C1) gold)))
+      (suzuki_error_bound t hlist).
+
+Proof. Admitted.
