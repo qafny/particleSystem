@@ -2,6 +2,7 @@
 
 QBlueSyntax.v
 QBlueCompiler.v
+QBlueSemantics.v
 MuQSyntax.v
 MuQSem.v
 MuQType.v

@@ -3,20 +3,20 @@
 Require Import Reals.
 Require Import Coq.Strings.String.
 Require Import Psatz.
-Require Import QBlue.QBlueSyntax.
 Require Import QuantumLib.Complex.
-Local Open Scope nat_scope.
+Require Import QBlue.QBlueSyntax.
+Require Import QBlue.QBlueCompiler.
+(* Local Open Scope nat_scope. 
 
-
-Coercion INR : nat >-> R.
+Coercion INR : nat >-> R. *)
 
 (* Single ket semantics, apply a or a+ to a single eta state: a^[+] |k> 
 return single-element list: [(z, signle-element nat list)] *)
 Definition single_sem (flag : bool) (z:C) (k m : nat) : phi :=
   if flag then
-    (if k =? m then [(z, [])] else [(Cmult z (RtoC (sqrt ( k + 1 ))), [k + 1])])
+    (if k =? m then [(z, [])] else [(Cmult z (RtoC (sqrt (INR (k + 1)))), [Nat.add k 1])])
   else
-    (if k =? 0 then [(z, [])] else [(Cmult z (RtoC (sqrt k)), [k - 1])]).
+    (if k =? 0 then [(z, [])] else [(Cmult z (RtoC (sqrt (INR k))), [Nat.sub k 1])]).
   
 (* helper function to combine two quantum states *)
 (* if two lists are equal *)
@@ -48,10 +48,31 @@ Definition appendList (a b : phi) : phi :=
   | _, _ => []
   end.
 
-Inductive sem : H -> phi -> phi -> Prop :=
+(* semanics for creator / annihilator. *)  
+Inductive sem_lowp_snd : hsnd -> phi -> phi -> Prop :=
+  | s_move_anni: forall m ptc z j, sem_lowp_snd (anni ptc m) ([(z,[j])]) (single_sem false z j m)
+  | s_move_crea: forall z ptc m j, sem_lowp_snd (creator ptc m) ([(z,[j])]) (single_sem true z j m)
+  | s_move_unit: forall z m j, sem_lowp_snd (hunit m) ([(z,[j])]) ([(z,[j])])  
+  .
+
+  (*
+Inductive sem_lowp_tensor : paulimat -> phi -> phi -> Prop :=
+  | tryre: forall s, sem_lowp_tensor paulii s s.
+
+Inductive sem_lowp_plus : lowprog -> phi -> phi -> Prop :=
+  | s_plus_empty: forall st, sem_lowp_plus [] st st
+  | s_plus_next: forall p p2 sx sl s1 s2, sem_lowp_tensor p sx s1 -> sem_lowp_plus p2 sl s2 ->
+    sem_lowp_plus p2 (sx :: sl) (combine s1 s2).
+
+Inductive sem_lowp : lowprog -> phi -> phi -> Prop :=
+  | sem_plus_empty: forall st, sem_lowp [] st st
+  | sem_plus_next: forall st1 st2 eten eplus, sem_lowp 
+
+
+Inductive sem : hsnd -> phi -> phi -> Prop :=
   (* s_move *)
-  | s_move_anni: forall z zeta m j, sem (HAnni z zeta m) ([(z,[j])]) (single_sem false z j m)
-  | s_move_crea: forall z zeta m j, sem (HDag (HAnni z zeta m)) ([(z,[j])]) (single_sem true z j m)
+  | s_move_anni: forall m z j, sem (anni (_, m)) ([(z,[j])]) (single_sem false z j m)
+  | s_move_crea: forall z m j, sem (creator (_, m)) ([(z,[j])]) (single_sem true z j m)
   (* s_sum *)
   | s_sum: forall e1 e2 phi phi1 phi2, sem e1 phi phi1 -> sem e2 phi phi2 -> 
             sem (HPlus e1 e2) phi (combine phi1 phi2)
@@ -64,8 +85,7 @@ Inductive sem : H -> phi -> phi -> Prop :=
   (* s_tensor *)
   | s_tensor: forall e1 e2 w w' phi phi', sem e1 w phi -> sem e2 w' phi' ->
             sem (HTensor e1 e2) (w ++ w') (appendList phi phi').
-(* Q: For s_par and s_tensor, is it right to use just (phi1 ++ phi2)?*)
 
 
 
-
+*)

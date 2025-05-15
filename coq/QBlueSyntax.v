@@ -12,21 +12,29 @@ Coercion INR : nat >-> R. *)
 
 (* Define m, n, j, k as natural numbers; z as complex numbers *)
 
-(* single particle basis vector with at most m states, eta = |k> *)
+(* n particle ket state: w ::= z · TENSOR eta_k, each element is a site *)
+Definition ket := (C * list nat) %type.
+
+(* Quantum state phi ::= SUM w_j | O *)
+Definition phi := list ket. 
+
 
 (* Particle Type Flag *)
 Inductive particle : Set := 
   | fermi (* fermion *)
   | bos. (* boson *)
 
-Definition stype := (particle * nat) %type.
+Definition stype := nat.
 
 Inductive hsnd : Type :=
-  | anni: stype -> hsnd
-  | creator: stype -> hsnd.
-  
+  | anni: particle -> stype -> hsnd
+  | creator: particle -> stype -> hsnd
+  | hunit: stype -> hsnd.
+   
 (* highprog_ten: (amplitude, length, f: index -> (site_id, hsnd) *)
-Definition highprog_ten := (C * nat * (nat -> list (nat * hsnd))) %type.
+Definition highprog_ten := (C * nat * (nat -> list hsnd)) %type.
 
 (* (# of qubits of each site) * (e1 x e2 ..) *)
-Definition highprog := ((list nat) * (list highprog_ten)) %type.
+(* require for each term to have the same length of qubits: [a+ 3; a 2; I 10], then 
+all the other terms should also be 15. *)
+Definition highprog := list highprog_ten.

@@ -188,13 +188,28 @@ Definition fermion_anni (n : nat) : lowprog :=
   
 (* Transform highprog to lowprog. *)
 (* Get the number of qubits in each site. *)
-(* Fixpoint get_nqbit (input : list hsnd) : list nat :=
-  match input with [] => []
-  | x :: ax => 
-    match x with 
-    | creator (_, Nb) => Nb :: (get_nqbit ax)
-    | anni (_, Nb) => Nb :: (get_nqbit ax) end
-  end. *)
+Definition get_nqbit_hsnd (input : hsnd) : nat :=
+  match input with 
+    | creator _ Nb => Nb 
+    | anni _ Nb => Nb  
+    | hunit Nb => Nb
+  end.
+
+Fixpoint get_nqbit_ten (len : nat) (f : nat -> list hsnd) : list nat :=
+  match len with 
+  | 0 => []
+  | S n => match (f n) with 
+    | [] => [] (* no snd in this site *)
+    | x :: ax => (* e1 o e2 ... o en, just take the first one to get the nqubits *)
+    (get_nqbit_hsnd x) :: (get_nqbit_ten n f)
+    end
+  end.
+
+Definition get_nqbit (input : highprog) : list nat :=
+  match input with 
+  | [] => []
+  | (_, len, f) :: ax => get_nqbit_ten len f
+  end.
 
 (* count the number of qubits before and after the target site *)
 Fixpoint sum_pre_qubits (input : list nat) (sid : nat) : nat :=
@@ -221,23 +236,26 @@ Definition snd_map_h0 (input : hsnd) (sid : nat) (qbits : list nat) : lowprog :=
   let left := [(C1, prebits, fun x => paulii)] in 
   let right := [(C1, postbits, fun x => paulii)] in 
   match input with 
-  | anni (bos, Nb) => plus_ten_plus (plus_ten_plus left (boson_annihilator Nb)) right 
-  | creator (bos, Nb) => plus_ten_plus (plus_ten_plus left (boson_creator Nb)) right 
-  | anni (fermi, Nb) => plus_ten_plus (fermion_anni sid) right
-  | creator (fermi, Nb) => plus_ten_plus (fermion_creator sid) right
+  | anni bos Nb => plus_ten_plus (plus_ten_plus left (boson_annihilator Nb)) right 
+  | creator bos Nb => plus_ten_plus (plus_ten_plus left (boson_creator Nb)) right 
+  | anni fermi Nb => plus_ten_plus (fermion_anni sid) right
+  | creator fermi Nb => plus_ten_plus (fermion_creator sid) right
+  | hunit Nb => (
+    let mid := [(C1, Nb, fun x => paulii)] in
+    plus_ten_plus (plus_ten_plus left mid) right)
   end.
 
 (* transform e1 o e2 *)
-Fixpoint snd_map_h1 (input : list (nat * hsnd)) (qbits : list nat) : lowprog :=
+Fixpoint snd_map_h1 (sid : nat) (input : list hsnd) (qbits : list nat) : lowprog :=
   match input with [] => []
-    | (sid, x) :: ax => plus_app_plus (snd_map_h0 x sid qbits) (snd_map_h1 ax qbits) end.
+    | x :: ax => plus_app_plus (snd_map_h0 x sid qbits) (snd_map_h1 sid ax qbits) end.
 
 (* transform e1 x e2 *)
 Definition snd_map_h2 (input : highprog_ten) (qbits : list nat) : lowprog :=
   match input with (z, m, f) =>
   let fix helper (id: nat) : lowprog :=
     match id with 0 => []
-    | S m' => plus_ten_plus (snd_map_h1 (f id) qbits) (helper m')
+    | S m' => plus_ten_plus (snd_map_h1 id (f id) qbits) (helper m')
     end
     in mult_ampli_hplus z (helper m)
   end.
@@ -249,9 +267,10 @@ Fixpoint snd_map_h3 (input : list highprog_ten) (qbits : list nat) : lowprog :=
   | x :: ax => plus_plus_plus (snd_map_h2 x qbits) (snd_map_h3 ax qbits)
   end.
 
+(* Transform from high program to low *)
 Definition snd_map (input : highprog) : lowprog :=
-  let (qubits, progl) := input in
-  snd_map_h3 progl qubits.
+  let qubits := get_nqbit input in
+  snd_map_h3 input qubits.
   
 
 (* The error bound for the Lie-Trotter *)
