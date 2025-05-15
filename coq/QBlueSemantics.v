@@ -49,21 +49,39 @@ Definition appendList (a b : phi) : phi :=
   end.
 
 (* semanics for creator / annihilator. *)  
-Inductive sem_lowp_snd : hsnd -> phi -> phi -> Prop :=
-  | s_move_anni: forall m ptc z j, sem_lowp_snd (anni ptc m) ([(z,[j])]) (single_sem false z j m)
-  | s_move_crea: forall z ptc m j, sem_lowp_snd (creator ptc m) ([(z,[j])]) (single_sem true z j m)
-  | s_move_unit: forall z m j, sem_lowp_snd (hunit m) ([(z,[j])]) ([(z,[j])])  
-  .
+Inductive sem_highprog_snd : hsnd -> phi -> phi -> Prop :=
+  | s_anni: forall m ptc z j, sem_highprog_snd (anni ptc m) ([(z,[j])]) (single_sem false z j m)
+  | s_crea: forall z ptc m j, sem_highprog_snd (creator ptc m) ([(z,[j])]) (single_sem true z j m)
+  | s_unit: forall m s, sem_highprog_snd (hunit m) s s.
 
-  (*
-Inductive sem_lowp_tensor : paulimat -> phi -> phi -> Prop :=
-  | tryre: forall s, sem_lowp_tensor paulii s s.
+(* semanics for e1 o e2 o ... en, the first nat is site id in the corresponding state phi*)  
+Inductive sem_highprog_app : nat -> list hsnd -> phi -> phi -> Prop :=
+  | s_app_empty: forall sid s, sem_highprog_app sid [] s s
+  | s_app_next: forall sid opfst oplist sini s1 s2, sem_highprog_app sid oplist sini s1 ->
+    sem_highprog_snd opfst s1 s2 ->
+    sem_highprog_app sid (opfst :: oplist) sini s2.
 
-Inductive sem_lowp_plus : lowprog -> phi -> phi -> Prop :=
-  | s_plus_empty: forall st, sem_lowp_plus [] st st
-  | s_plus_next: forall p p2 sx sl s1 s2, sem_lowp_tensor p sx s1 -> sem_lowp_plus p2 sl s2 ->
-    sem_lowp_plus p2 (sx :: sl) (combine s1 s2).
+(* semanics for e1 x e2 x ... en. *)  
+Inductive sem_highprog_tensor : highprog_ten -> phi -> phi -> Prop :=
+  | s_ten_empty: forall z f s, sem_highprog_tensor (z, 0%nat, f) s s
+  | s_ten_next: forall z f n sini smid sfinal,
+    sem_highprog_app (S n) (f (S n)) sini smid ->
+    sem_highprog_tensor (z, n, f) smid sfinal ->
+    sem_highprog_tensor (z, S n, f) sini sfinal.
 
+(* semanics for e1 + e2 + ... en. *) 
+Inductive sem_highprog_plus : highprog -> phi -> phi -> Prop :=
+  | s_plus_empty: forall s, sem_highprog_plus [] s s
+  | s_plus_next: forall sini opten oplist s1 s2,
+    sem_highprog_tensor opten sini s1 -> 
+    sem_highprog_plus oplist sini s2 ->
+    sem_highprog_plus (opten :: oplist) sini (combine s1 s2).
+
+(* Q1. apply e2... en first, then e1
+Q2. let snd just apply to the first of the state
+Q3. paulix, y, how to write? We have canceled out the list
+*)
+    (*
 Inductive sem_lowp : lowprog -> phi -> phi -> Prop :=
   | sem_plus_empty: forall st, sem_lowp [] st st
   | sem_plus_next: forall st1 st2 eten eplus, sem_lowp 
@@ -86,6 +104,6 @@ Inductive sem : hsnd -> phi -> phi -> Prop :=
   | s_tensor: forall e1 e2 w w' phi phi', sem e1 w phi -> sem e2 w' phi' ->
             sem (HTensor e1 e2) (w ++ w') (appendList phi phi').
 
-
+Inductive sem_lowp_snd : hsnd -> phi -> phi -> Prop :=
 
 *)
