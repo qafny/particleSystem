@@ -5,7 +5,24 @@ Import ListNotations.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueSemantics.
 
+(*
+(* To make sure all programs are in canonical forms
+e.g., only the followings are allowed:
+a, a+, (any e1) + (any e2),
+(e1 e2)⊗e3, e1(e2⊗e3) *)
+Inductive canonicalCheck : bool -> H -> Prop := 
+  | canonicalCheckAnni: forall c s m f, canonicalCheck f (HAnni c s m)
+  | canonicalCheckHDag: forall c s m f, canonicalCheck f (HDag (HAnni c s m)) 
+  (* within dagger only HAnni is allowed. *)
+  | canonicalCheckHTensor: forall e1 e2 f, canonicalCheck true e1 -> canonicalCheck true e2
+    -> canonicalCheck f (HTensor e1 e2)
+  | canonicalCheckHPlus: forall e1 e2 f, canonicalCheck f e1 -> canonicalCheck f e2
+    -> canonicalCheck false (HPlus e1 e2)
+  | canonicalCheckHApp: forall e1 e2 f, canonicalCheck true e1 -> canonicalCheck true e2
+    -> canonicalCheck f (HApp e1 e2).
+    *)
 
+    
 Inductive rewrites : H -> H -> Prop :=
 (* (e1 + e2) e ≡ (e1 e) + (e2 e) *)
 | R_App_Plus_L : forall e1 e2 e,

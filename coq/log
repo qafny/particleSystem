@@ -1,4 +1,5 @@
 May 14: modify type of hsnd (add hunit, remove site type in highprog)
 
-
+May 16: add semantics for low/high level programs.
+		Can work on combine "sem_lowprog_plus" and "sem_highprog_plus" and *_tensor later.
 
