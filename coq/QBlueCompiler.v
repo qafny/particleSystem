@@ -378,3 +378,54 @@ Theorem suzuki_second_order_error_bound :
       (suzuki_error_bound t hlist).
 
 Proof. Admitted.
+
+
+(* Qdrift trotterization *)
+(* Random sampling *)
+Parameter A : Type.
+Parameter L : list A.            
+Parameter L1 : list A.
+Parameter Lwei : list R. (* weight/strength of each term *)     
+Parameter Prob : A -> R.
+
+Axiom length_match :
+  length L = length Lwei.
+
+Axiom weighted_prob :
+  forall (i : nat) (xi : A),
+    nth_error L i = Some xi ->
+    nth_error Lwei i = Some (Prob xi).
+
+Fixpoint count_occurrences (x : A) (L : list A) : nat :=
+  match L with
+  | [] => 0
+  | y :: ys =>
+      if x =? y then 1 + count_occurrences x ys
+      else count_occurrences x ys
+  end.
+
+Definition frequency_in (x : A) (L : list A) : R :=
+  let count := count_occurrences x L in
+  let total := length L in
+  if Nat.eqb total 0 then 0
+  else (INR count) / (INR total).
+
+Axiom randome_sampling :
+  forall x : A,
+    In x L1 ->
+    In x L /\ (* Every sampled element must come from L *)
+    (* follow the probability distribution *)
+    frequency_in x L1 = Prob x / fold_right Rplus 0 P.
+
+
+Theorem qdrift_error : 
+ forall n rho, qdrift_sample rho L = P 
+ -> (forall P, P in L' => pick rho L := P)
+ -> size of L' = n 
+ -> exp(-i L' t) <=
+Proof.
+  
+Qed.
+
+
+
