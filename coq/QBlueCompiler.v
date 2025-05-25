@@ -2,8 +2,9 @@
 Require Import Reals.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
+Require Import QuantumLib.Matrix.
 Require Import QBlue.QBlueSyntax.
-Local Open Scope nat_scope.
+Local Open Scope R_scope.
 
 Require Import List.
 Import ListNotations.
@@ -381,51 +382,150 @@ Proof. Admitted.
 
 
 (* Qdrift trotterization *)
-(* Random sampling *)
-Parameter A : Type.
-Parameter L : list A.            
-Parameter L1 : list A.
-Parameter Lwei : list R. (* weight/strength of each term *)     
-Parameter Prob : A -> R.
+(* Definition of L: a matrix. It relies on Hamiltonian H. It operates on the state |phi><phi| *)
+(* L(rho) = i(H rho - rho H). This matrix takes rho and do commutation i[H, rho] *)
+Variable nd : nat. 
+Definition TransL := Matrix nd nd.
+Parameter L_h : list R. 
+Parameter L_Lori : list TransL. (* hj, Lj *)           
+Parameter L_sampledID : list nat. (* Sampled IDs. if L1 = [1,3,3,2], chose L[3] twice *)
+(* Diamond norm, the . *)
+Parameter norm_diamond : TransL -> R.
+(* . *)
+Parameter expH1 : R -> TransL -> TransL.
 
+(*  *)
 Axiom length_match :
-  length L = length Lwei.
+  length L_sampledID = length L_h.
 
-Axiom weighted_prob :
-  forall (i : nat) (xi : A),
-    nth_error L i = Some xi ->
-    nth_error Lwei i = Some (Prob xi).
+Definition lambda : R := fold_right Rplus 0%R L_h.
 
-Fixpoint count_occurrences (x : A) (L : list A) : nat :=
-  match L with
+
+(* Theorem for qdrift. *)
+(* calculate L = sum_j (hj Lj) *)
+Fixpoint sum_L (prob : list R) (ll : list TransL) : TransL :=
+  match prob, ll with 
+  | [], _ => Zero
+  | _, [] => Zero
+  | p :: pl, m :: ml => Mplus (scale p m) (sum_L pl ll) 
+  end.
+
+Definition tau (t : R) : R := lambda * t / (INR (length L_sampledID)).
+
+(* Generate the sampled list based on the sampled ID idl and the original list vl. *)
+Fixpoint sum_sampled_exp (t : R) (idl : list nat) : TransL :=
+  match idl with
+  | [] => Zero
+  | id :: ax =>
+    match (nth_error L_Lori id, nth_error L_h id) with
+    | (None, _) => Zero
+    | (_, None) => Zero
+    | (Some Lj, Some hj) => Mplus (scale (hj / lambda) (expH1 (tau t) Lj)) (sum_sampled_exp t ax)
+    end
+  end.
+
+Definition qdrift_error (t : R) :=   
+  let N : R := INR (length L_sampledID) in
+  let gold := expH1 (t / N) (sum_L L_h L_Lori) in
+  let approx := sum_sampled_exp t L_sampledID in
+  0.5 * (norm_diamond (Mplus gold (-1 .* approx))).
+
+Theorem qdrift_error_boundary : 
+  forall (t : R),
+  let N : R := INR (length L_sampledID) in
+  let boundary := 4 * lambda^2 * t^2 / N^2 in 
+  qdrift_error t <= boundary.
+Proof.
+Admitted.
+
+
+(* Lemmas for proving qdrift error bound. *)
+(* count the # of occur of x in ll. *)
+Fixpoint count_occurrences (x : nat) (ll : list nat) : nat :=
+  match ll with
   | [] => 0
   | y :: ys =>
       if x =? y then 1 + count_occurrences x ys
       else count_occurrences x ys
   end.
 
-Definition frequency_in (x : A) (L : list A) : R :=
-  let count := count_occurrences x L in
-  let total := length L in
+Definition cal_frequency (x : nat) (ll : list nat) : R :=
+  let count := count_occurrences x ll in
+  let total := length ll in
   if Nat.eqb total 0 then 0
   else (INR count) / (INR total).
 
+(* 1. sampling Lj based on the strength of hj *)
+Definition get_prob (id : nat) : R :=
+  match (nth_error L_h id) with
+    | Some hj => hj / lambda
+    | None => 0%R
+    end.
+
 Axiom randome_sampling :
-  forall x : A,
-    In x L1 ->
-    In x L /\ (* Every sampled element must come from L *)
-    (* follow the probability distribution *)
-    frequency_in x L1 = Prob x / fold_right Rplus 0 P.
+  forall (id : nat),
+    In id L_sampledID ->
+    cal_frequency id L_sampledID = get_prob id.
 
+(* 2. |Lj|_dianorm <= 2, because the largest singular value of Hj is 1. *)
+Axiom Lj_norm_bound :
+  forall (x : TransL), 
+  In x L_Lori -> norm_diamond x <=2.
 
-Theorem qdrift_error : 
- forall n rho, qdrift_sample rho L = P 
- -> (forall P, P in L' => pick rho L := P)
- -> size of L' = n 
- -> exp(-i L' t) <=
+(* 3. exponential expansion of real number x and matrix *)
+(* Exponential expansion of e^{x} = 1 + x + x^2/2! + ... + x^k/k! *)
+Fixpoint exp_expansion (x : R) (k : nat) : R :=
+  match k with
+  | 0 => 1
+  | S k' =>
+      let term := (x ^ k) / (INR (fact k)) in (exp_expansion x k') + term
+  end.
+
+(* Exponential expansion of e^{tau L} = 1 + tau L + (tau L)^2/2! + ... + (tau L)^k/k! *)
+Fixpoint exp_expansion_m {n} (tau : R) (L : Matrix n n) (k : nat) : Matrix n n :=
+  match k with
+  | 0 => I n
+  | S k' =>
+      let term := scale ((tau ^ k) / (INR (fact k))) (Mmult_n k L) in
+      Mplus (exp_expansion_m tau L k') term
+  end.
+
+(* https://arxiv.org/pdf/1711.10980, Lemma F.2 *)
+(* used in Appendix B11, "A random compiler for fast Hamiltonian simulation" *)
+(* 4. sum_k^∞ x^k/k! <= x^(k+1)/(k+1)! e^x *)
+Lemma exp_tail_bound : 
+  forall {x : R} {n : nat}, exp_expansion x n - (1+x) <= x^2/2 * (exp x).
+Proof. Admitted.
+
+(* 5. dianorm >= 0 *)
+Axiom dianorm_nonneg :
+  forall (A : TransL), 0 <= norm_diamond A.
+
+(* 6. dianorm inequality *)
+(* |A + B| < |A| + |B|, |.| is norm_diamond   *)
+Axiom dianorm_triangle :
+  forall {n m} (A B : Matrix n m),
+    norm_diamond  (Mplus A B) <= (norm_diamond A) + (norm_diamond B).
+
+(* |AB| < |A| * |B| *)
+Axiom dianorm_submultiplicative :
+  forall {n m p} (A : Matrix n m) (B : Matrix m p),
+    norm_diamond (Mmult A B) <= (norm_diamond A) * (norm_diamond B).
+
+(* |A^k| <= |A|^k for square matrices *)
+Lemma dianorm_pow_le :
+  forall (A : TransL) (k : nat),
+    norm_diamond (Mmult_n k A) <= (norm_diamond A) ^ k.
+
 Proof.
-  
-Qed.
-
-
+  intros A k.
+  induction k as [|k' IH].
+  - simpl. (* Assuming norm(I) = 1 *)
+    admit. (* Need identity matrix and norm_diamond I = 1 *)
+  - simpl. apply Rle_trans with (r2 := norm_diamond A * norm_diamond (Mmult_n k' A)).
+    + apply dianorm_submultiplicative.
+    + apply Rmult_le_compat_l.
+      * apply Rle_trans with (r2 := 0). apply Rle_refl. apply dianorm_nonneg.
+      * apply IH.
+Admitted.
 

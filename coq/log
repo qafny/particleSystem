@@ -6,3 +6,7 @@ May 16: add semantics for low/high level programs.
 
 May 18: writting the theorem of qdrift. Has coded the sampling psedocode. 
 		Trying to be clear about diamond distance.
+
+May 25: complete diamond distance definition for qdrift randomized compilation.
+
+
