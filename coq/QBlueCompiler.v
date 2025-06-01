@@ -100,21 +100,29 @@ Fixpoint ten_app_plus (h1 : lowprog_ten) (h2l : lowprog) : lowprog :=
 
 (* transformation for boson qubit mapping *)
 (* ladder operator *)
+(* |0><1| = (+) = 1/2(X+iY) *)
 Definition ladder_anni : lowprog :=
   let x := fun x => paulix in
   let y := fun x => pauliy in
   [(RtoC (1/2), 1%nat, x); (Cmult Ci (RtoC (1/2)), 1%nat, y)].
 
+(* |1><0| = (-) = 1/2(X-iY) *)
 Definition ladder_creator : lowprog :=
   let x := fun x => paulix in
   let y := fun x => pauliy in
 [(RtoC (1/2), 1%nat, x); (Cmult (-Ci) (RtoC (1/2)), 1%nat, y)].
 
-(* ∣1⟩⟨1∣= 1/2(I−Z) *)
+(* ∣1><1∣= 1/2(I−Z) *)
 Definition projector : lowprog :=
   let x := fun x => paulii in
   let y := fun x => pauliz in
 [(RtoC (1/2), 1%nat, x); (Cmult (-C1) (RtoC (1/2)), 1%nat, y)]. 
+
+(* ∣0><0∣= 1/2(I+Z) *)
+Definition projector0 : lowprog :=
+  let x := fun x => paulii in
+  let y := fun x => pauliz in
+[(RtoC (1/2), 1%nat, x); (RtoC (1/2), 1%nat, y)]. 
 
 
 (* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
@@ -125,8 +133,77 @@ Fixpoint mult_ampli_hplus (z : C) (p : lowprog) : lowprog :=
   | x :: ax => (helper x) :: (mult_ampli_hplus z ax)
   end.
 
-(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
+
+(* arXiv:2307.06580v. Eq. 34-36 *)
+(* boson binary mapping *)
+(* convert a number to binary. n: natural number; len: list of the binary number *)
+Fixpoint cnt2bin (n len : nat) : list nat :=
+  match len with
+  | 0 => []
+  | S n' => (cnt2bin (Nat.div n 2) n') ++ [n mod 2]
+  end.
+(* Compute cnt2bin 9 5. *) (* 01001 *)
+
+(* map |0><1| to lowprog *)
+Definition unitstate2pauli (n1 n2 : nat) : lowprog :=
+  match n1, n2 with 
+  | 0, 0 => projector0 
+  | 0, 1 => ladder_anni 
+  | 1, 0 => ladder_creator 
+  | 1, 1 => projector
+  | _, _ => []
+  end.
+
+(* map |n1><n2| to lowprog. *)
+Fixpoint state2pauli_helper (n1 n2 : list nat) : lowprog :=
+  match n1, n2 with 
+  | x::ax, y::ay => plus_plus_plus (unitstate2pauli x y) (state2pauli_helper ax ay)
+  | [], _ => []
+  | _, [] => []
+  end.
+
+Definition state2pauli (n1 n2 Nq : nat) : lowprog :=
+  let n1l := cnt2bin n1 Nq in
+  let n2l := cnt2bin n2 Nq in
+  state2pauli_helper n1l n2l.
+
 Definition boson_creator (Nb : nat) : lowprog :=
+  let nterm : nat := Nat.sub (Nat.pow 2 Nb) 2 in
+  let fix helper (n : nat) :=
+    match n with 
+    | 0 => []
+    | S n' => let amp := RtoC (sqrt (INR (n + 1))) in
+      let aterm := mult_ampli_hplus amp (state2pauli (Nat.add n 1) n Nb) in
+      plus_plus_plus aterm (helper n') 
+    end in
+  helper nterm.
+
+Definition boson_annihilator (Nb : nat) : lowprog :=
+  let nterm : nat := Nat.sub (Nat.pow 2 Nb) 2 in
+  let fix helper (n : nat) :=
+    match n with 
+    | 0 => []
+    | S n' => let amp := RtoC (sqrt (INR (n + 1))) in
+      let aterm := mult_ampli_hplus amp (state2pauli n (Nat.add n 1) Nb) in
+      plus_plus_plus aterm (helper n') 
+    end in
+  helper nterm.
+
+Definition boson_numerator (Nb : nat) : lowprog :=
+  let nterm : nat := Nat.sub (Nat.pow 2 Nb) 1 in
+  let fix helper (n : nat) :=
+    match n with 
+    | 0 => []
+    | S n' => let amp := RtoC (INR n) in
+      let aterm := mult_ampli_hplus amp (state2pauli n n Nb) in
+      plus_plus_plus aterm (helper n') 
+    end in
+  helper nterm.
+
+
+(* The following method are based on onehot. Not used. To be consistent with fermion *)  
+(* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
+Definition boson_creator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
     let amp := RtoC (sqrt (INR (n + 1))) in
     let left : lowprog := [(C1, n, fun x => paulii)] in
@@ -143,7 +220,7 @@ Definition boson_creator (Nb : nat) : lowprog :=
   in if Nb =? 0 then [] else helper (Nat.sub Nb 1).
 
 (* b_i = SUM_{1 to Nb} sqrt(n) I_0 x ... x (-)_(n-1) x (+)_(n) ... x I_Nb *)
-Definition boson_annihilator (Nb : nat) : lowprog :=
+Definition boson_annihilator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
     let amp := RtoC (sqrt (INR n)) in
     let left : lowprog := [(C1, Nat.sub n 1, fun _ => paulii)] in
@@ -161,7 +238,7 @@ Definition boson_annihilator (Nb : nat) : lowprog :=
   in if Nb <? 1 then [] else helper Nb.
   
 (* n_i = SUM_{0 to Nb} n_i I_0 x ... |1><1|_ni ... x I_Nb *)
-Definition boson_numerator (Nb : nat) : lowprog :=
+Definition boson_numerator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
     let amp := RtoC (INR n) in
     let left : lowprog := [(C1, n, fun _ => paulii)] in
