@@ -21,7 +21,11 @@ Definition phi := list ket.
 
 (* Particle Type Flag *)
 Inductive particle : Set := 
-  | fermi (* fermion *)
+  | electron (* electron *) 
+  | proton 
+  | neutron 
+  | nue (* nu_e *)
+  | numu 
   | bos. (* boson *)
 
 Definition stype := nat.
