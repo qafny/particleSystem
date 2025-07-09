@@ -47,29 +47,31 @@ Definition ket := (C * list nat) %type.
 
 
 (* Quantum state phi ::= SUM w_j | O *)
-Definition iota : Set := nat * (nat -> nat). 
+
 
 
 (* Particle Type Flag *)
 Inductive particle : Set := 
-  | electron (* electron *) 
-  | proton 
-  | neutron 
-  | nue (* nu_e *)
-  | numu 
-  | bos. (* boson *)
+  | Fem (* fermion *) 
+  | Bos (x:nat). (* boson *)
 
+
+Definition iota : Set := (list particle). 
+(*
 Definition stype := nat.
+*)
 
-Definition tauType :Set := particle * iota.
+Inductive typeflag : Set := P | U | H. 
+
+Definition tauType :Set := typeflag * iota.
 
 Inductive blueExp := 
         | HApp (x:blueExp) (y:blueExp)
         | HPlus (x:blueExp) (y:blueExp)
         | HTensor (x:blueExp) (y:blueExp)
         | HDag (x:blueExp)
-        | Anni (x:particle) (n:stype)
-        | HId (x:particle) (n:stype).
+        | HAnni
+        | HId.
 
 
 
@@ -77,9 +79,9 @@ Inductive blueExp :=
 (* Canaoncal form *)
 
 Inductive hsnd : Type :=
-  | anni: particle -> stype -> hsnd
-  | creator: particle -> stype -> hsnd
-  | hunit: stype -> hsnd.
+  | anni: particle -> hsnd
+  | creator: particle -> hsnd
+  | hunit: particle -> hsnd.
    
 (* highprog_ten: (amplitude, length, f: index -> (site_id, hsnd) *)
 Definition highprog_ten := (C * nat * (nat -> list hsnd)) %type.
