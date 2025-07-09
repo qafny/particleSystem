@@ -38,7 +38,7 @@ Inductive exp :=
         | Var (x:var)
         | Val (c:C)
         | Mul (c:C) (e:exp)
-        | Zero (tl:list partype)
+        | Zero
         | St (s: parstate) (t:partype)
         | Anni (s:sigma) (c:C) (t:partype) (tf:typeflag)
         | Trans (e:exp)
@@ -53,10 +53,17 @@ Inductive exp :=
         | App (e1:exp) (e2:exp).
 
 
+Definition varx := 1.
+
+Definition vary := 2.
+
+Compute (fun x => (Val x)).
+
+
 Fixpoint subst (e:exp) (x:var) (e1:exp) :=
   match e with Var y => if x =? y then e1 else Var y
              | Val c => Val c
-             | Zero tl => Zero tl
+             | Zero => Zero
              | St s t => St s t
              | Mul c ea => Mul c (subst ea x e1)
              | Anni s c t tf => Anni s c t tf
@@ -71,6 +78,33 @@ Fixpoint subst (e:exp) (x:var) (e1:exp) :=
              | If ea eb ec => If (subst ea x e1) (subst eb x e1) (subst ec x e1)
              | App ea eb => App (subst ea x e1) (subst eb x e1)
   end.
+
+Compute (subst (Plus ((Var varx)::[(Var vary)])) varx (Zero)).
+
+Definition eta : Set := nat.
+
+(* This is ... *)
+Definition check_eta (x:eta) (k:nat) := x < k.
+
+(* Definition page 3, Figure 2 w.  *)
+Definition ket : Type := C * list eta.
+
+(* first part of iota, t(m) *)
+Definition stype := nat.
+
+(* be careful about if type is empty, iota tensor iota *)
+Definition iota := list stype. 
+
+(* O == [] , [w_0, w_1, ...] *)
+Definition phi := list ket.
+
+(*Page 4 table 5. *)
+Inductive flag := Pf | Hf.
+
+Definition tau : Type := flag * iota.
+
+Inductive exp := .... 
+
 
 Fixpoint list_sub (s:list var) (b:var) :=
    match s with nil => nil

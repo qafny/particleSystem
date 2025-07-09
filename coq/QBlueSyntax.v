@@ -12,11 +12,42 @@ Coercion INR : nat >-> R. *)
 
 (* Define m, n, j, k as natural numbers; z as complex numbers *)
 
-(* n particle ket state: w ::= z · TENSOR eta_k, each element is a site *)
+(* quantum state syntax. *)
+Definition vector := nat.
+
+Definition basisKet := nat -> nat.
+
+Definition psi := list basisKet.
+
+(*
+Definition parstate : Type := (C * spinbase).
+
+Definition sigma : Set := nat.
+
+Definition partype :Set := nat * nat.
+
+Definition qtype : Set := list partype.
+
+Inductive typeflag : Set := P | U | H. 
+
+Inductive ttype : Set := TType (q:qtype) | IType (q:qtype) | FType (tv:typeflag) (q:qtype).
+
+Coercion TType : qtype >-> ttype.
+
+Inductive type : Set := CT | QTy (t:ttype) | FTy (t1:type) (t2:type).
+
+Coercion QTy : ttype >-> type.
+*)
+
+
+(* n particle ket state: w ::= z · TENSOR eta_k, each element is a site 
+
 Definition ket := (C * list nat) %type.
+*)
+
 
 (* Quantum state phi ::= SUM w_j | O *)
-Definition phi := list ket. 
+Definition iota : Set := nat * (nat -> nat). 
 
 
 (* Particle Type Flag *)
@@ -29,6 +60,21 @@ Inductive particle : Set :=
   | bos. (* boson *)
 
 Definition stype := nat.
+
+Definition tauType :Set := particle * iota.
+
+Inductive blueExp := 
+        | HApp (x:blueExp) (y:blueExp)
+        | HPlus (x:blueExp) (y:blueExp)
+        | HTensor (x:blueExp) (y:blueExp)
+        | HDag (x:blueExp)
+        | Anni (x:particle) (n:stype)
+        | HId (x:particle) (n:stype).
+
+
+
+
+(* Canaoncal form *)
 
 Inductive hsnd : Type :=
   | anni: particle -> stype -> hsnd

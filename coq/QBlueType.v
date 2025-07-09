@@ -23,7 +23,7 @@ Inductive canonicalCheck : bool -> H -> Prop :=
     *)
 
     
-Inductive rewrites : H -> H -> Prop :=
+Inductive rewrites : blueExp -> blueExp -> Prop :=
 (* (e1 + e2) e ≡ (e1 e) + (e2 e) *)
 | R_App_Plus_L : forall e1 e2 e,
     rewrites (HApp (HPlus e1 e2) e)
@@ -65,7 +65,7 @@ Inductive rewrites : H -> H -> Prop :=
 
 
 (* To allow multi-step rewrite *)
-Inductive rewrites_recur : H -> H -> Prop :=
+Inductive rewrites_recur :  blueExp -> blueExp -> Prop :=
 | RS_Refl : forall e, rewrites_recur e e
 | RS_Step : forall e1 e2 e3,
     rewrites e1 e2 ->
@@ -83,7 +83,7 @@ Definition uni_tp (zt1 zt2 : xi) : xi :=
 
 
 (* Typing rules *)
-Inductive typing : H -> tau -> Prop :=
+Inductive typing : blueExp -> tau -> Prop :=
 | T_PAR : forall e e' tp,
     rewrites_recur e e' ->
     typing e' tp ->
