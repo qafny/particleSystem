@@ -268,7 +268,7 @@ Definition boson_numerator_bin (Nb : nat) : lowprog :=
 (* n: apply Z/I to the first n sites; par: the particle type of each site *)
 Definition fermion_zop_helper (p : option particle) : lowprog_ten :=
   match p with 
-  | Some fermi => (C1, 1%nat, fun _ => pauliz)
+  | Some Fermi => (C1, 1%nat, fun _ => pauliz)
   | _ => (C1, 1%nat, fun _ => paulii)
   end.
 
@@ -291,11 +291,11 @@ Definition fermion_anni (n : nat) (par : list (option particle)) : lowprog :=
 (* Transform highprog to lowprog. *)
 (* Get the number of qubits in each site. *)
 Definition get_nqbit_hsnd (input : hsnd) : nat :=
-  match input with 
-    | creator _ Nb => Nb 
-    | anni _ Nb => Nb  
-    | hunit Nb => Nb
+  match input with
+  | anni (Bos n) | creator (Bos n) | hunit (Bos n) => n
+  | anni Fem | creator Fem | hunit Fem => 2
   end.
+
 
 Fixpoint get_nqbit_ten (len : nat) (f : nat -> list hsnd) : list nat :=
   match len with 
@@ -316,9 +316,8 @@ Definition get_nqbit (input : highprog) : list nat :=
 (* Get the particle type of each site. *)
 Definition get_particle_vs_site_hsnd (input : hsnd) : option particle :=
   match input with 
-    | creator p _ => Some p 
-    | anni p _ => Some p  
-    | hunit _ => None
+    | anni p | creator p | hunit p => Some p
+   
   end.
 
 Fixpoint get_particle_vs_site_ten (len : nat) (f : nat -> list hsnd) : list (option particle) :=
@@ -363,13 +362,16 @@ Definition snd_map_h0 (input : hsnd) (sid : nat) (qbits : list nat)
   let left := [(C1, prebits, fun x => paulii)] in 
   let right := [(C1, postbits, fun x => paulii)] in 
   match input with 
-  | anni bos Nb => plus_ten_plus (plus_ten_plus left (boson_annihilator Nb)) right 
-  | creator bos Nb => plus_ten_plus (plus_ten_plus left (boson_creator Nb)) right 
-  | anni fermi Nb => plus_ten_plus (fermion_anni sid par) right
-  | creator fermi Nb => plus_ten_plus (fermion_creator sid par) right
-  | hunit Nb => (
-    let mid := [(C1, Nb, fun x => paulii)] in
+  | anni (Bos Nb) => plus_ten_plus (plus_ten_plus left (boson_annihilator Nb)) right 
+  | creator (Bos Nb) => plus_ten_plus (plus_ten_plus left (boson_creator Nb)) right 
+  | anni Fem => plus_ten_plus (fermion_anni sid par) right
+  | creator Fem => plus_ten_plus (fermion_creator sid par) right
+  | hunit Fem => (
+    let mid := [(C1, 2%nat, fun x => paulii)] in
     plus_ten_plus (plus_ten_plus left mid) right)
+  | hunit (Bos Nb) => (
+    let mid := [(C1, Nb, fun x => paulii)] in
+    plus_ten_plus (plus_ten_plus left mid) right) 
   end.
 
 (* transform e1 o e2 *)
