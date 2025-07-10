@@ -154,6 +154,209 @@ Fixpoint canonical_next (e:blueExp) : bool :=
   | _ => canonical_next e
   end.
 
+
+Lemma put_get_cus_eq :
+   forall f x n, nor_modes f x n -> (put_cus f x (get_cus n f x) n) = f.
+Proof.
+  intros.
+  unfold put_cus,get_cus,put_cu.
+  apply functional_extensionality. intros.
+  destruct x0. simpl.
+  bdestruct (v =? x). bdestruct (n0 <? n).
+  subst.
+  unfold nor_modes in H.
+  specialize (H n0 H1) as eq1. unfold nor_mode in eq1.
+  destruct (f (x,n0)). easy. inv eq1. 
+  easy. easy.
+Qed.
+
+Lemma get_cus_put_eq :
+   forall f x v n, v < 2^n -> nor_modes f x n -> get_cus n (put_cus f x (nat2fb v) n) x = (nat2fb v).
+Proof.
+  intros.
+  unfold get_cus.
+  apply functional_extensionality. intros.
+  bdestruct (x0 <? n).
+  simpl.
+  unfold nor_modes in H.
+  assert (nor_mode (put_cus f x (nat2fb v) n) (x, x0)).
+  apply nor_mode_cus_eq. apply H0. easy.
+  unfold nor_mode in H2.
+  destruct (put_cus f x ((nat2fb v)) n (x, x0)) eqn:eq2.
+  unfold put_cus in eq2. simpl in eq2.
+  bdestruct (x =? x).
+  bdestruct (x0 <? n).
+  unfold put_cu in eq2.
+  assert (nor_mode f (x,x0)).
+  apply H0. easy.
+  unfold nor_mode in H5.
+  destruct (f (x, x0)). inv eq2. easy. inv H5. lia. lia.
+  inv H2.
+  unfold allfalse.
+  rewrite nat2fb_bound with (n := n); try easy.
+Qed.
+
+Lemma put_cus_same : forall f x g n, nor_modes f x n 
+               -> get_cus n f x = g -> put_cus f x g n = f.
+Proof.
+  intros.
+  rewrite <- H0. 
+  rewrite put_get_cus_eq. easy. easy.
+Qed.
+
+Lemma get_cus_put_neq :
+   forall f x y g n, x <> y -> get_cus n (put_cus f x g n) y = get_cus n f y.
+Proof.
+  intros. unfold get_cus,put_cus.
+  apply functional_extensionality. intros.
+  simpl.
+  bdestruct ( y =? x). lia.
+  destruct (f (y, x0)). easy. easy. 
+Qed.
+
+Lemma get_put_cus_cut_n : forall n f x g, nor_modes f x n
+             -> (get_cus n (put_cus f x g n) x) = cut_n g n.
+Proof.
+  intros. unfold get_cus,put_cus,cut_n.
+  apply functional_extensionality. intros.
+  bdestruct (x0 <? n). simpl.
+  bdestruct (x =? x).
+  bdestruct (x0 <? n).
+  unfold put_cu.
+  unfold nor_modes in H0.
+  specialize (H x0 H2). unfold nor_mode in H.
+  destruct (f (x,x0)). easy. lia. lia.
+  lia. easy.
+Qed.
+
+Definition get_cu (v : val) :=
+    match v with nval b r => Some b 
+                 | _ => None
+    end.
+
+Lemma put_get_cu : forall f x, nor_mode f x -> put_cu (f x) (get_cua (f x)) = f x.
+Proof.
+ intros. unfold put_cu, get_cua.
+ unfold nor_mode in H. destruct (f x); inv H.
+ reflexivity.
+Qed.
+
+Lemma get_put_cu : forall f x v, nor_mode f x -> get_cua (put_cu (f x) v) = v.
+Proof.
+ intros. unfold put_cu, get_cua.
+ unfold nor_mode in H. destruct (f x); inv H.
+ reflexivity.
+Qed.
+
+Lemma get_cua_t : forall b r, get_cua (nval b r) = b.
+Proof.
+ intros. unfold get_cua. reflexivity.
+Qed.
+
+(* Proofs of types and syntax. *)
+Ltac nor_sym := try (apply neq_sym; assumption) ; try assumption.
+
+
+Lemma iner_neq : forall (x y:var) (a b:nat), x <> y -> (x,a) <> (y,b).
+Proof.
+  intros. intros R.
+  inv R. contradiction.
+Qed.
+
+Lemma iner_neq_1 : forall (x:var) (c:posi) a, x <> fst c -> (x,a) <> c.
+Proof.
+  intros. intros R.
+  destruct c.
+  inv R. contradiction.
+Qed.
+
+Lemma iner_neq_2 : forall (x:var) (c:posi) a, x <> fst c -> c <> (x,a).
+Proof.
+  intros. intros R.
+  destruct c.
+  inv R. contradiction.
+Qed.
+
+Ltac tuple_eq := intros R; inv R; lia.
+
+Ltac iner_p := try nor_sym; try tuple_eq ; try (apply iner_neq ; assumption)
+           ; try (apply iner_neq_1 ; assumption) ; try (apply iner_neq_2 ; assumption).
+
+Lemma exp_neu_t_prop : forall p x l l', exp_neu_l x l p l' -> exp_neu_prop l -> exp_neu_prop l'.
+Proof.
+ induction p; intros; try easy.
+ 1-7:inv H; easy.
+ unfold exp_neu_prop in *.
+ intros. inv H.
+ destruct l'. simpl in *. lia.
+ destruct i. simpl in *.
+ destruct l'. easy.
+ specialize (H0 1 a).
+ assert (1 + 1 < S (S (length (s0 :: l')))) by lia.
+ apply H0 in H. simpl in *. easy.
+ simpl in *. easy.
+ specialize (H0 (S (S i)) a).
+ assert (S (S i) + 1 < length (Rs :: s :: l')).
+ simpl in *. lia.
+ apply H0 in H.
+ simpl in *. easy.
+ simpl in *. easy.
+ unfold fst_not_opp in H5. destruct l. simpl in *. lia.
+ destruct i. simpl in *. inv H2.
+ unfold opp_ls in *. intros R. inv R. easy.
+ specialize (H0 i a).
+ assert (i + 1 < length (s :: l)). simpl in *. lia.
+ apply H0 in H. simpl in *. easy. simpl in *. easy.
+ apply H0; try easy.
+ unfold exp_neu_prop in *.
+ intros. inv H.
+ destruct l'. simpl in *. lia.
+ destruct i. simpl in *.
+ destruct l'. easy.
+ specialize (H0 1 a).
+ assert (1 + 1 < S (S (length (s0 :: l')))) by lia.
+ apply H0 in H. simpl in *. easy.
+ simpl in *. easy.
+ specialize (H0 (S (S i)) a).
+ assert (S (S i) + 1 < length (Ls :: s :: l')).
+ simpl in *. lia.
+ apply H0 in H.
+ simpl in *. easy.
+ simpl in *. easy.
+ unfold fst_not_opp in *. destruct l. simpl in *. lia.
+ destruct i. simpl in *. inv H2.
+ unfold opp_ls. intros R. inv R. easy.
+ specialize (H0 i a).
+ assert (i + 1 < length (s :: l)). simpl in *. lia.
+ apply H0 in H. simpl in *. easy. simpl in *. easy.
+ apply H0; try easy.
+ unfold exp_neu_prop in *.
+ intros. inv H.
+ destruct i. simpl in *.
+ destruct l'. easy.
+ specialize (H0 1 a).
+ assert (1 + 1 < S (length (s :: l'))) by lia.
+ apply H0 in H. simpl in *. easy.
+ simpl in *. easy.
+ specialize (H0 (S (S i)) a).
+ assert (S (S i) + 1 < length (Re :: l')).
+ simpl in *. lia.
+ apply H0 in H.
+ simpl in *. easy.
+ simpl in *. easy.
+ unfold fst_not_opp in *. destruct l. simpl in *. lia.
+ destruct i. simpl in *. inv H2.
+ unfold opp_ls. intros R. inv R. easy.
+ specialize (H0 i a).
+ assert (i + 1 < length (s :: l)). simpl in *. lia.
+ apply H0 in H. simpl in *. easy. simpl in *. easy.
+ apply H0; try easy.
+ 1-2:inv H; easy.
+ inv H.
+ apply IHp2 with (x := x) (l := l'0); try easy. 
+ apply IHp1 with (x:=x) (l := l); try easy.
+Qed.
+
 Lemma dag_canonical : forall e1 t, exists e2, rewrites_recur t e1 e2 /\ is_canonical e2 = true.
 Proof.
  induction e1; intros; simpl in *.
