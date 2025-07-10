@@ -773,4 +773,3 @@ Definition Hgad (k : nat) (lambda : R) (hori : lowprog) : lowprog :=
   end.
     
 Local Close Scope nat_scope.
-
