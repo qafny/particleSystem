@@ -82,8 +82,10 @@ Definition WFState (t:iota) (s:psi) := forall e, In e s -> WFKet t (snd e).
 (* Theorem: type soundness *)
 Theorem type_right_matrix: forall ia e, typing ia e (H, ia) ->  rewrites_recur ia (HDag e) e.
 Proof.
+  intros. induction H; try easy.
 Admitted.  
 
-Theorem type_preservation: forall ia e t n s, typing ia e t -> WFState ia s -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
+Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
 Proof.
+  intros. induction H; try easy.
 Admitted.
