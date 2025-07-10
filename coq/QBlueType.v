@@ -155,25 +155,3 @@ Fixpoint canonical_next (e:blueExp) : bool :=
 Lemma dag_canonical : forall t e1, exists e2, rewrites_recur t e1 e2 /\ is_canonical e2 = true.
 Proof.
 Admitted.
-
-Definition ket_matches_iota (k : ket) (i : iota) : bool :=
-    let '(_, particles) := k in
-    Nat.eqb (length particles) (length i).
-  
-Definition is_type (tp : tau) (qphi : phi) : bool :=
-    let '(_, i) := tp in
-    forallb (fun k => ket_matches_iota k i) qphi.
-
-
-(* Theorem: type soundness *)
-Theorem type_progress: forall (e: H) (tp: tau) (qphi: phi), 
-(typing e tp) -> (is_type tp qphi=true) -> (canonicalCheck false e) 
--> exists qphi', sem e qphi qphi'.
-Proof.
-Admitted.  
-
-Theorem type_preservation: forall (e: H) (tp: tau) (qphi: phi) (qphi': phi), 
-(typing e tp) -> (is_type tp qphi=true) -> (canonicalCheck false e) 
--> sem e qphi qphi' -> (is_type tp qphi'=true). 
-Proof.
-Admitted.

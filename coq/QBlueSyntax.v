@@ -17,7 +17,7 @@ Definition vector := nat.
 
 Definition basisKet := nat -> nat.
 
-Definition psi := list basisKet.
+Definition psi := list (C * basisKet).
 
 (*
 Definition parstate : Type := (C * spinbase).
@@ -72,7 +72,6 @@ Inductive blueExp :=
         | HDag (x:blueExp)
         | HAnni
         | HId.
-
 
 
 

@@ -1,6 +1,7 @@
 -R . QBlue
 
 QBlueSyntax.v
-QBlueCompiler.v
+QBlueType.v
 QBlueSemantics.v
+QBlueCompiler.v
 

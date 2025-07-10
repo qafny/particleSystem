@@ -4,197 +4,86 @@ Require Import Reals.
 Require Import Coq.Strings.String.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
+Require Import QuantumLib.VectorStates.
 Require Import QBlue.QBlueSyntax.
-Require Import QBlue.QBlueCompiler.
+Require Import QBlueType.
 (* Local Open Scope nat_scope. 
 
 Coercion INR : nat >-> R. *)
+Definition create_sem (m:nat) (b:nat) : option (C * nat) :=
+  if b <? m then Some (RtoC (sqrt (INR (b+1))), Nat.add b 1) else None.
 
-(* Single ket semantics, apply a (false) or a+ to a single eta state: a^[+] |k> 
-k: current state; m: boundary; return (C, nat) *)
-Definition op_asite (flag : bool) (k m : nat) : option (R * nat) :=
-  if flag then
-    (if k =? m then None else Some (sqrt (INR (k + 1)), Nat.add k 1))
-  else
-    (if k =? 0 then None else Some (sqrt (INR k), Nat.sub k 1)).
- 
-(* replace the pos_th element in ll with newv *)
-Fixpoint replace_nth {A : Type} (pos : nat) (newv : A) (ll : list A) : list A :=
-  match pos, ll with
-  | 0, _ :: xs => newv :: xs                     
-  | S n, x :: xs => x :: replace_nth n newv xs   
-  | _, [] => []                                  
+
+Definition anni_sem (m:nat) (b:nat) : option (C * nat) :=
+  if b =? 0 then None else Some (RtoC (sqrt (INR b)), Nat.sub b 1).
+
+Local Open Scope nat_scope.
+
+Inductive forall_map (P:psi -> psi -> Prop) : psi -> psi -> Prop :=
+    forall_map_empty : forall_map P nil nil
+  | forall_map_many: forall x y s1 s2, P ([x]) y -> forall_map P s1 s2 -> forall_map P (x::s1) (y++s2).
+
+Definition nleft (f:nat -> nat) (n:nat) := fun i => f (i + n).
+
+Fixpoint allFem (t:iota) (f:nat -> nat) :=
+  match t with [] => 0
+             | Fem::xl => f 0 + allFem xl (nleft f 1)
+             | (Bos a)::xl => allFem xl (nleft f 1)
   end.
 
-(* creator operates on a tensor term.
-flag: creator/anni; sid: site id; m: boundary of this operator; input: a term of tensor *)
-Definition op_aterm (flag : bool) (sid m : nat) (input : ket) : ket :=
-  let (amp, nlist) := input in
-  match nth_error nlist sid with 
-  | None => (amp, [])
-  | Some k => match (op_asite flag k m) with
-    | None => (amp, [])
-    | Some (factor, newv) => 
-    let newl := replace_nth sid newv nlist in (Cmult amp factor, newl)
-    end
-  end.
-  
-(* helper function to combine two quantum states *)
-(* if two lists are equal *)
-Fixpoint eq_list (x y : list nat) : bool :=
-  match x, y with
-  | [], [] => true
-  | a :: xx, b :: yy => if true then eq_list xx yy else false
-  | _, _ => false
-  end.
+Definition ketCombine (n:nat) (f1 f2:nat -> nat) :=
+  fun i => if i <? n then f1 i else f2 (i-n).
 
-Fixpoint subcombine (a : ket) (qs : phi) : phi :=
+Fixpoint subcombine (n:nat) (a : (C * basisKet)) (qs : psi) : psi :=
   match qs with 
-  | [] => [a]
-  | (x,y)::xs => 
-    if (eq_list (snd a) y) then (Cplus (fst a) x, y)::(subcombine a xs) else (x,y)::xs
+  | [] => []
+  | (x,y)::xs => (Cmult (fst a) x, ketCombine n (snd a) y)::subcombine n a xs
   end.
 
-Fixpoint combine (phi1 phi2: phi) : phi:=
+Fixpoint combine (n:nat) (phi1 phi2: psi) : psi:=
   match phi1 with 
-    | [] => phi2
-    | x::xs => subcombine x (combine xs (phi2))
+    | [] => []
+    | x::xs => subcombine n x (combine n xs (phi2))
   end.
 
-Fixpoint sem_hsnd (flag : bool) (sid m : nat) (input : phi) : phi :=
-  match input with 
-  | [] => []
-  | k :: kl => subcombine (op_aterm flag sid m k) (sem_hsnd flag sid m kl)
-  end.
+Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop := 
+   s_id : forall n t s, blue_sem n t HId s s
+ | f_anni_1: forall n s, anni_sem 2 (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
+ | f_anni_2: forall n s c m, anni_sem 2 (snd s 0) = Some (c,m)
+               -> blue_sem n ([Fem]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))])
+ | f_crea_1: forall n s, create_sem 2 (snd s 0) = None -> blue_sem n ([Fem]) (HDag HAnni) ([s]) (nil)
+ | f_crea_2: forall n s c m, create_sem 2 (snd s 0) = Some (c,m)
+               -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(fst s, (update (snd s) 0 m))])
+ | b_anni_1: forall n j s, anni_sem j (snd s 0) = None -> blue_sem n ([Bos j]) HAnni ([s]) (nil)
+ | b_anni_2: forall n j s c m, anni_sem j (snd s 0) = Some (c,m)
+               -> blue_sem n ([Bos j]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))])
+ | b_crea_1: forall n j s, create_sem j (snd s 0) = None -> blue_sem n ([Bos j]) (HDag HAnni) ([s]) (nil)
+ | b_crea_2: forall n j s c m, create_sem j (snd s 0) = Some (c,m)
+               -> blue_sem n ([Bos j]) (HDag HAnni) ([s]) ([(fst s, (update (snd s) 0 m))])
+ | s_top: forall n t e s s1, forall_map (blue_sem n t e) s s1 -> blue_sem n t e s s1
+ | s_ten: forall n t1 t2 e1 e2 w s1 s2, blue_sem n t1 e1 ([w]) s1 
+                 -> blue_sem (n+allFem t1 (snd w)) t2 e2 ([(C1, nleft (snd w) (length t1))]) s2
+                 -> blue_sem n (t1++t2) (HTensor e1 e2) ([w]) (combine (length t1) s1 s2)
+ | s_app: forall n t e1 e2 s s1 s2, blue_sem n t e2 s s1 
+                 -> blue_sem n t e1 s1 s2
+                 -> blue_sem n t (HApp e1 e2) s s2
+ | s_plus: forall n t e1 e2 s s1 s2, blue_sem n t e1 s s1 
+                 -> blue_sem n t e2 s s2
+                 -> blue_sem n t (HPlus e1 e2) s (s1++s2).
 
-(*
-(* helper func for S-TEN *)
-Definition appendList (a b : phi) : phi :=
-  match a, b with 
-  (* for tensor operation, the two inputs must be kets with the same amplitudes *)
-  | [(z1, al)], [(z2, bl)] => [(Cmult z1 z2, al ++ bl)]
-  | _, _ => []
-  end.
-*)
+Inductive WFKet : iota -> basisKet -> Prop := 
+  WFEmpty : forall s, WFKet nil s
+ | WFManyF : forall xl s, s 0 < 2 -> WFKet xl (nleft s 1) -> WFKet (Fem::xl) s
+ | WFManyB : forall m xl s, s 0 < m -> WFKet xl (nleft s 1) -> WFKet (Bos m::xl) s.
 
-(* semanics for creator / annihilator. *)  
-Inductive sem_highprog_snd : nat -> hsnd -> phi -> phi -> Prop :=
-  | s_anni: forall sid m ptc s, sem_highprog_snd sid (anni ptc m) s (sem_hsnd false sid m s)
-  | s_crea: forall sid m ptc s, sem_highprog_snd sid (creator ptc m) s (sem_hsnd true sid m s)
-  | s_unit: forall sid m s, sem_highprog_snd sid (hunit m) s s.
-
-(* semanics for e1 o e2 o ... en, the first nat is site id in the corresponding state phi*)  
-Inductive sem_highprog_app : nat -> list hsnd -> phi -> phi -> Prop :=
-  | s_app_empty: forall sid s, sem_highprog_app sid [] s s
-  | s_app_next: forall sid opfst oplist sini s1 s2, sem_highprog_app sid oplist sini s1 ->
-    sem_highprog_snd sid opfst s1 s2 ->
-    sem_highprog_app sid (opfst :: oplist) sini s2.
-
-(* semanics for e1 x e2 x ... en. *)  
-Inductive sem_highprog_tensor : highprog_ten -> phi -> phi -> Prop :=
-  | s_ten_empty: forall z f s, sem_highprog_tensor (z, 0%nat, f) s s
-  | s_ten_next: forall z f n sini smid sfinal,
-    sem_highprog_app (S n) (f (S n)) sini smid ->
-    sem_highprog_tensor (z, n, f) smid sfinal ->
-    sem_highprog_tensor (z, S n, f) sini sfinal.
-
-(* semanics for e1 + e2 + ... en. *) 
-Inductive sem_highprog_plus : highprog -> phi -> phi -> Prop :=
-  | s_plus_empty: forall s, sem_highprog_plus [] s s
-  | s_plus_next: forall sini opten oplist s1 s2,
-    sem_highprog_tensor opten sini s1 -> 
-    sem_highprog_plus oplist sini s2 ->
-    sem_highprog_plus (opten :: oplist) sini (combine s1 s2).
+Definition WFState (t:iota) (s:psi) := forall e, In e s -> WFKet t (snd e).
 
 
-(* The following translate the state into qubit-based 
-and define the semantics for low-level program *)
-Fixpoint genl_helper (v len : nat) : list nat :=
-  match len with 0 => []
-  | S n => v :: (genl_helper v n)
-  end.
+(* Theorem: type soundness *)
+Theorem type_right_matrix: forall ia e, typing ia e (H, ia) ->  rewrites_recur ia (HDag e) e.
+Proof.
+Admitted.  
 
-(* Ex: |3> (m=5) ==> |0 0 0 1 0 0> *)
-Definition translate_to_bistate_siteh (k m : nat) : list nat :=
-  let left : list nat := genl_helper 0%nat k in
-  let right : list nat := genl_helper 0%nat (Nat.sub m k) in
-  left ++ (1%nat :: right).
-
-(* input: a m-based ket; boundary: m for each site *)
-Fixpoint translate_to_bistate_keth (input : list nat) (boundary : list nat) : list nat :=
-  match input, boundary with 
-  | [], _ => []
-  | k :: kl, m :: ml => 
-    let cur : list nat := translate_to_bistate_siteh k m in
-    let rem : list nat := translate_to_bistate_keth kl ml in
-    cur ++ rem
-  | _, [] => []
-  end.
-
-(* translate state from natural-number-based to qubit-based *)
-Definition translate_to_bistate (input : ket) (boundary : list nat) : ket :=
-  let (amp, klist) := input in (amp, translate_to_bistate_keth klist boundary).
-
-(* semanics for pauli strings. *)
-Definition op_pauli (op : paulimat) (k : nat) : (C * nat) :=
-  match op with 
-  | paulii => (C1, k)
-  | paulix => (C1, Nat.sub 1 k)
-  | pauliy => if k =? 0 then (Ci, 1%nat) else (-Ci, 0%nat)
-  | pauliz => if k =? 0 then (C1, 0%nat) else (-C1, 1%nat)
-  end.
-
-(* creator operates on a tensor term in binary.
-op: paulimat; sid: site id; input: a term of tensor *)
-Definition op_pauli_aterm (op : paulimat) (sid : nat) (input : ket) : ket :=
-  let (amp, nlist) := input in
-  match nth_error nlist sid with 
-  | None => (amp, [])
-  | Some k => let (factor, newv) := op_pauli op k in 
-    let newl := replace_nth sid newv nlist in (Cmult amp factor, newl)
-  end.
-
-Fixpoint sem_pauli (op : paulimat) (sid : nat) (input : phi) : phi :=
-  match input with 
-  | [] => []
-  | k :: kl => subcombine (op_pauli_aterm op sid k) (sem_pauli op sid kl)
-  end.
-
-(* site id; pauli operator; input state; output state *)
-Inductive sem_lowprog_snd : nat -> paulimat -> phi -> phi -> Prop :=
-  | s_move_pauli: forall op sid s, sem_lowprog_snd sid op s (sem_pauli op sid s).
-
-(* semanics for e1 x e2 x ... en. *)  
-Inductive sem_lowprog_tensor : lowprog_ten -> phi -> phi -> Prop :=
-  | s_tenl_empty: forall z f s, sem_lowprog_tensor (z, 0%nat, f) s s
-  | s_tenl_next: forall z f n sini smid sfinal,
-    sem_lowprog_snd (S n) (f (S n)) sini smid ->
-    sem_lowprog_tensor (z, n, f) smid sfinal ->
-    sem_lowprog_tensor (z, S n, f) sini sfinal.
-
-(* semanics for e1 + e2 + ... en. *) 
-Inductive sem_lowprog_plus : lowprog -> phi -> phi -> Prop :=
-  | s_plusl_empty: forall s, sem_lowprog_plus [] s s
-  | s_plusl_next: forall sini opten oplist s1 s2,
-    sem_lowprog_tensor opten sini s1 -> 
-    sem_lowprog_plus oplist sini s2 ->
-    sem_lowprog_plus (opten :: oplist) sini (combine s1 s2).
-
-(*
-Inductive sem : hsnd -> phi -> phi -> Prop :=
-  (* s_move *)
-  | s_move_anni: forall m z j, sem (anni (_, m)) ([(z,[j])]) (single_sem false z j m)
-  | s_move_crea: forall z m j, sem (creator (_, m)) ([(z,[j])]) (single_sem true z j m)
-  (* s_sum *)
-  | s_sum: forall e1 e2 phi phi1 phi2, sem e1 phi phi1 -> sem e2 phi phi2 -> 
-            sem (HPlus e1 e2) phi (combine phi1 phi2)
-  (* s_par *)
-  | s_par: forall e phi1 phi1' phi2 phi2', sem e phi1 phi1' -> sem e phi2 phi2' ->
-            sem e (phi1 ++ phi2) (combine phi1' phi2')
-  (* s_app *)
-  | s_app: forall e1 e2 phi phi' phi'', sem e2 phi phi' -> sem e1 phi' phi'' ->
-            sem (HApp e1 e2) phi phi''
-  (* s_tensor *)
-  | s_tensor: forall e1 e2 w w' phi phi', sem e1 w phi -> sem e2 w' phi' ->
-            sem (HTensor e1 e2) (w ++ w') (appendList phi phi').
-*)
+Theorem type_preservation: forall ia e t n s, typing ia e t -> WFState ia s -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
+Proof.
+Admitted.
