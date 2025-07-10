@@ -152,6 +152,7 @@ Fixpoint canonical_next (e:blueExp) : bool :=
   | _ => canonical_next e
   end.
 
-Lemma dag_canonical : forall t e1, exists e2, rewrites_recur t e1 e2 /\ is_canonical e2 = true.
+Lemma dag_canonical : forall e1 t, exists e2, rewrites_recur t e1 e2 /\ is_canonical e2 = true.
 Proof.
+ induction e1; intros; simpl in *.
 Admitted.
