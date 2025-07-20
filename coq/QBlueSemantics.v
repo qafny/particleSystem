@@ -78,13 +78,74 @@ Inductive WFKet : iota -> basisKet -> Prop :=
 
 Definition WFState (t:iota) (s:psi) := forall e, In e s -> WFKet t (snd e).
 
+
+(* Denote the blueExp as Matrix form *)
+Fixpoint blueExp_dim (e : blueExp) : nat :=
+  match e with
+  | HId => 2
+  | HAnni => 2
+  | HPlus e1 e2 => blueExp_dim e1
+  | HTensor e1 e2 => (blueExp_dim e1) * (blueExp_dim e2)
+  | HApp e1 e2 => blueExp_dim e1
+  | HDag e1 => blueExp_dim e1
+  end.
+
+(* Modify Mmult for the exceptional case of wrong dimension *)
+Definition Mmult_tmp {m1 m2 n1 n2 : nat} (A : Matrix m1 m2) (B : Matrix n1 n2) : Matrix m1 n2 :=
+  if Nat.eqb n1 m2 then Mmult A B
+  else I m1. (* Not sure how to return erronic case. Zero has been overridn by MuQ files. *) 
+
+Fixpoint blueExp_denote (e : blueExp) : Square (blueExp_dim e) :=
+  match e with
+  | HId => I 2
+  | HAnni => fun i j =>
+    match (i, j) with
+    | (0, 1) => C1
+    | _ => C0
+    end
+  | HPlus e1 e2 => Mplus (blueExp_denote e1) (blueExp_denote e2)
+  | HTensor e1 e2 => kron (blueExp_denote e1) (blueExp_denote e2)
+  | HApp e1 e2 => Mmult_tmp (blueExp_denote e1) (blueExp_denote e2)
+  | HDag e1 => adjoint (blueExp_denote e1)
+  end.
+
+Definition Hermitian {n} (A : Square n) : Prop := mat_equiv (adjoint A) A.
+
+Definition blueExp_Hermitian (ia : iota) (e : blueExp) : Prop :=
+  Hermitian (blueExp_denote e).
+
+Inductive interprete_herm : iota -> blueExp -> Prop :=
+  | R_blueExp_Hermitian : forall ia e,
+      typing ia e (H, ia) ->
+      blueExp_Hermitian ia e ->
+      interprete_herm ia e.
+
+Lemma hermitian_rewrites :
+  forall ia e,
+    blueExp_Hermitian ia e ->
+    rewrites_recur ia (HDag e) e.
+Proof.
+  intros ia e Hherm.
+  simpl.
+Admitted.
+
+Lemma typing_sound_hermitian :
+  forall ia e,
+    typing ia e (H, ia) ->
+    blueExp_Hermitian ia e.
+Proof. Admitted.
+
 (* Theorem: type soundness *)
 Theorem type_right_matrix: forall ia e, typing ia e (H, ia) ->  rewrites_recur ia (HDag e) e.
 Proof.
-  intros. induction H; try easy.
-Admitted.  
+  intros ia e Htype.
+  apply hermitian_rewrites.
+  apply typing_sound_hermitian; assumption.
+Qed.
 
-Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
+
+Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s',
+ blue_sem n ia e s s' /\ WFState ia s'.
 Proof.
   intros. induction H; try easy.
 Admitted.

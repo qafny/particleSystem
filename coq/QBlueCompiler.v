@@ -910,7 +910,7 @@ Fixpoint synth_analog_indiana_helper (ml : list nat) (nbit : nat) (pauli_str : n
 Definition synth_analog_indiana (t : R) (nbit : nat) (pauli_str : nat -> paulimat) 
   : list ugate :=
   let ml := find_nonI nbit pauli_str in 
-  let mid := exp_ugate t [fill_pl nbit ml pauliz] in
+  let mid := exp_ugate t [fill_pl nbit ml paulix] in
   let (left, right) := synth_analog_indiana_helper ml nbit pauli_str in
   left ++ [mid] ++ right.
 

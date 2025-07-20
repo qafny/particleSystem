@@ -66,12 +66,12 @@ Inductive typeflag : Set := P | U | H.
 Definition tauType :Set := typeflag * iota.
 
 Inductive blueExp := 
-        | HApp (x:blueExp) (y:blueExp)
-        | HPlus (x:blueExp) (y:blueExp)
-        | HTensor (x:blueExp) (y:blueExp)
-        | HDag (x:blueExp)
+        | HId
         | HAnni
-        | HId.
+        | HDag (x:blueExp)
+        | HPlus (x:blueExp) (y:blueExp)
+        | HApp (x:blueExp) (y:blueExp)
+        | HTensor (x:blueExp) (y:blueExp).
 
 
 
@@ -89,3 +89,5 @@ Definition highprog_ten := (C * nat * (nat -> list hsnd)) %type.
 (* require for each term to have the same length of qubits: [a+ 3; a 2; I 10], then 
 all the other terms should also be 15. *)
 Definition highprog := list highprog_ten.
+
+
