@@ -52,8 +52,8 @@ Definition ket := (C * list nat) %type.
 
 (* Particle Type Flag *)
 Inductive particle : Set := 
-  | Fem (* fermion *) 
-  | Bos (x:nat). (* boson *)
+  | Fem (* fermion t(2) *) 
+  | Bos (x:nat). (* boson t(m) *) 
 
 
 Definition iota : Set := (list particle). 

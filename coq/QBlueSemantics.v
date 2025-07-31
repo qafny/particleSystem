@@ -13,7 +13,7 @@ Coercion INR : nat >-> R. *)
 Definition create_sem (m:nat) (b:nat) : option (C * nat) :=
   if b <? m then Some (RtoC (sqrt (INR (b+1))), Nat.add b 1) else None.
 
-
+(* annilator: a(m) |b> = sqrt(b) |b-1> *)
 Definition anni_sem (m:nat) (b:nat) : option (C * nat) :=
   if b =? 0 then None else Some (RtoC (sqrt (INR b)), Nat.sub b 1).
 
@@ -46,11 +46,15 @@ Fixpoint combine (n:nat) (phi1 phi2: psi) : psi:=
     | x::xs => subcombine n x (combine n xs (phi2))
   end.
 
+
+(* nat: contex number, record occupied fermions
+  iota: state type; blueExp: op; psi: input and output state (C amplitude, nat->nat site_id :  ) *)
 Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop := 
-   s_id : forall n t s, blue_sem n t HId s s
+ | s_id : forall n t s, blue_sem n t HId s s
+ (* anni_sem 2 should be anni_sem 1? *)
  | f_anni_1: forall n s, anni_sem 2 (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
- | f_anni_2: forall n s c m, anni_sem 2 (snd s 0) = Some (c,m)
-               -> blue_sem n ([Fem]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))])
+ | f_anni_2: forall n s c m, anni_sem 2 (snd s 0) = Some (c,m) 
+     -> blue_sem n ([Fem]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))]) (* fst s should be (fst s)*c? *)
  | f_crea_1: forall n s, create_sem 2 (snd s 0) = None -> blue_sem n ([Fem]) (HDag HAnni) ([s]) (nil)
  | f_crea_2: forall n s c m, create_sem 2 (snd s 0) = Some (c,m)
                -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(fst s, (update (snd s) 0 m))])
@@ -71,10 +75,13 @@ Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop :=
                  -> blue_sem n t e2 s s2
                  -> blue_sem n t (HPlus e1 e2) s (s1++s2).
 
+(*  *)                 
 Inductive WFKet : iota -> basisKet -> Prop := 
-  WFEmpty : forall s, WFKet nil s
+ | WFEmpty : forall s, WFKet nil s
+ (* xl is the state of right part of s *)
  | WFManyF : forall xl s, s 0 < 2 -> WFKet xl (nleft s 1) -> WFKet (Fem::xl) s
  | WFManyB : forall m xl s, s 0 < m -> WFKet xl (nleft s 1) -> WFKet (Bos m::xl) s.
+
 
 Definition WFState (t:iota) (s:psi) := forall e, In e s -> WFKet t (snd e).
 
@@ -114,38 +121,85 @@ Definition Hermitian {n} (A : Square n) : Prop := mat_equiv (adjoint A) A.
 Definition blueExp_Hermitian (ia : iota) (e : blueExp) : Prop :=
   Hermitian (blueExp_denote e).
 
+
 Inductive interprete_herm : iota -> blueExp -> Prop :=
   | R_blueExp_Hermitian : forall ia e,
       typing ia e (H, ia) ->
       blueExp_Hermitian ia e ->
       interprete_herm ia e.
 
+Lemma typing_sound_hermitian :
+  forall ia e h,
+    typing ia e h -> fst h = H -> snd h = ia ->
+    blueExp_Hermitian ia e.
+Proof.
+intros ia e h Hypo.
+induction e.
+Admitted.
+
+
 Lemma hermitian_rewrites :
   forall ia e,
     blueExp_Hermitian ia e ->
     rewrites_recur ia (HDag e) e.
 Proof.
-  intros ia e Hherm.
-  simpl.
+  intros ia e Hypo.
+  unfold blueExp_Hermitian in Hypo.
+  unfold Hermitian in Hypo.
+  destruct e eqn:E. 
 Admitted.
 
-Lemma typing_sound_hermitian :
-  forall ia e,
-    typing ia e (H, ia) ->
-    blueExp_Hermitian ia e.
-Proof. Admitted.
 
 (* Theorem: type soundness *)
 Theorem type_right_matrix: forall ia e, typing ia e (H, ia) ->  rewrites_recur ia (HDag e) e.
 Proof.
   intros ia e Htype.
   apply hermitian_rewrites.
-  apply typing_sound_hermitian; assumption.
-Qed.
+Admitted.
 
+(* The estimated state for HAnni *)
 
+Definition ket_minus_one (amp : C) (f : basisKet) : list (C * basisKet) :=
+  match anni_sem 2 (f 0) with
+  | None => []
+  | Some (c, m') => [(c, update f 0 m')]
+  end.
+
+Fixpoint tysound_hanni (s : psi) : psi := 
+  match s with 
+  | [] => []
+  | k :: s' => ket_minus_one (fst k) (snd k) ++ (tysound_hanni s')
+  end.
+
+ (* | f_anni_1: forall n s, anni_sem 2 (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
+ | f_anni_2: forall n s c m, anni_sem 2 (snd s 0) = Some (c,m) 
+               -> blue_sem n ([Fem]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))]) *)
+
+(* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
 Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s',
- blue_sem n ia e s s' /\ WFState ia s'.
-Proof.
-  intros. induction H; try easy.
+  blue_sem n ia e s s' /\ WFState ia s'.
+Proof. 
+  intros ia e t n s Hty Hst. induction Hty.
+  (* T_opF *)
+  (* - remember (tysound_hanni s) as s1.
+  (* - pose (s1 := map (fun s0 => (fst s0, update (snd s0) 0 2)) s). *)
+  exists s1. split.
+    apply  s_top.
+    destruct s; simpl in *; subst.
+    -- constructor.
+    -- constructor. 
+
+    Check (forall_map_ind (blue_sem n [Fem] HAnni) (fun a => fun b => forall_map (blue_sem n [Fem] HAnni) a b) s s1).
+    inv.
+    assert (forall_map (blue_sem n [Fem] HAnni) s s1) as G1.
+    induction in forall_map_ind.
+    apply (forall_map_ind ((blue_sem n [Fem] HAnni)) s s1).
+    admit. admit. easy.
+    induction s; simpl in *; subst. constructor.
+
+    -- apply s_top. apply f_anni_1. *)
+  - admit.
+  - admit.  
+  - exists s. split. apply s_id. try easy.
+ 
 Admitted.
