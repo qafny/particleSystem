@@ -1,7 +1,5 @@
 -R . QBlue
 
-MathSpec.v
-BasicUtility.v
 QBlueSyntax.v
 QBlueType.v
 QBlueSemantics.v

@@ -19,6 +19,11 @@ Definition basisKet := nat -> nat.
 
 Definition psi := list (C * basisKet).
 
+(* Standard inversion/subst/clear abbrev. *)
+Tactic Notation "inv" hyp(H) := inversion H; subst; clear H.
+Tactic Notation "inv" hyp(H) "as" simple_intropattern(p) :=
+  inversion H as p; subst; clear H.
+
 (*
 Definition parstate : Type := (C * spinbase).
 

@@ -162,7 +162,7 @@ Admitted.
 Definition ket_minus_one (amp : C) (f : basisKet) : list (C * basisKet) :=
   match anni_sem 2 (f 0) with
   | None => []
-  | Some (c, m') => [(c, update f 0 m')]
+  | Some (c, m') => [(Cmult c amp, update f 0 m')]
   end.
 
 Fixpoint tysound_hanni (s : psi) : psi := 
@@ -176,6 +176,7 @@ Fixpoint tysound_hanni (s : psi) : psi :=
                -> blue_sem n ([Fem]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))]) *)
 
 (* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
+
 Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s',
   blue_sem n ia e s s' /\ WFState ia s'.
 Proof. 
@@ -198,7 +199,22 @@ Proof.
     induction s; simpl in *; subst. constructor.
 
     -- apply s_top. apply f_anni_1. *)
-  - admit.
+  - exists (tysound_hanni s).
+    split. apply s_top.
+    induction s. simpl in *. constructor. simpl in *. constructor.
+    unfold ket_minus_one.
+    destruct (anni_sem 2 (snd a 0)) eqn:eq1. destruct p; simpl in *.
+    assert (In a (a :: s)) as G1. left. easy.
+    apply Hst in G1. inv G1.
+    specialize (Hst a).
+    assert ((c * fst a)%C = fst a).
+    unfold anni_sem in *. destruct (snd a 0). simpl in *. easy. simpl in *. destruct n1.
+    simpl in *. inv eq1. rewrite sqrt_1. lca.
+    lia. rewrite H. apply f_anni_2 with (c := c); try easy.
+    apply f_anni_1. easy. apply IHs.
+    unfold WFState in *. intros. apply Hst. simpl. right. easy.
+    
+    apply f_anni_2.
   - admit.  
   - exists s. split. apply s_id. try easy.
  
