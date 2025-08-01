@@ -213,8 +213,20 @@ Proof.
     lia. rewrite H. apply f_anni_2 with (c := c); try easy.
     apply f_anni_1. easy. apply IHs.
     unfold WFState in *. intros. apply Hst. simpl. right. easy.
-    
-    apply f_anni_2.
+    induction s. simpl in *. easy.
+    simpl in *. unfold WFState. intros. apply in_app_or in H. destruct H.
+    constructor.
+    unfold ket_minus_one in *. 
+    destruct (anni_sem 2 (snd a 0)) eqn:eq1. destruct p. simpl in *. inv H; try easy.
+    simpl in *. rewrite update_index_eq.
+    unfold anni_sem in eq1. destruct (snd a 0) eqn:eq2. simpl in *. easy. simpl in *. destruct n1. inv eq1. lia.
+    inv eq1.
+    assert (In a (a :: s)) as G1. left. easy.
+    apply Hst in G1. inv G1. rewrite eq2 in H0. lia. easy.
+    constructor.
+    assert (WFState [Fem] s).
+    unfold WFState. intros. apply Hst. right. easy.
+    apply IHs in H0. apply H0 in H. easy.
   - admit.  
   - exists s. split. apply s_id. try easy.
  
