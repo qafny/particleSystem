@@ -137,15 +137,14 @@ Fixpoint canonical_next (e:blueExp) : bool :=
   match e with HTensor e1 e2 => (canonical_next e1) && (canonical_next e2)
              | HApp e1 e2 => (canonical_next e1) && (canonical_next e2)
              | HAnni => true
+             | HId => true             
   | HDag e' =>
       match e' with
       | HAnni => true
       | _ => false
       end
 
-  | HId => true
-
-  | _ => false
+  | HPlus _ _ => false
   end.
 
  Fixpoint is_canonical (e : blueExp) : bool :=

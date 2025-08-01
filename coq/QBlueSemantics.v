@@ -177,10 +177,10 @@ Fixpoint tysound_hanni (s : psi) : psi :=
 
 (* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
 
-Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s',
+Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s -> exists s',
   blue_sem n ia e s s' /\ WFState ia s'.
 Proof. 
-  intros ia e t n s Hty Hst. induction Hty.
+  intros ia e t n s Hty Hcan Hst. induction Hty.
   (* T_opF *)
   (* - remember (tysound_hanni s) as s1.
   (* - pose (s1 := map (fun s0 => (fst s0, update (snd s0) 0 2)) s). *)
@@ -230,4 +230,12 @@ Proof.
   - admit.  
   - exists s. split. apply s_id. try easy.
  
+Admitted.
+
+Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s',
+  blue_sem n ia e s s' /\ WFState ia s'.
+Proof. 
+  intros ia e t n s Hty Hst.
+  specialize (dag_canonical e ia) as G1.
+  destruct G1. destruct H.
 Admitted.
