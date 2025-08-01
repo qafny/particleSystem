@@ -10,11 +10,11 @@ Require Import QBlueType.
 (* Local Open Scope nat_scope. 
 
 Coercion INR : nat >-> R. *)
-Definition create_sem (m:nat) (b:nat) : option (C * nat) :=
+Definition create_sem (m b : nat) : option (C * nat) :=
   if b <? m then Some (RtoC (sqrt (INR (b+1))), Nat.add b 1) else None.
 
 (* annilator: a(m) |b> = sqrt(b) |b-1> *)
-Definition anni_sem (m:nat) (b:nat) : option (C * nat) :=
+Definition anni_sem (b:nat) : option (C * nat) :=
   if b =? 0 then None else Some (RtoC (sqrt (INR b)), Nat.sub b 1).
 
 Local Open Scope nat_scope.
@@ -51,15 +51,14 @@ Fixpoint combine (n:nat) (phi1 phi2: psi) : psi:=
   iota: state type; blueExp: op; psi: input and output state (C amplitude, nat->nat site_id :  ) *)
 Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop := 
  | s_id : forall n t s, blue_sem n t HId s s
- (* anni_sem 2 should be anni_sem 1? *)
- | f_anni_1: forall n s, anni_sem 2 (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
- | f_anni_2: forall n s c m, anni_sem 2 (snd s 0) = Some (c,m) 
+ | f_anni_1: forall n s, anni_sem (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
+ | f_anni_2: forall n s c m, anni_sem (snd s 0) = Some (c,m) 
      -> blue_sem n ([Fem]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))]) (* fst s should be (fst s)*c? *)
- | f_crea_1: forall n s, create_sem 2 (snd s 0) = None -> blue_sem n ([Fem]) (HDag HAnni) ([s]) (nil)
- | f_crea_2: forall n s c m, create_sem 2 (snd s 0) = Some (c,m)
+ | f_crea_1: forall n s, create_sem 1 (snd s 0) = None -> blue_sem n ([Fem]) (HDag HAnni) ([s]) (nil)
+ | f_crea_2: forall n s c m, create_sem 1 (snd s 0) = Some (c,m)
                -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(fst s, (update (snd s) 0 m))])
- | b_anni_1: forall n j s, anni_sem j (snd s 0) = None -> blue_sem n ([Bos j]) HAnni ([s]) (nil)
- | b_anni_2: forall n j s c m, anni_sem j (snd s 0) = Some (c,m)
+ | b_anni_1: forall n j s, anni_sem (snd s 0) = None -> blue_sem n ([Bos j]) HAnni ([s]) (nil)
+ | b_anni_2: forall n j s c m, anni_sem (snd s 0) = Some (c,m)
                -> blue_sem n ([Bos j]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))])
  | b_crea_1: forall n j s, create_sem j (snd s 0) = None -> blue_sem n ([Bos j]) (HDag HAnni) ([s]) (nil)
  | b_crea_2: forall n j s c m, create_sem j (snd s 0) = Some (c,m)
@@ -158,9 +157,8 @@ Proof.
 Admitted.
 
 (* The estimated state for HAnni *)
-
 Definition ket_minus_one (amp : C) (f : basisKet) : list (C * basisKet) :=
-  match anni_sem 2 (f 0) with
+  match anni_sem (f 0) with
   | None => []
   | Some (c, m') => [(Cmult c amp, update f 0 m')]
   end.
@@ -171,39 +169,19 @@ Fixpoint tysound_hanni (s : psi) : psi :=
   | k :: s' => ket_minus_one (fst k) (snd k) ++ (tysound_hanni s')
   end.
 
- (* | f_anni_1: forall n s, anni_sem 2 (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
- | f_anni_2: forall n s c m, anni_sem 2 (snd s 0) = Some (c,m) 
-               -> blue_sem n ([Fem]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))]) *)
 
 (* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
-
 Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s -> exists s',
   blue_sem n ia e s s' /\ WFState ia s'.
 Proof. 
   intros ia e t n s Hty Hcan Hst. induction Hty.
   (* T_opF *)
-  (* - remember (tysound_hanni s) as s1.
-  (* - pose (s1 := map (fun s0 => (fst s0, update (snd s0) 0 2)) s). *)
-  exists s1. split.
-    apply  s_top.
-    destruct s; simpl in *; subst.
-    -- constructor.
-    -- constructor. 
-
-    Check (forall_map_ind (blue_sem n [Fem] HAnni) (fun a => fun b => forall_map (blue_sem n [Fem] HAnni) a b) s s1).
-    inv.
-    assert (forall_map (blue_sem n [Fem] HAnni) s s1) as G1.
-    induction in forall_map_ind.
-    apply (forall_map_ind ((blue_sem n [Fem] HAnni)) s s1).
-    admit. admit. easy.
-    induction s; simpl in *; subst. constructor.
-
-    -- apply s_top. apply f_anni_1. *)
+  (* - remember (tysound_hanni s) as s1. *)
   - exists (tysound_hanni s).
     split. apply s_top.
     induction s. simpl in *. constructor. simpl in *. constructor.
     unfold ket_minus_one.
-    destruct (anni_sem 2 (snd a 0)) eqn:eq1. destruct p; simpl in *.
+    destruct (anni_sem (snd a 0)) eqn:eq1. destruct p; simpl in *.
     assert (In a (a :: s)) as G1. left. easy.
     apply Hst in G1. inv G1.
     specialize (Hst a).
@@ -217,7 +195,7 @@ Proof.
     simpl in *. unfold WFState. intros. apply in_app_or in H. destruct H.
     constructor.
     unfold ket_minus_one in *. 
-    destruct (anni_sem 2 (snd a 0)) eqn:eq1. destruct p. simpl in *. inv H; try easy.
+    destruct (anni_sem (snd a 0)) eqn:eq1. destruct p. simpl in *. inv H; try easy.
     simpl in *. rewrite update_index_eq.
     unfold anni_sem in eq1. destruct (snd a 0) eqn:eq2. simpl in *. easy. simpl in *. destruct n1. inv eq1. lia.
     inv eq1.
