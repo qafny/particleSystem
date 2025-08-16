@@ -46,6 +46,13 @@ Fixpoint combine (n:nat) (phi1 phi2: psi) : psi:=
     | x::xs => subcombine n x (combine n xs (phi2))
   end.
 
+Fixpoint Cpow (c : C) (n : nat) : C :=
+  match n with
+  | O   => C1
+  | S k => c * Cpow c k
+  end.
+
+Notation "c ^ n" := (Cpow c n) : C_scope.
 
 (* nat: contex number, record occupied fermions
   iota: state type; blueExp: op; psi: input and output state (C amplitude, nat->nat site_id :  ) *)
@@ -53,10 +60,12 @@ Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop :=
  | s_id : forall n t s, blue_sem n t HId s s
  | f_anni_1: forall n s, anni_sem (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
  | f_anni_2: forall n s c m, anni_sem (snd s 0) = Some (c,m) 
-     -> blue_sem n ([Fem]) HAnni ([s]) ([(Cmult c (fst s), (update (snd s) 0 m))]) (* fst s should be (fst s)*c? *)
+    (* -> blue_sem n ([Fem]) HAnni ([s]) ([((Cmult c (fst s)), (update (snd s) 0 m))]) *)
+     -> blue_sem n ([Fem]) HAnni ([s]) ([(Cmult (C1 ^ n) (Cmult c (fst s)), (update (snd s) 0 m))]) 
  | f_crea_1: forall n s, create_sem 1 (snd s 0) = None -> blue_sem n ([Fem]) (HDag HAnni) ([s]) (nil)
  | f_crea_2: forall n s c m, create_sem 1 (snd s 0) = Some (c,m)
-               -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(Cmult c (fst s), (update (snd s) 0 m))])
+    (* -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([((Cmult c (fst s)), (update (snd s) 0 m))]) *)
+     -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(Cmult (C1 ^ n) (Cmult c (fst s)), (update (snd s) 0 m))])
  | b_anni_1: forall n j s, anni_sem (snd s 0) = None -> blue_sem n ([Bos j]) HAnni ([s]) (nil)
  | b_anni_2: forall n j s c m, anni_sem (snd s 0) = Some (c,m)
                -> blue_sem n ([Bos j]) HAnni ([s]) ([(Cmult c (fst s), (update (snd s) 0 m))])
@@ -157,16 +166,28 @@ Proof.
 Admitted.
 
 (* The estimated state for HAnni *)
-Definition ket_minus_one (amp : C) (f : basisKet) : list (C * basisKet) :=
+Definition ket_minus_one (g : nat) (amp : C) (f : basisKet) : list (C * basisKet) :=
+  match anni_sem (f 0) with
+  | None => []
+  | Some (c, m') => [(Cmult (C1 ^ g) (Cmult c amp), update f 0 m')]
+  end.
+
+Fixpoint tysound_hanni (g : nat) (s : psi) : psi := 
+  match s with 
+  | [] => []
+  | k :: s' => ket_minus_one g (fst k) (snd k) ++ (tysound_hanni g s')
+  end.
+
+Definition ket_minus_one_bos (amp : C) (f : basisKet) : list (C * basisKet) :=
   match anni_sem (f 0) with
   | None => []
   | Some (c, m') => [(Cmult c amp, update f 0 m')]
   end.
 
-Fixpoint tysound_hanni (s : psi) : psi := 
+Fixpoint tysound_hanni_bos (s : psi) : psi := 
   match s with 
   | [] => []
-  | k :: s' => ket_minus_one (fst k) (snd k) ++ (tysound_hanni s')
+  | k :: s' => ket_minus_one_bos (fst k) (snd k) ++ (tysound_hanni_bos s')
   end.
 
 
@@ -177,7 +198,7 @@ Proof.
   intros ia e t n s Hty Hcan Hst. induction Hty.
   
   - (* 1. blue_sem n [Fem] HAnni s (tysound_hanni s) /\ WFState [Fem] (tysound_hanni s) *)  
-    exists (tysound_hanni s). split.
+    exists (tysound_hanni n s). split.
     -- apply s_top. induction s as [|a s' IHs].
       --- simpl. constructor.
       --- simpl. constructor.
@@ -231,12 +252,12 @@ Proof.
           ++ apply IH1 in Hst1. apply Hst1 in H. easy.
 
   - (* 2. blue_sem n [Fem] HAnni s (tysound_hanni s) /\ WFState [Fem] (tysound_hanni s) *)  
-    exists (tysound_hanni s). split.
+    exists (tysound_hanni_bos s). split.
     -- apply s_top. induction s as [|a s' IHs].
       --- simpl. constructor.
       --- simpl. constructor.
         (* blue_sem n [Fem] HAnni [a] (ket_minus_one (fst a) (snd a)) *)
-        + unfold ket_minus_one. destruct (anni_sem (snd a 0)) eqn:eq1.
+        + unfold ket_minus_one_bos. destruct (anni_sem (snd a 0)) eqn:eq1.
           ++ destruct p as [c n0]. 
           apply b_anni_2. apply eq1.
           ++ constructor. apply eq1.
@@ -252,7 +273,7 @@ Proof.
         (* H: In e (ket_minus_one (fst a) (snd a)) 
            WFKet [Fem] (snd e) *)
         + constructor. 
-          ++ unfold ket_minus_one in *. destruct (anni_sem (snd a 0)) eqn:eq1.
+          ++ unfold ket_minus_one_bos in *. destruct (anni_sem (snd a 0)) eqn:eq1.
             +++ destruct p. simpl in *. inv H.
               simpl in *. rewrite update_index_eq.
               unfold anni_sem in eq1.
@@ -279,7 +300,7 @@ Proof.
 
 Admitted. 
 
-
+(*
 (* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
 Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s 
   -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
@@ -380,7 +401,7 @@ Proof.
           ++ rewrite H. apply f_anni_2 with (c := c). try easy.
           ++ apply f_anni_1. easy.
         + apply IHs. unfold WFState in *. intros. apply Hst. simpl. right. easy. 
-
+*)
 
 Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s',
   blue_sem n ia e s s' /\ WFState ia s'.
