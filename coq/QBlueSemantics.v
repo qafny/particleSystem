@@ -53,16 +53,16 @@ Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop :=
  | s_id : forall n t s, blue_sem n t HId s s
  | f_anni_1: forall n s, anni_sem (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
  | f_anni_2: forall n s c m, anni_sem (snd s 0) = Some (c,m) 
-     -> blue_sem n ([Fem]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))]) (* fst s should be (fst s)*c? *)
+     -> blue_sem n ([Fem]) HAnni ([s]) ([(Cmult c (fst s), (update (snd s) 0 m))]) (* fst s should be (fst s)*c? *)
  | f_crea_1: forall n s, create_sem 1 (snd s 0) = None -> blue_sem n ([Fem]) (HDag HAnni) ([s]) (nil)
  | f_crea_2: forall n s c m, create_sem 1 (snd s 0) = Some (c,m)
-               -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(fst s, (update (snd s) 0 m))])
+               -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(Cmult c (fst s), (update (snd s) 0 m))])
  | b_anni_1: forall n j s, anni_sem (snd s 0) = None -> blue_sem n ([Bos j]) HAnni ([s]) (nil)
  | b_anni_2: forall n j s c m, anni_sem (snd s 0) = Some (c,m)
-               -> blue_sem n ([Bos j]) HAnni ([s]) ([(fst s, (update (snd s) 0 m))])
+               -> blue_sem n ([Bos j]) HAnni ([s]) ([(Cmult c (fst s), (update (snd s) 0 m))])
  | b_crea_1: forall n j s, create_sem j (snd s 0) = None -> blue_sem n ([Bos j]) (HDag HAnni) ([s]) (nil)
  | b_crea_2: forall n j s c m, create_sem j (snd s 0) = Some (c,m)
-               -> blue_sem n ([Bos j]) (HDag HAnni) ([s]) ([(fst s, (update (snd s) 0 m))])
+               -> blue_sem n ([Bos j]) (HDag HAnni) ([s]) ([(Cmult c (fst s), (update (snd s) 0 m))])
  | s_top: forall n t e s s1, forall_map (blue_sem n t e) s s1 -> blue_sem n t e s s1
  | s_ten: forall n t1 t2 e1 e2 w s1 s2, blue_sem n t1 e1 ([w]) s1 
                  -> blue_sem (n+allFem t1 (snd w)) t2 e2 ([(C1, nleft (snd w) (length t1))]) s2
@@ -150,7 +150,7 @@ Admitted.
 
 
 (* Theorem: type soundness *)
-Theorem type_right_matrix: forall ia e, typing ia e (H, ia) ->  rewrites_recur ia (HDag e) e.
+Theorem type_right_matrix: forall ia e, typing ia e (H, ia) -> rewrites_recur ia (HDag e) e.
 Proof.
   intros ia e Htype.
   apply hermitian_rewrites.
@@ -171,44 +171,216 @@ Fixpoint tysound_hanni (s : psi) : psi :=
 
 
 (* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
-Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s -> exists s',
-  blue_sem n ia e s s' /\ WFState ia s'.
+Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s 
+  -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
+Proof. 
+  intros ia e t n s Hty Hcan Hst. induction Hty.
+  
+  - (* 1. blue_sem n [Fem] HAnni s (tysound_hanni s) /\ WFState [Fem] (tysound_hanni s) *)  
+    exists (tysound_hanni s). split.
+    -- apply s_top. induction s as [|a s' IHs].
+      --- simpl. constructor.
+      --- simpl. constructor.
+        (* blue_sem n [Fem] HAnni [a] (ket_minus_one (fst a) (snd a)) *)
+        + unfold ket_minus_one. destruct (anni_sem (snd a 0)) eqn:eq1.
+          ++ destruct p as [c n0]. 
+          apply f_anni_2. apply eq1.
+          ++ constructor. apply eq1.
+        
+        (* forall_map (blue_sem n [Fem] HAnni) s' (tysound_hanni s') *)
+        + apply IHs. intros e IHe. (* intro var and hypo for WFState *)
+          apply Hst. right. apply IHe.
+    
+    (* WFState [Fem] (tysound_hanni s) *)
+    -- induction s as [|a s' IH1].
+      --- simpl. easy.
+    (*  --- intros e IHe. (* introduce the var in the def of WState *) 
+        simpl in IHe. apply in_app_or in IHe. destruct IHe as [IHe1 | IHe2]. (* break IH to 2 parts *)
+        + admit.
+        + assert (WFState [Fem] s') as Hst1. admit. 
+         
+        
+        apply Hst. right. unfold WFState in IH1. easy. *)
+  
+      --- simpl. unfold WFState. intros. apply in_app_or in H. destruct H.
+        (* H: In e (ket_minus_one (fst a) (snd a)) 
+           WFKet [Fem] (snd e) *)
+        + constructor. 
+          ++ unfold ket_minus_one in *. destruct (anni_sem (snd a 0)) eqn:eq1.
+            +++ destruct p. simpl in *. inv H.
+              simpl in *. rewrite update_index_eq.
+              unfold anni_sem in eq1.
+              destruct (snd a 0) eqn:eq2.
+              ++++ simpl in *. easy.
+              ++++ simpl in eq1. inv eq1. assert (In a (a :: s')) as G1. left. easy.
+                      apply Hst in G1. inv G1.  rewrite eq2 in H0. 
+                simpl. destruct n1.
+                +++++ lia.
+                +++++  assert (In a (a :: s')) as G1. left. easy.
+                      apply Hst in G1. inv G1. lia. 
+              ++++ easy.
+            +++ easy. 
+          ++ constructor. 
+
+        (* H: In e (tysound_hanni s)
+        WFKet [Fem] (snd e) *)
+        + assert (WFState [Fem] s') as Hst1.
+          ++ unfold WFState.
+             intros e1 IHe. (* instantialize the var and hypo in WFState *)
+             apply Hst. right. easy.
+          ++ apply IH1 in Hst1. apply Hst1 in H. easy.
+
+  - (* 2. blue_sem n [Fem] HAnni s (tysound_hanni s) /\ WFState [Fem] (tysound_hanni s) *)  
+    exists (tysound_hanni s). split.
+    -- apply s_top. induction s as [|a s' IHs].
+      --- simpl. constructor.
+      --- simpl. constructor.
+        (* blue_sem n [Fem] HAnni [a] (ket_minus_one (fst a) (snd a)) *)
+        + unfold ket_minus_one. destruct (anni_sem (snd a 0)) eqn:eq1.
+          ++ destruct p as [c n0]. 
+          apply b_anni_2. apply eq1.
+          ++ constructor. apply eq1.
+        
+        (* forall_map (blue_sem n [Fem] HAnni) s' (tysound_hanni s') *)
+        + apply IHs. intros e IHe. (* intro var and hypo for WFState *)
+          apply Hst. right. apply IHe.
+    
+       (* WFState [Fem] (tysound_hanni s) *)
+    -- induction s as [|a s' IH1].
+      --- simpl in *. easy.
+      --- simpl. unfold WFState. intros. apply in_app_or in H. destruct H.
+        (* H: In e (ket_minus_one (fst a) (snd a)) 
+           WFKet [Fem] (snd e) *)
+        + constructor. 
+          ++ unfold ket_minus_one in *. destruct (anni_sem (snd a 0)) eqn:eq1.
+            +++ destruct p. simpl in *. inv H.
+              simpl in *. rewrite update_index_eq.
+              unfold anni_sem in eq1.
+              destruct (snd a 0) eqn:eq2.
+              ++++ simpl in *. easy.
+              ++++ simpl in eq1. inv eq1. assert (In a (a :: s')) as G1. left. easy.
+                      apply Hst in G1. inv G1.  rewrite eq2 in H1. 
+                simpl. destruct n1.
+                +++++ lia.
+                +++++  assert (In a (a :: s')) as G1. left. easy.
+                      apply Hst in G1. inv G1. lia. 
+              ++++ easy.
+            +++ easy. 
+          ++ constructor. 
+   
+        (* H: In e (tysound_hanni s)
+        WFKet [Fem] (snd e) *)
+        + assert (WFState [Bos m] s') as Hst1.
+          ++ unfold WFState.
+             intros e1 IHe. (* instantialize the var and hypo in WFState *)
+             apply Hst. right. easy.
+          ++ apply IH1 in Hst1. apply Hst1 in H. easy.
+  - exists s. split. apply s_id. try easy.
+
+Admitted. 
+
+
+(* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
+Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s 
+  -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
 Proof. 
   intros ia e t n s Hty Hcan Hst. induction Hty.
   (* T_opF *)
   (* - remember (tysound_hanni s) as s1. *)
   - exists (tysound_hanni s).
-    split. apply s_top.
-    induction s. simpl in *. constructor. simpl in *. constructor.
-    unfold ket_minus_one.
-    destruct (anni_sem (snd a 0)) eqn:eq1. destruct p; simpl in *.
-    assert (In a (a :: s)) as G1. left. easy.
-    apply Hst in G1. inv G1.
-    specialize (Hst a).
-    assert ((c * fst a)%C = fst a).
-    unfold anni_sem in *. destruct (snd a 0). simpl in *. easy. simpl in *. destruct n1.
-    simpl in *. inv eq1. rewrite sqrt_1. lca.
-    lia. rewrite H. apply f_anni_2 with (c := c); try easy.
-    apply f_anni_1. easy. apply IHs.
-    unfold WFState in *. intros. apply Hst. simpl. right. easy.
-    induction s. simpl in *. easy.
-    simpl in *. unfold WFState. intros. apply in_app_or in H. destruct H.
-    constructor.
-    unfold ket_minus_one in *. 
-    destruct (anni_sem (snd a 0)) eqn:eq1. destruct p. simpl in *. inv H; try easy.
-    simpl in *. rewrite update_index_eq.
-    unfold anni_sem in eq1. destruct (snd a 0) eqn:eq2. simpl in *. easy. simpl in *. destruct n1. inv eq1. lia.
-    inv eq1.
-    assert (In a (a :: s)) as G1. left. easy.
-    apply Hst in G1. inv G1. rewrite eq2 in H0. lia. easy.
-    constructor.
-    assert (WFState [Fem] s).
-    unfold WFState. intros. apply Hst. right. easy.
-    apply IHs in H0. apply H0 in H. easy.
+    split.
+    -- apply s_top. induction s as [|a s' IHs].
+      --- simpl. constructor.
+      --- simpl. constructor.
+        (* blue_sem n [Fem] HAnni [a] (ket_minus_one (fst a) (snd a)) *)
+        + unfold ket_minus_one. destruct (anni_sem (snd a 0)) eqn:eq1. 
+          ++ destruct p as [c n0].
+            assert ((c * fst a)%C = fst a). 
+            assert (In a (a :: s')) as G1. left. easy. 
+            (* get H0 and H1, the 2 req in WFManyF *)
+            apply Hst in G1. inv G1. 
+            destruct (snd a 0) as [|n2].
+            +++ inv eq1.
+            +++ destruct n2 as [|n3].
+              ++++ unfold anni_sem in eq1. simpl in eq1. inv eq1. rewrite sqrt_1. lca.
+              ++++ lia.  
+            +++ rewrite H. 
+                apply f_anni_2 with (c := c). apply eq1.
+          ++ constructor. apply eq1.
+          
+        (* forall_map (blue_sem n [Fem] HAnni) s' (tysound_hanni s') *)
+        + apply IHs. intros e IHe. (* intro var and hypo for WFState *)
+          apply Hst. right. apply IHe.
+
+    (* WFState [Fem] (tysound_hanni s) *)
+    -- induction s.
+      --- simpl in *. easy.
+      --- simpl in *. unfold WFState. intros. apply in_app_or in H. destruct H.
+        (* H: In e (ket_minus_one (fst a) (snd a)) 
+           WFKet [Fem] (snd e) *)
+        + constructor.
+          ++ unfold ket_minus_one in *. destruct (anni_sem (snd a 0)) eqn:eq1.
+            +++ destruct p. simpl in *. inv H; try easy.
+                simpl in *. rewrite update_index_eq.
+                unfold anni_sem in eq1.
+                destruct (snd a 0) eqn:eq2.
+                ++++ simpl in *. easy.
+                ++++ simpl in *. destruct n1.
+                  +++++ inv eq1. lia.
+                  +++++ inv eq1. assert (In a (a :: s)) as G1. left. easy.
+                        apply Hst in G1. inv G1. rewrite eq2 in H0. lia. 
+            +++ easy.
+
+          ++ constructor.
+
+        (* H: In e (tysound_hanni s)
+        WFKet [Fem] (snd e) *)
+        + assert (WFState [Fem] s) as Hst1.
+          ++ unfold WFState. intros. apply Hst. right. easy.
+          ++ apply IHs in Hst1. apply Hst1 in H. easy.
+          
   - admit.  
   - exists s. split. apply s_id. try easy.
  
 Admitted.
+
+
+Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s 
+  -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
+Proof. 
+  intros ia e t n s Hty Hcan Hst. induction Hty.
+  (* T_opF *)
+  (* - remember (tysound_hanni s) as s1. *)
+  - exists (tysound_hanni s).
+    split.
+    -- apply s_top. induction s as [|a s' IHs].
+      --- simpl in *. constructor.
+      --- simpl in *.
+        assert (In a (a :: s')) as G1. left. easy.
+        (* get H0 and H1, the 2 req in WFManyF *)
+        apply Hst in G1. inv G1.
+        constructor.
+        (* blue_sem n [Fem] HAnni [a] (ket_minus_one (fst a) (snd a)) *)
+        + unfold ket_minus_one. destruct (anni_sem (snd a 0)) eqn:eq1. destruct p.
+          specialize (Hst a).
+          ++ destruct (snd a 0).
+            +++ inv eq1.
+            +++ unfold anni_sem in eq1. simpl in eq1. destruct n1 as [|n1'] eqn:En1.
+              ++++ simpl in eq1. rewrite sqrt_1 in eq1. inv eq1.
+                   assert (H: (C1 * fst a)%C = fst a). lca.
+                   rewrite H.   
+              apply f_anni_2 with (c := fst a). reflexivity. 
+            +++ 
+          
+           unfold anni_sem in *. destruct (snd a 0).
+            +++ inv eq1.
+            +++ simpl in *. destruct n1.
+              ++++ simpl in *. inv eq1. rewrite sqrt_1. lca. 
+              ++++ lia.
+          ++ rewrite H. apply f_anni_2 with (c := c). try easy.
+          ++ apply f_anni_1. easy.
+        + apply IHs. unfold WFState in *. intros. apply Hst. simpl. right. easy. 
+
 
 Theorem type_soundness: forall ia e t n s, typing ia e t -> WFState ia s -> exists s',
   blue_sem n ia e s s' /\ WFState ia s'.

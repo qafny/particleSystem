@@ -132,26 +132,26 @@ Inductive typing : iota -> blueExp -> tauType -> Prop :=
     typing t (HApp e e') (zeta, t).
 
 
-(* Check if expression e is canonical *)
+(* Check if expression e is canonical, can be: a, a^+, I, or []o[], []x[]. 
+[] can be a, a^+, I, or their tensor, or their app, like ([]x[]) o ([]x[]) *)
 Fixpoint canonical_next (e:blueExp) : bool :=
-  match e with HTensor e1 e2 => (canonical_next e1) && (canonical_next e2)
-             | HApp e1 e2 => (canonical_next e1) && (canonical_next e2)
-             | HAnni => true
-             | HId => true             
+  match e with
+  | HTensor e1 e2 => (canonical_next e1) && (canonical_next e2)
+  | HApp e1 e2 => (canonical_next e1) && (canonical_next e2)
+  | HAnni => true
+  | HId => true             
   | HDag e' =>
       match e' with
       | HAnni => true
       | _ => false
       end
-
   | HPlus _ _ => false
   end.
 
- Fixpoint is_canonical (e : blueExp) : bool :=
+Fixpoint is_canonical (e : blueExp) : bool :=
   match e with
   | HPlus e1 e2 =>
       is_canonical e1 && is_canonical e2
-
   | _ => canonical_next e
   end.
 
