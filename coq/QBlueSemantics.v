@@ -130,13 +130,13 @@ Definition blueExp_Hermitian (ia : iota) (e : blueExp) : Prop :=
 
 Inductive interprete_herm : iota -> blueExp -> Prop :=
   | R_blueExp_Hermitian : forall ia e,
-      typing ia e (HH, ia) ->
+      typing ia e (HER, ia) ->
       blueExp_Hermitian ia e ->
       interprete_herm ia e.
 
 Lemma typing_sound_hermitian :
   forall ia e h,
-    typing ia e h -> fst h = HH -> snd h = ia ->
+    typing ia e h -> fst h = HER -> snd h = ia ->
     blueExp_Hermitian ia e.
 Proof.
 intros ia e h Hypo.
@@ -157,7 +157,7 @@ Admitted.
 
 
 (* Theorem: type soundness *)
-Theorem type_right_matrix: forall ia e, typing ia e (HH, ia) -> rewrites_recur ia (HDag e) e.
+Theorem type_right_matrix: forall ia e, typing ia e (HER, ia) -> rewrites_recur ia (HDag e) e.
 Proof.
   intros ia e Htype.
   apply hermitian_rewrites.
