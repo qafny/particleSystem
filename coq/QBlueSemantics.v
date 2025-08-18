@@ -389,9 +389,7 @@ Proof.
               ++ destruct p as [c n0]. 
               apply f_crea_2. apply eq1.
               ++ constructor. apply eq1.
-            + apply IHs.
-              ++ admit.
-              (* ++ apply part_is_wfstate_fem in Hst. easy. *)
+            + apply IHs. apply part_is_wfstate_fem in Hst. easy.
       
         ---- (* WFState [Fem] (tysound_hdag_fem n s) *)
           induction s as [| a s' IH1].
