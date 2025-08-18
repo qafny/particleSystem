@@ -130,13 +130,13 @@ Definition blueExp_Hermitian (ia : iota) (e : blueExp) : Prop :=
 
 Inductive interprete_herm : iota -> blueExp -> Prop :=
   | R_blueExp_Hermitian : forall ia e,
-      typing ia e (H, ia) ->
+      typing ia e (HER, ia) ->
       blueExp_Hermitian ia e ->
       interprete_herm ia e.
 
 Lemma typing_sound_hermitian :
   forall ia e h,
-    typing ia e h -> fst h = H -> snd h = ia ->
+    typing ia e h -> fst h = HER -> snd h = ia ->
     blueExp_Hermitian ia e.
 Proof.
 intros ia e h Hypo.
@@ -157,7 +157,7 @@ Admitted.
 
 
 (* Theorem: type soundness *)
-Theorem type_right_matrix: forall ia e, typing ia e (H, ia) -> rewrites_recur ia (HDag e) e.
+Theorem type_right_matrix: forall ia e, typing ia e (HER, ia) -> rewrites_recur ia (HDag e) e.
 Proof.
   intros ia e Htype.
   apply hermitian_rewrites.
@@ -216,15 +216,33 @@ Fixpoint tysound_hdag_bos (b : nat) (s : psi) : psi :=
   end.
 
 
-Lemma part_is_wfstate: forall (a: (C * basisKet)) (s : list (C * basisKet)),
+Lemma part_is_wfstate_fem: forall (a: (C * basisKet)) (s : list (C * basisKet)),
   WFState [Fem] (a :: s) -> WFState [Fem] s.
 Proof.
   intros a s IH1 t IH2.
-  unfold WFState. 
   apply IH1. right. easy.
 Qed.
 
+Lemma part_is_wfstate_bos: forall (a : C * basisKet) (s : list (C * basisKet)) (m : nat),
+  WFState [Bos m] (a :: s) -> WFState [Bos m] s.
+Proof.
+  intros a s m IH1 t IH2.
+  apply IH1. right. easy.
+Qed.
 
+Lemma fem_bound_ins: forall (a : C * basisKet) (s : list (C * basisKet)), 
+  WFState [Fem] (a :: s) -> snd a 0 < 2.
+Admitted.
+
+Lemma fem_bound1: forall (a : C * basisKet) (c : C) (n0 : nat), 
+  anni_sem (snd a 0) = Some (c, n0) -> n0 < 2.
+Admitted.
+
+Lemma fem_bound2: forall (a : C * basisKet) (c : C) (n0 : nat), 
+  snd a 0 < 2 -> create_sem 1 (snd a 0) = Some (c, n0) -> n0 < 2.
+Admitted.
+
+  
 (* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
 Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s 
   -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
@@ -278,7 +296,7 @@ Proof.
           ++ (* None *) easy.
 
         + (* IHe2: In e (tysound_hanni_fem n s') *)
-          apply part_is_wfstate in Hst.
+          apply part_is_wfstate_fem in Hst.
           apply IH1 in Hst. apply Hst in IHe2. easy. 
 
   - (* 2. blue_sem n [Bos m] HAnni s (tysound_hanni s) /\ WFState [Bos m] (tysound_hanni s) *)  
@@ -324,11 +342,8 @@ Proof.
           ++ (* None *) easy.
 
         + (* IHe2: In e (tysound_hanni_bos n s') *)  
-        assert (WFState [Bos m] s') as Hst1.
-          ++ unfold WFState.
-             intros e1 IHe. (* instantialize the var and hypo in WFState *)
-             apply Hst. right. easy.
-          ++ apply IH1 in Hst1. apply Hst1 in IHe2. easy.
+        apply part_is_wfstate_bos in Hst.
+        apply IH1 in Hst. apply Hst in IHe2. easy.
         
   - (* 3. blue_sem n t HId s s' /\ WFState t s' *)
     exists s. split. apply s_id. try easy.
@@ -351,11 +366,31 @@ Proof.
               ++ constructor. apply eq1.
             + apply IHs.
               ++ admit.
-              ++ apply part_is_wfstate in Hst. easy.
+              ++ apply part_is_wfstate_fem in Hst. easy.
       
         ---- (* WFState [Fem] (tysound_hdag_fem n s) *)
-          admit.
-        
+          induction s as [| a s' IH1].
+          ----- simpl. easy.
+          ----- simpl. unfold WFState.
+            intros e IHe. apply in_app_or in IHe. destruct IHe.
+            + (* H: In e (ket_plus_one_fem n (fst a) (snd a)). Goal: WFKet [Fem] (snd e) *)
+              unfold ket_plus_one_fem in H.
+              destruct (create_sem 1 (snd a 0)) eqn:eq1.
+              ++ destruct p as [c n0]. simpl in H. destruct H as [H1 | H1].
+                +++ destruct H1. simpl.
+                    constructor.
+                    ++++ unfold update. simpl. 
+                      apply fem_bound_ins in Hst. 
+                      apply fem_bound2 in eq1. easy. easy. 
+                    ++++ constructor. 
+                +++ easy. 
+              ++ easy.  
+
+            + (* H: In e (tysound_hdag_fem n s'). Goal: WFKet [Fem] (snd e) *)
+              apply part_is_wfstate_fem in Hst. apply IH1 in Hst.
+              ++ apply Hst in H. easy.
+              ++ admit.
+     
       --- (* blue_sem n [Bos m] (HDag HAnni) s s' /\ WFState [Bos m] s' *) 
         admit.
       --- (* blue_sem n t (HDag HAnni) s s' /\ WFState t s' *) 
@@ -364,6 +399,9 @@ Proof.
     -- easy.
     -- easy.
     -- easy.
+  
+ 
+    
 
 Admitted. 
 

@@ -114,7 +114,7 @@ Inductive typing : iota -> blueExp -> tauType -> Prop :=
 | T_HER : forall t e,
     rewrites_recur t (HDag e) e ->
     typing t e (P,t) ->
-    typing t e (H,t)
+    typing t e (HER,t)
 
 | T_TENSOR : forall  t1 t2 e e' zeta,
     typing t1 e (zeta, t1) ->

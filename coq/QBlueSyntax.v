@@ -66,7 +66,7 @@ Definition iota : Set := (list particle).
 Definition stype := nat.
 *)
 
-Inductive typeflag : Set := P | U | H. 
+Inductive typeflag : Set := P | U | HER. 
 
 Definition tauType :Set := typeflag * iota.
 
