@@ -250,14 +250,29 @@ Lemma fem_bound2: forall (a : C * basisKet) (c : C) (n0 : nat),
   snd a 0 < 2 -> create_sem 1 (snd a 0) = Some (c, n0) -> n0 < 2.
 Admitted.
 
-  
+Lemma canonical_next_implies_is_canonical :
+  forall e, canonical_next e = true -> is_canonical e = true.
+Proof.
+  intros e H.
+  destruct e; simpl. 
+  - easy.
+  - easy.
+  - easy.
+  - easy.
+  - easy.
+  - easy.
+Qed.
+
 (* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
 Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s 
   -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
 Proof. 
-  intros ia e t n s Hty Hcan Hst. induction Hty.
+  intros ia e t n s Hty Hcan Hst.
+  revert s Hst Hcan.
+  induction Hty.
   
   - (* 1. blue_sem n [Fem] HAnni s (tysound_hanni s) /\ WFState [Fem] (tysound_hanni s) *)  
+    intros s.
     exists (tysound_hanni_fem n s). split.
     -- apply s_top. induction s as [|a s' IHs].
       --- simpl. constructor.
@@ -308,6 +323,7 @@ Proof.
           apply IH1 in Hst. apply Hst in IHe2. easy. 
 
   - (* 2. blue_sem n [Bos m] HAnni s (tysound_hanni s) /\ WFState [Bos m] (tysound_hanni s) *)  
+    intros s.
     exists (tysound_hanni_bos s). split.
     -- apply s_top. induction s as [|a s' IHs].
       --- simpl. constructor.
@@ -354,10 +370,11 @@ Proof.
         apply IH1 in Hst. apply Hst in IHe2. easy.
         
   - (* 3. blue_sem n t HId s s' /\ WFState t s' *)
+    intros s. 
     exists s. split. apply s_id. try easy.
 
   - (* 4. blue_sem n t (HDag e) s s' /\ WFState t s' *)
-    simpl in Hcan. destruct e eqn : Eqcan.
+    intros. simpl in Hcan. destruct e eqn : Eqcan.
     (* pick HDag HAnni with Hcan *)
     -- easy.
     -- (* blue_sem n t (HDag HAnni) s s' /\ WFState t s' *)
@@ -374,7 +391,7 @@ Proof.
               ++ constructor. apply eq1.
             + apply IHs.
               ++ admit.
-              ++ apply part_is_wfstate_fem in Hst. easy.
+              (* ++ apply part_is_wfstate_fem in Hst. easy. *)
       
         ---- (* WFState [Fem] (tysound_hdag_fem n s) *)
           induction s as [| a s' IH1].
@@ -396,8 +413,7 @@ Proof.
 
             + (* H: In e (tysound_hdag_fem n s'). Goal: WFKet [Fem] (snd e) *)
               apply part_is_wfstate_fem in Hst. apply IH1 in Hst.
-              ++ apply Hst in H. easy.
-              ++ admit.
+              apply Hst in H. easy.
      
       --- (* blue_sem n [Bos m] (HDag HAnni) s s' /\ WFState [Bos m] s' *) 
         admit.
@@ -409,11 +425,16 @@ Proof.
     -- easy.
   
   - (* 5. T-HER *)
-    apply IHHty in Hst. 
+    intros. apply IHHty in Hst. 
     -- easy.
     -- easy.
   
   - (* 6. blue_sem n (t1 ++ t2) (HTensor e e') s s' /\ WFState (t1 ++ t2) s' *)
+    intros s Hst Hcan.
+    simpl in Hcan.
+    apply andb_true_iff in Hcan. destruct Hcan as [Hcan1 Hcan2]. 
+    apply canonical_next_implies_is_canonical in Hcan1.
+    apply canonical_next_implies_is_canonical in Hcan2.
     admit.
     (* destruct IHHty1 as [s1 IHs1]. admit. admit.
     destruct IHHty2 as [s2 IHs2]. admit. admit.
@@ -422,6 +443,34 @@ Proof.
       --- admit.
       --- simpl. constructor.
     apply s_ten. *)
+
+  - (* 7. blue_sem n t (HPlus e e') s s' /\ WFState t s' *)
+  intros s Hst Hcan.
+  simpl in Hcan.
+  apply andb_true_iff in Hcan. destruct Hcan as [Hcan1 Hcan2]. 
+  destruct (IHHty1 s Hst Hcan1) as [s1 IHs1].
+  destruct (IHHty2 s Hst Hcan2) as [s2 IHs2].
+  exists (s1 ++ s2). split.
+    -- apply s_plus.
+      --- apply IHs1.
+      --- apply IHs2.
+    
+    -- (* WFState t (s1 ++ s2) *)
+      unfold WFState. intros et IHe.
+      apply in_app_or in IHe. destruct IHe.
+      --- apply IHs1 in H. easy. 
+      --- apply IHs2 in H. easy.
+  
+  - (* 8. blue_sem n t (HApp e e') s s' /\ WFState t s' *)
+  intros s Hst Hcan. 
+  simpl in Hcan. apply andb_true_iff in Hcan. destruct Hcan as [Hcan1 Hcan2].
+  apply canonical_next_implies_is_canonical in Hcan1.
+  apply canonical_next_implies_is_canonical in Hcan2.
+  destruct (IHHty2 s Hst Hcan2) as [s1 [Sem2 Hst2]].
+  destruct (IHHty1 s1 Hst2 Hcan1) as [s2 [Sem1 Hst1]].
+  exists s2. split.
+    -- apply s_app with (s1 := s1). easy. easy.
+    -- easy. 
 
 Admitted. 
 
