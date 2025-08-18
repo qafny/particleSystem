@@ -130,13 +130,13 @@ Definition blueExp_Hermitian (ia : iota) (e : blueExp) : Prop :=
 
 Inductive interprete_herm : iota -> blueExp -> Prop :=
   | R_blueExp_Hermitian : forall ia e,
-      typing ia e (HER, ia) ->
+      typing ia e (HH, ia) ->
       blueExp_Hermitian ia e ->
       interprete_herm ia e.
 
 Lemma typing_sound_hermitian :
   forall ia e h,
-    typing ia e h -> fst h = HER -> snd h = ia ->
+    typing ia e h -> fst h = HH -> snd h = ia ->
     blueExp_Hermitian ia e.
 Proof.
 intros ia e h Hypo.
@@ -157,7 +157,7 @@ Admitted.
 
 
 (* Theorem: type soundness *)
-Theorem type_right_matrix: forall ia e, typing ia e (HER, ia) -> rewrites_recur ia (HDag e) e.
+Theorem type_right_matrix: forall ia e, typing ia e (HH, ia) -> rewrites_recur ia (HDag e) e.
 Proof.
   intros ia e Htype.
   apply hermitian_rewrites.
@@ -201,7 +201,7 @@ Fixpoint tysound_hdag_fem (g : nat) (s : psi) : psi :=
   | [] => []
   | k :: s' => ket_plus_one_fem g (fst k) (snd k) ++ (tysound_hdag_fem g s')
   end.
-
+  
 (* b: # of particles in one site should be <= b *)
 Definition ket_plus_one_bos (b : nat) (amp : C) (f : basisKet) : list (C * basisKet) :=
   match create_sem b (f 0) with
@@ -215,6 +215,14 @@ Fixpoint tysound_hdag_bos (b : nat) (s : psi) : psi :=
   | k :: s' => ket_plus_one_bos b (fst k) (snd k) ++ (tysound_hdag_bos b s')
   end.
 
+(* Estimate state for HTensor.
+  len_s1: length for each pure state of s1 *)
+Fixpoint tysound_htensor (len_s1 : nat) (s1 s2 : psi) : psi :=
+  match s1, s2 with
+  | [], [] => []
+  | k1 :: s1', k2 :: s2' => (combine len_s1 [k1] [k2]) ++ (tysound_htensor len_s1 s1' s2')
+  | _, _ => []
+  end.
 
 Lemma part_is_wfstate_fem: forall (a: (C * basisKet)) (s : list (C * basisKet)),
   WFState [Fem] (a :: s) -> WFState [Fem] s.
@@ -235,7 +243,7 @@ Lemma fem_bound_ins: forall (a : C * basisKet) (s : list (C * basisKet)),
 Admitted.
 
 Lemma fem_bound1: forall (a : C * basisKet) (c : C) (n0 : nat), 
-  anni_sem (snd a 0) = Some (c, n0) -> n0 < 2.
+  snd a 0 < 2 -> anni_sem (snd a 0) = Some (c, n0) -> n0 < 2.
 Admitted.
 
 Lemma fem_bound2: forall (a : C * basisKet) (c : C) (n0 : nat), 
@@ -400,8 +408,20 @@ Proof.
     -- easy.
     -- easy.
   
- 
-    
+  - (* 5. T-HER *)
+    apply IHHty in Hst. 
+    -- easy.
+    -- easy.
+  
+  - (* 6. blue_sem n (t1 ++ t2) (HTensor e e') s s' /\ WFState (t1 ++ t2) s' *)
+    admit.
+    (* destruct IHHty1 as [s1 IHs1]. admit. admit.
+    destruct IHHty2 as [s2 IHs2]. admit. admit.
+    exists (tysound_htensor (length t1) s1 s2). split.
+    -- apply s_top. induction s as [|a s' IHs].
+      --- admit.
+      --- simpl. constructor.
+    apply s_ten. *)
 
 Admitted. 
 
