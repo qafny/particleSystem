@@ -31,6 +31,8 @@ Fixpoint allFem (t:iota) (f:nat -> nat) :=
              | (Bos a)::xl => allFem xl (nleft f 1)
   end.
 
+(* function for combining two states: s1 tensor s2 
+  n: number of sites in s1 *)
 Definition ketCombine (n:nat) (f1 f2:nat -> nat) :=
   fun i => if i <? n then f1 i else f2 (i-n).
 
@@ -215,13 +217,46 @@ Fixpoint tysound_hdag_bos (b : nat) (s : psi) : psi :=
   | k :: s' => ket_plus_one_bos b (fst k) (snd k) ++ (tysound_hdag_bos b s')
   end.
 
+
 (* Estimate state for HTensor.
-  len_s1: length for each pure state of s1 *)
-Fixpoint tysound_htensor (len_s1 : nat) (s1 s2 : psi) : psi :=
-  match s1, s2 with
-  | [], [] => []
-  | k1 :: s1', k2 :: s2' => (combine len_s1 [k1] [k2]) ++ (tysound_htensor len_s1 s1' s2')
-  | _, _ => []
+ len_s1: length for each pure state of s1 *)
+Fixpoint tysound_htensor_abs (len_s1 : nat) (F1 F2 : (C * basisKet) -> psi) (s : psi) : psi :=
+  match s with
+  | [] => []
+  | w :: s' => combine len_s1 (F1 w) (F2 w) ++ tysound_htensor_abs len_s1 F1 F2 s'
+  end.
+
+(* Get the state transition for blueExp e in the exp: e1 tensor e2. *)
+Fixpoint tysound_st_trans_forHTensor (e : blueExp) (w : C * basisKet) : psi :=
+  match e with 
+  | HId => [w]
+  | HAnni => match anni_sem ((snd w) 0) with 
+    | None => []
+    | Some (c, m) => [(Cmult c (fst w), update (snd w) 0 m)]
+    end
+  | HDag HAnni => match create_sem 2 ((snd w) 0) with 
+    | None => []
+    | Some (c, m) => [(Cmult c (fst w), update (snd w) 0 m)]
+    end
+  | HApp e1 e2 => 
+    match tysound_st_trans_forHTensor e2 w with 
+    | [] => []
+    | w' :: aw => tysound_st_trans_forHTensor e1 w'
+    end
+
+  | HTensor e1 e2 => (tysound_st_trans_forHTensor e1 w) ++ (tysound_st_trans_forHTensor e2 w)
+  | _ => []
+  end.
+
+Definition tysound_htensor (len_s1 : nat) (e e' : blueExp) (s : psi) : psi :=
+  tysound_htensor_abs len_s1 (tysound_st_trans_forHTensor e) (tysound_st_trans_forHTensor e') s.
+
+(* Get the context number based on the first pure state of s1
+n: context number of s1; t1: type of s1 *)
+Definition tysound_htensor_ctxn (n : nat) (t1 : iota) (s1 : psi) : nat :=
+  match s1 with 
+  | [] => 0
+  | k :: ak => n + (allFem t1 (snd k))
   end.
 
 Lemma part_is_wfstate_fem: forall (a: (C * basisKet)) (s : list (C * basisKet)),
@@ -254,25 +289,20 @@ Lemma canonical_next_implies_is_canonical :
   forall e, canonical_next e = true -> is_canonical e = true.
 Proof.
   intros e H.
-  destruct e; simpl. 
-  - easy.
-  - easy.
-  - easy.
-  - easy.
-  - easy.
-  - easy.
+  destruct e; simpl; easy. 
 Qed.
+
 
 (* ia: iota, state type; e: op; t: op type; n: context number for fermion; s: input state *)
 Theorem can_type_soundness: forall ia e t n s, typing ia e t  -> is_canonical e = true -> WFState ia s 
   -> exists s', blue_sem n ia e s s' /\ WFState ia s'.
 Proof. 
   intros ia e t n s Hty Hcan Hst.
-  revert s Hst Hcan.
+  revert n s Hst Hcan.
   induction Hty.
   
   - (* 1. blue_sem n [Fem] HAnni s (tysound_hanni s) /\ WFState [Fem] (tysound_hanni s) *)  
-    intros s.
+    intros n s.
     exists (tysound_hanni_fem n s). split.
     -- apply s_top. induction s as [|a s' IHs].
       --- simpl. constructor.
@@ -323,7 +353,7 @@ Proof.
           apply IH1 in Hst. apply Hst in IHe2. easy. 
 
   - (* 2. blue_sem n [Bos m] HAnni s (tysound_hanni s) /\ WFState [Bos m] (tysound_hanni s) *)  
-    intros s.
+    intros n s.
     exists (tysound_hanni_bos s). split.
     -- apply s_top. induction s as [|a s' IHs].
       --- simpl. constructor.
@@ -370,7 +400,7 @@ Proof.
         apply IH1 in Hst. apply Hst in IHe2. easy.
         
   - (* 3. blue_sem n t HId s s' /\ WFState t s' *)
-    intros s. 
+    intros n s. 
     exists s. split. apply s_id. try easy.
 
   - (* 4. blue_sem n t (HDag e) s s' /\ WFState t s' *)
@@ -423,31 +453,33 @@ Proof.
     -- easy.
   
   - (* 5. T-HER *)
-    intros. apply IHHty in Hst. 
+    intros. apply (IHHty n) in Hst. 
     -- easy.
     -- easy.
   
   - (* 6. blue_sem n (t1 ++ t2) (HTensor e e') s s' /\ WFState (t1 ++ t2) s' *)
-    intros s Hst Hcan.
-    simpl in Hcan.
-    apply andb_true_iff in Hcan. destruct Hcan as [Hcan1 Hcan2]. 
-    apply canonical_next_implies_is_canonical in Hcan1.
-    apply canonical_next_implies_is_canonical in Hcan2.
-    admit.
-    (* destruct IHHty1 as [s1 IHs1]. admit. admit.
-    destruct IHHty2 as [s2 IHs2]. admit. admit.
-    exists (tysound_htensor (length t1) s1 s2). split.
-    -- apply s_top. induction s as [|a s' IHs].
-      --- admit.
-      --- simpl. constructor.
-    apply s_ten. *)
-
-  - (* 7. blue_sem n t (HPlus e e') s s' /\ WFState t s' *)
-  intros s Hst Hcan.
+  intros n s Hwf Hcan.
+  revert n.
   simpl in Hcan.
   apply andb_true_iff in Hcan. destruct Hcan as [Hcan1 Hcan2]. 
-  destruct (IHHty1 s Hst Hcan1) as [s1 IHs1].
-  destruct (IHHty2 s Hst Hcan2) as [s2 IHs2].
+  apply canonical_next_implies_is_canonical in Hcan1.
+  apply canonical_next_implies_is_canonical in Hcan2.
+  exists (tysound_htensor (length t1) e e' s). split. 
+    -- apply s_top. induction s as [|a s' IHs].
+      --- constructor.
+      --- admit.
+
+    -- induction s as [|a s' IH1].
+      --- simpl. easy.
+      --- simpl. unfold WFState. 
+        admit.
+
+  - (* 7. blue_sem n t (HPlus e e') s s' /\ WFState t s' *)
+  intros n s Hst Hcan.
+  simpl in Hcan.
+  apply andb_true_iff in Hcan. destruct Hcan as [Hcan1 Hcan2]. 
+  destruct (IHHty1 n s Hst Hcan1) as [s1 IHs1].
+  destruct (IHHty2 n s Hst Hcan2) as [s2 IHs2].
   exists (s1 ++ s2). split.
     -- apply s_plus.
       --- apply IHs1.
@@ -460,15 +492,15 @@ Proof.
       --- apply IHs2 in H. easy.
   
   - (* 8. blue_sem n t (HApp e e') s s' /\ WFState t s' *)
-  intros s Hst Hcan. 
+  intros n s Hst Hcan. 
   simpl in Hcan. apply andb_true_iff in Hcan. destruct Hcan as [Hcan1 Hcan2].
   apply canonical_next_implies_is_canonical in Hcan1.
   apply canonical_next_implies_is_canonical in Hcan2.
-  destruct (IHHty2 s Hst Hcan2) as [s1 [Sem2 Hst2]].
-  destruct (IHHty1 s1 Hst2 Hcan1) as [s2 [Sem1 Hst1]].
+  destruct (IHHty2 n s Hst Hcan2) as [s1 [Sem2 Hst2]].
+  destruct (IHHty1 n s1 Hst2 Hcan1) as [s2 [Sem1 Hst1]].
   exists s2. split.
     -- apply s_app with (s1 := s1). easy. easy.
-    -- easy. 
+    -- easy.
 
 Admitted. 
 
