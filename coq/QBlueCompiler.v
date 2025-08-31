@@ -4,6 +4,8 @@ Require Import Psatz.
 Require Import QuantumLib.Complex.
 Require Import QuantumLib.Matrix.
 Require Import QBlue.QBlueSyntax.
+Require Import QBlue.QBlueSemantics.
+Require Import QBlue.QBlueType.
 Local Open Scope R_scope.
 
 Require Import List.
@@ -415,7 +417,65 @@ Definition snd_map (input : highprog) : lowprog :=
   let qubits := get_nqbit input in
   let particle := get_particle_vs_site input in
   snd_map_h3 input qubits particle.
+ 
+
+(* Transform state from high to low level (described in binary).
+  len: # of the sites of input; 
+  input: nat-based ket; input_type: Fem/(Bos m) for particle types since sid.
+  output: list nat, the bin-based ket; iota: change all particle types to (Bos 2). *)
+Fixpoint state_map_basis_helper (len : nat) (input : basisKet) (input_type : iota) : 
+  ((list nat) * iota) := 
+  match input_type with 
+  | [] => ([], [])
+  | ty::aty => 
+    let sid := Nat.sub len (length input_type) in
+    let (ket_app, ty_app) := state_map_basis_helper len input aty in
+    let klen : nat := 
+      (match ty with
+      | Fem => 1%nat
+      | Bos m => Nat.log2_up m 
+      end) in 
+    let newk : (list nat) := cnt2bin (input sid) klen in
+    let newt : iota := repeat (Bos 2) klen in
+    (newk ++ ket_app, newt ++ ty_app)
+  end.
+
+Definition state_map_basis (input_wamp : C * basisKet) (input_type : iota) : (C * basisKet) := 
+  let (amp, input) := input_wamp in
+  let (bin_ket, _) := state_map_basis_helper (length input_type) input input_type in
+  let output := fun x => nth x bin_ket 0%nat in
+  (amp, output).
+
+Definition state_map (input : psi) (input_type : iota) : psi :=
+  map (fun x => state_map_basis x input_type) input.
+
+Fixpoint state_type_bin (input : iota) : iota :=
+  match input with 
+  | [] => []
+  | ty :: ty_app => 
+    let klen : nat := 
+      (match ty with
+      | Fem => 1%nat
+      | Bos m => Nat.log2_up m 
+      end) in 
+      let newt := repeat (Bos 2) klen in
+      newt ++ (state_type_bin ty_app)
+  end.
+
+
+(* Theorem for particle transformation from low-level to high-level *)
+(* Theorem particle_transoform_correctness: forall n st_type e op_type op_type' s, 
+  typing st_type e op_type -> WFState st_type s -> exists s1,
+  let H' := snd_map e in
+  let s' := state_map s in
+  let st_type' := state_type_bin st_type in
+  let s1' := state_map s1 in
+  typing st_type H' op_type' /\ WFState st_type' s1' /\ blue_sem n st_type' H' s' s1'.
+Proof.
   
+Qed. *)
+
+
 
 (* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
