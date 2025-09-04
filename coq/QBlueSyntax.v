@@ -94,4 +94,13 @@ Definition highprog_ten := (C * nat * (nat -> list hsnd)) %type.
 all the other terms should also be 15. *)
 Definition highprog := list highprog_ten.
 
+(* Pauli string *)
+Inductive paulimat: Type :=
+| paulix             (* X = [[0;1]; [1;0] ] *)
+| pauliy             (* Y = [[0;-i]; [i;0]] *)
+| pauliz             (* Z = [[1;0]; [0;-1]] *)
+| paulii.
 
+(* lowprog_ten: (amplitude, length, f: index -> element *)
+Definition lowprog_ten := (C * nat * (nat -> paulimat)) %type.
+Definition lowprog := list lowprog_ten.

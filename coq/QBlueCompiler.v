@@ -14,14 +14,6 @@ Local Open Scope list_scope.
 
 From SQIR Require Import SQIR.
 
-
-(* Pauli string *)
-Inductive paulimat: Type :=
-| paulix             (* X = [[0;1]; [1;0] ] *)
-| pauliy             (* Y = [[0;-i]; [i;0]] *)
-| pauliz             (* Z = [[1;0]; [0;-1]] *)
-| paulii.
-
 Definition paulimat_eqb (a b : paulimat) : bool :=
   match a, b with
   | paulix, paulix => true
@@ -30,10 +22,6 @@ Definition paulimat_eqb (a b : paulimat) : bool :=
   | paulii, paulii => true
   | _, _ => false
   end.
-
-(* lowprog_ten: (amplitude, length, f: index -> element *)
-Definition lowprog_ten := (C * nat * (nat -> paulimat)) %type.
-Definition lowprog := list lowprog_ten.
 
 (* This is for trotterization. Maybe need to modify later *)
 (* exp(-i t H) *)
@@ -1027,13 +1015,12 @@ Fixpoint bexp_map (input : blueExp) (qbits : list nat) (par : list particle)
   end.
 
 (* Transform from blueExp to lowprog *)
-Definition bexp_to_lowprag (input : blueExp) (input_type : iota) : lowprog :=
+Definition bexp_to_lowprog (input : blueExp) (input_type : iota) : lowprog :=
   let qbits := get_nqbit_bexp input_type in
   bexp_map input qbits input_type 0%nat.
 
 Local Close Scope nat_scope.
 (*************** Transform blueExp to lowprog. ************)
-
 
 
 (* Transform state from high to low level (described in binary).
@@ -1081,15 +1068,15 @@ Fixpoint state_type_bin (input : iota) : iota :=
 
 
 (* Theorem for particle transformation from low-level to high-level *)
-(* Theorem particle_transoform_correctness: forall n st_type e op_type op_type' s, 
+Theorem particle_transoform_correctness: forall n st_type e op_type s, 
   typing st_type e op_type -> WFState st_type s -> exists s1,
-  let H' := snd_map e in
-  let s' := state_map s in
+  let H' := bexp_to_lowprog e st_type in
+  let s' := state_map s st_type in
   let st_type' := state_type_bin st_type in
-  let s1' := state_map s1 in
-  typing st_type H' op_type' /\ WFState st_type' s1' /\ blue_sem n st_type' H' s' s1'.
+  let s1' := state_map s1 st_type' in
+  blue_sem n st_type e s s1 /\ WFState st_type' s1' /\ blue_sem_low H' s' s1'.
 Proof.
-  
-Qed. *)
+Admitted. 
+
 
 

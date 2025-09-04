@@ -83,6 +83,35 @@ Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop :=
                  -> blue_sem n t e2 s s2
                  -> blue_sem n t (HPlus e1 e2) s (s1++s2).
 
+
+(* apply a 1-qubit Pauli to psi *)
+Definition app_apauli (p : paulimat) (n : nat) : (C * nat) := 
+  match p with 
+  | paulii => (C1, n)
+  | paulix => (C1, (n+1) mod 2)
+  | pauliy => (Cmult (Cpow (-C1) n) Ci, (n+1) mod 2)
+  | pauliz => (Cpow (-C1) n, n)
+  end.
+
+(* Calculate a tensor list of pauli applying to a list of sites *)
+Definition apply_pauli (Len : nat) (f : nat -> paulimat) (input : basisKet) : (C * basisKet) :=
+  let fix helper (len : nat) : (C * basisKet) :=
+    let (c, k) := app_apauli (f len) (input len) in
+    let (c1, rem) :=
+      match len with 
+      | 0 => (C1, input)
+      | S n => helper n 
+    end in (Cmult c c1, update rem len k)
+  in helper (Len-1).
+  
+(* Semantic for lowprog *)
+Inductive blue_sem_low : lowprog -> psi -> psi -> Prop := 
+ | bl_top : forall e s s1, forall_map (blue_sem_low e) s s1 -> blue_sem_low e s s1 
+ | bl_ten : forall cprog cin cout l fpau fin fout, 
+        (cout, fout) = apply_pauli l fpau fin -> 
+        blue_sem_low [(cprog, l, fpau)] [(cin, fin)] [(Cmult (Cmult cprog cin) cout, fout)].     
+        
+
 (* To make sure the state matches its type *)                 
 Inductive WFKet : iota -> basisKet -> Prop := 
  | WFEmpty : forall s, WFKet nil s
