@@ -276,6 +276,7 @@ Definition boson_numerator_bin (Nb : nat) : lowprog :=
   in if Nb <? 0 then [] else helper Nb.
 
 
+(*************** Transform highprog to lowprog. ************)
 (* Jordan-Wigner transformation for fermions *)
 (* a_n^+ = Z_1 x Z_2 ... Z_n-1 x (-)_n, only apply z to the sites of fermion *)
 (* n: apply Z/I to the first n sites; par: the particle type of each site *)
@@ -300,8 +301,8 @@ Definition fermion_creator (n : nat) (par : list (option particle)) : lowprog :=
 Definition fermion_anni (n : nat) (par : list (option particle)) : lowprog :=
   let left : lowprog := fermion_zop (Nat.sub n 1) par in
   plus_ten_plus left ladder_anni.
-  
-(* Transform highprog to lowprog. *)
+ 
+
 (* Get the number of qubits in each site. *)
 Definition get_nqbit_hsnd (input : hsnd) : nat :=
   match input with
@@ -417,65 +418,8 @@ Definition snd_map (input : highprog) : lowprog :=
   let qubits := get_nqbit input in
   let particle := get_particle_vs_site input in
   snd_map_h3 input qubits particle.
+(*************** Transform highprog to lowprog. End. ************)
  
-
-(* Transform state from high to low level (described in binary).
-  len: # of the sites of input; 
-  input: nat-based ket; input_type: Fem/(Bos m) for particle types since sid.
-  output: list nat, the bin-based ket; iota: change all particle types to (Bos 2). *)
-Fixpoint state_map_basis_helper (len : nat) (input : basisKet) (input_type : iota) : 
-  ((list nat) * iota) := 
-  match input_type with 
-  | [] => ([], [])
-  | ty::aty => 
-    let sid := Nat.sub len (length input_type) in
-    let (ket_app, ty_app) := state_map_basis_helper len input aty in
-    let klen : nat := 
-      (match ty with
-      | Fem => 1%nat
-      | Bos m => Nat.log2_up m 
-      end) in 
-    let newk : (list nat) := cnt2bin (input sid) klen in
-    let newt : iota := repeat (Bos 2) klen in
-    (newk ++ ket_app, newt ++ ty_app)
-  end.
-
-Definition state_map_basis (input_wamp : C * basisKet) (input_type : iota) : (C * basisKet) := 
-  let (amp, input) := input_wamp in
-  let (bin_ket, _) := state_map_basis_helper (length input_type) input input_type in
-  let output := fun x => nth x bin_ket 0%nat in
-  (amp, output).
-
-Definition state_map (input : psi) (input_type : iota) : psi :=
-  map (fun x => state_map_basis x input_type) input.
-
-Fixpoint state_type_bin (input : iota) : iota :=
-  match input with 
-  | [] => []
-  | ty :: ty_app => 
-    let klen : nat := 
-      (match ty with
-      | Fem => 1%nat
-      | Bos m => Nat.log2_up m 
-      end) in 
-      let newt := repeat (Bos 2) klen in
-      newt ++ (state_type_bin ty_app)
-  end.
-
-
-(* Theorem for particle transformation from low-level to high-level *)
-(* Theorem particle_transoform_correctness: forall n st_type e op_type op_type' s, 
-  typing st_type e op_type -> WFState st_type s -> exists s1,
-  let H' := snd_map e in
-  let s' := state_map s in
-  let st_type' := state_type_bin st_type in
-  let s1' := state_map s1 in
-  typing st_type H' op_type' /\ WFState st_type' s1' /\ blue_sem n st_type' H' s' s1'.
-Proof.
-  
-Qed. *)
-
-
 
 (* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
@@ -973,4 +917,179 @@ Definition synth_analog_indiana (t : R) (nbit : nat) (pauli_str : nat -> paulima
   let mid := exp_ugate t [fill_pl nbit ml paulix] in
   let (left, right) := synth_analog_indiana_helper ml nbit pauli_str in
   left ++ [mid] ++ right.
+
+
+(*************** Transform blueExp to lowprog. Another pass is highprog -> lowprog ************)
+Local Open Scope nat_scope.
+(* Jordan-Wigner transformation for fermions *)
+(* a_n^+ = Z_1 x Z_2 ... Z_n-1 x (-)_n, only apply z to the sites of fermion *)
+(* n: apply Z/I to the first n sites; par: the particle type of each site *)
+Definition fermion_zop_helper1 (p : particle) : lowprog_ten :=
+  match p with 
+  | Fem => (C1, 1%nat, fun _ => pauliz)
+  | _ => (C1, 1%nat, fun _ => paulii)
+  end.
+
+(* get [Z, I]^{ten (n-1)} *)
+Fixpoint fermion_zop1 (n : nat) (par : list particle) : lowprog :=
+  match n, par with 
+  | 0%nat, _ => [] 
+  | _, [] => []
+  | S n', x :: ax => (fermion_zop_helper1 x) :: (fermion_zop1 n' ax)
+  end.
+
+Definition fermion_creator1 (n : nat) (par : list particle) : lowprog :=
+  let left : lowprog := fermion_zop1 (Nat.sub n 1) par in
+  plus_ten_plus left ladder_creator.
+
+Definition fermion_anni1 (n : nat) (par : list particle) : lowprog :=
+  let left : lowprog := fermion_zop1 (Nat.sub n 1) par in
+  plus_ten_plus left ladder_anni.
+ 
+
+(* Get the number of qubits in each site. *)
+Definition get_nqbit_bexp_unit (input : particle) : nat :=
+  match input with
+  | Bos n => n
+  | Fem => 2
+  end.
+
+Fixpoint get_nqbit_bexp (input :iota) : list nat :=
+  match input with
+  | [] => []
+  | x :: ax => (get_nqbit_bexp_unit x) :: get_nqbit_bexp ax
+  end.
+
+
+(* Transform a creator / annhialator / ID. *)
+Definition bexp_map_hunit
+  (sid : nat) (* sid: its site id. *)
+  (qbits : list nat) (* qbits: # of qubits in each site. *)
+  (par : iota) (* particle type of each site *)
+  (flag : nat) (* flag: 0: anni, 1: creator, 2: id *)
+  : lowprog :=
+  let preb   := sum_pre_qubits  qbits sid in
+  let postb  := sum_post_qubits qbits sid in
+  let left   := [(C1, preb,  fun _ => paulii)] in
+  let right  := [(C1, postb, fun _ => paulii)] in
+  match nth_error par sid with
+  | Some (Bos nb) =>
+      match flag with
+      | 0%nat =>
+          plus_ten_plus (plus_ten_plus left (boson_annihilator nb)) right
+      | 1%nat =>
+          plus_ten_plus (plus_ten_plus left (boson_creator nb)) right
+      | _ =>
+          let mid := [(C1, nb, fun _ => paulii)] in
+          plus_ten_plus (plus_ten_plus left mid) right
+      end
+
+  | Some Fem =>
+      match flag with
+      | 0%nat =>
+          plus_ten_plus (fermion_anni1 sid par) right
+      | 1%nat =>
+          plus_ten_plus (fermion_creator1 sid par) right
+      | _ =>
+          let mid := [(C1, 2%nat, fun _ => paulii)] in
+          plus_ten_plus (plus_ten_plus left mid) right
+      end
+
+  | _ => []
+  end.
+
+
+(* Count the # of sites corresponding to this blueExp *)
+Fixpoint count_sites (input : blueExp) : nat :=
+  match input with
+  | HId | HAnni => 1
+  | HDag e => count_sites e
+  | HPlus e1 e2 => count_sites e1
+  | HTensor e1 e2 => (count_sites e1) + (count_sites e2)
+  | HApp e1 e2 => count_sites e1
+  end. 
+
+(* helper func to transform blueExp to lowprog *)
+Fixpoint bexp_map (input : blueExp) (qbits : list nat) (par : list particle)
+  (st_id : nat) : lowprog :=
+  match input with 
+  | HId => bexp_map_hunit st_id qbits par 2
+  | HAnni => bexp_map_hunit st_id qbits par 0
+  | HDag x => match x with
+    | HAnni => bexp_map_hunit st_id qbits par 1
+    | _ => []
+    end
+  | HPlus e1 e2 => plus_plus_plus (bexp_map e1 qbits par st_id) (bexp_map e2 qbits par st_id)
+  | HApp e1 e2 => plus_app_plus (bexp_map e1 qbits par st_id) (bexp_map e2 qbits par st_id) 
+  | HTensor e1 e2 => 
+    let nsite := count_sites e1 in
+    plus_ten_plus (bexp_map e1 qbits par st_id) (bexp_map e2 qbits par (st_id + nsite))
+  end.
+
+(* Transform from blueExp to lowprog *)
+Definition bexp_to_lowprag (input : blueExp) (input_type : iota) : lowprog :=
+  let qbits := get_nqbit_bexp input_type in
+  bexp_map input qbits input_type 0%nat.
+
+Local Close Scope nat_scope.
+(*************** Transform blueExp to lowprog. ************)
+
+
+
+(* Transform state from high to low level (described in binary).
+  len: # of the sites of input; 
+  input: nat-based ket; input_type: Fem/(Bos m) for particle types since sid.
+  output: list nat, the bin-based ket; iota: change all particle types to (Bos 2). *)
+Fixpoint state_map_basis_helper (len : nat) (input : basisKet) (input_type : iota) : 
+  ((list nat) * iota) := 
+  match input_type with 
+  | [] => ([], [])
+  | ty::aty => 
+    let sid := Nat.sub len (length input_type) in
+    let (ket_app, ty_app) := state_map_basis_helper len input aty in
+    let klen : nat := 
+      (match ty with
+      | Fem => 1%nat
+      | Bos m => Nat.log2_up m 
+      end) in 
+    let newk : (list nat) := cnt2bin (input sid) klen in
+    let newt : iota := repeat (Bos 2) klen in
+    (newk ++ ket_app, newt ++ ty_app)
+  end.
+
+Definition state_map_basis (input_wamp : C * basisKet) (input_type : iota) : (C * basisKet) := 
+  let (amp, input) := input_wamp in
+  let (bin_ket, _) := state_map_basis_helper (length input_type) input input_type in
+  let output := fun x => nth x bin_ket 0%nat in
+  (amp, output).
+
+Definition state_map (input : psi) (input_type : iota) : psi :=
+  map (fun x => state_map_basis x input_type) input.
+
+Fixpoint state_type_bin (input : iota) : iota :=
+  match input with 
+  | [] => []
+  | ty :: ty_app => 
+    let klen : nat := 
+      (match ty with
+      | Fem => 1%nat
+      | Bos m => Nat.log2_up m 
+      end) in 
+      let newt := repeat (Bos 2) klen in
+      newt ++ (state_type_bin ty_app)
+  end.
+
+
+(* Theorem for particle transformation from low-level to high-level *)
+(* Theorem particle_transoform_correctness: forall n st_type e op_type op_type' s, 
+  typing st_type e op_type -> WFState st_type s -> exists s1,
+  let H' := snd_map e in
+  let s' := state_map s in
+  let st_type' := state_type_bin st_type in
+  let s1' := state_map s1 in
+  typing st_type H' op_type' /\ WFState st_type' s1' /\ blue_sem n st_type' H' s' s1'.
+Proof.
+  
+Qed. *)
+
 

@@ -71,7 +71,7 @@ Inductive typeflag : Set := P | U | HER.
 Definition tauType :Set := typeflag * iota.
 
 Inductive blueExp := 
-        | HId
+        | HId 
         | HAnni
         | HDag (x:blueExp)
         | HPlus (x:blueExp) (y:blueExp)
@@ -80,8 +80,7 @@ Inductive blueExp :=
 
 
 
-(* Canaoncal form *)
-
+(* highprog MUST be in canonical form *)
 Inductive hsnd : Type :=
   | anni: particle -> hsnd
   | creator: particle -> hsnd

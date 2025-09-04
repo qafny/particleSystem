@@ -83,13 +83,12 @@ Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop :=
                  -> blue_sem n t e2 s s2
                  -> blue_sem n t (HPlus e1 e2) s (s1++s2).
 
-(*  *)                 
+(* To make sure the state matches its type *)                 
 Inductive WFKet : iota -> basisKet -> Prop := 
  | WFEmpty : forall s, WFKet nil s
  (* xl is the state of right part of s *)
  | WFManyF : forall xl s, s 0 < 2 -> WFKet xl (nleft s 1) -> WFKet (Fem::xl) s
  | WFManyB : forall m xl s, s 0 < m -> WFKet xl (nleft s 1) -> WFKet (Bos m::xl) s.
-
 
 Definition WFState (t:iota) (s:psi) := forall e, In e s -> WFKet t (snd e).
 
@@ -97,7 +96,7 @@ Definition WFState (t:iota) (s:psi) := forall e, In e s -> WFKet t (snd e).
 (* Denote the blueExp as Matrix form *)
 Fixpoint blueExp_dim (e : blueExp) : nat :=
   match e with
-  | HId => 2
+  | HId => 2 (* WARNING: May be other dimension??? *)
   | HAnni => 2
   | HPlus e1 e2 => blueExp_dim e1
   | HTensor e1 e2 => (blueExp_dim e1) * (blueExp_dim e2)
