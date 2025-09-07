@@ -1067,6 +1067,20 @@ Fixpoint state_type_bin (input : iota) : iota :=
   end.
 
 
+(* Sub lemma for proving particle_transoform_correctness.
+  Well-form state is kept when transforming from high-level to low-level *)
+Lemma WFState_state_map_bin: forall st_type s, WFState st_type s ->
+  WFState (state_type_bin st_type) (state_map s (state_type_bin st_type)).
+Proof.
+  intros st_type s.
+  induction s as [| s' IHs'].
+  - easy.
+  - admit. (* unfold state_map. constructor.
+    intros IHe1 e IHe2.
+  *)
+Admitted. 
+
+
 (* Theorem for particle transformation from low-level to high-level *)
 Theorem particle_transoform_correctness: forall n st_type e op_type s, 
   typing st_type e op_type -> WFState st_type s -> exists s1,
@@ -1075,7 +1089,26 @@ Theorem particle_transoform_correctness: forall n st_type e op_type s,
   let st_type' := state_type_bin st_type in
   let s1' := state_map s1 st_type' in
   blue_sem n st_type e s s1 /\ WFState st_type' s1' /\ blue_sem_low H' s' s1'.
-Proof.
+  intros n st_type e op_type sin Hty Hwf.
+  Proof.
+    destruct (type_soundness st_type e op_type n sin Hty Hwf)
+    as [s1 [Hsem HWFr]].
+
+    exists s1.
+
+    repeat split.
+
+    - exact Hsem.
+    
+    - (* WFState (state_type_bin st_type) (state_map s1 (state_type_bin st_type)) *)
+    (* Any lemma that says mapping/bin-typing preserves WF works here *)
+    apply WFState_state_map_bin; exact HWFr.
+
+    
+    - admit. 
+      (* apply bexp_to_lowprog_sound; exact Hsem. *)
+
+  
 Admitted. 
 
 
