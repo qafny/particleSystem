@@ -1075,7 +1075,9 @@ Proof.
   intros st_type s.
   induction s as [| s' IHs'].
   - easy.
-  - admit. (* unfold state_map. constructor.
+  - unfold WFState. 
+    intros IH1 e IHe. apply in_app_or in IHe.  
+  admit. (* unfold state_map. constructor.
     intros IHe1 e IHe2.
   *)
 Admitted. 
