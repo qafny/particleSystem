@@ -1066,22 +1066,38 @@ Fixpoint state_type_bin (input : iota) : iota :=
       newt ++ (state_type_bin ty_app)
   end.
 
+Lemma in_state_map_iff :
+  forall (l:psi) (τ:iota) (e:C * basisKet),
+    In e (state_map l τ) <->
+    exists x, In x l /\ state_map_basis x τ = e.
+Proof.
+  intros l τ e. unfold state_map. rewrite in_map_iff. firstorder. 
+Qed.
+
+Lemma WFKet_state_map_basis_bin :
+  forall (sty : iota) (s : C * basisKet),
+    WFKet sty (snd s) ->
+    WFKet (state_type_bin sty) (snd (state_map_basis s (state_type_bin sty))).
+Proof.
+  intros sty s IH.
+  destruct sty as [| a sty'].
+  - simpl in *. unfold state_map_basis. simpl in *.  
+Admitted.
+
 
 (* Sub lemma for proving particle_transoform_correctness.
   Well-form state is kept when transforming from high-level to low-level *)
-Lemma WFState_state_map_bin: forall st_type s, WFState st_type s ->
-  WFState (state_type_bin st_type) (state_map s (state_type_bin st_type)).
+Lemma WFState_state_map_bin: forall sty s, WFState sty s ->
+  WFState (state_type_bin sty) (state_map s (state_type_bin sty)).
 Proof.
-  intros st_type s.
-  induction s as [| s' IHs'].
-  - easy.
-  - unfold WFState. 
-    intros IH1 e IHe. apply in_app_or in IHe.  
-  admit. (* unfold state_map. constructor.
-    intros IHe1 e IHe2.
-  *)
-Admitted. 
-
+  intros sty s Hwf e Hin.
+  apply in_state_map_iff in Hin.
+  destruct Hin as [x [HxIn Heq]].
+  subst e.  
+  apply WFKet_state_map_basis_bin.
+  apply Hwf. easy.
+Qed. 
+  
 
 (* Theorem for particle transformation from low-level to high-level *)
 Theorem particle_transoform_correctness: forall n st_type e op_type s, 
