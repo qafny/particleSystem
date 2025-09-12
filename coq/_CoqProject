@@ -3,5 +3,7 @@
 QBlueSyntax.v
 QBlueType.v
 QBlueSemantics.v
+QBlueSemanticsProof.v
 QBlueCompiler.v
+QBlueCompilerProof.v
 
