@@ -32,5 +32,7 @@ Definition run_test (exp : blueExp) (it : iota) : list ugate :=
     end in
   helper lowp.
 
-Compute run_test exp2 it2.
-Compute run_test exp1 it1.
+(* Compute run_test exp2 it2.
+Compute run_test exp1 it1. *)
+
+
