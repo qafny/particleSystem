@@ -1,9 +1,11 @@
 -R . QBlue
 
+QBlueUtility.v
 QBlueSyntax.v
 QBlueType.v
 QBlueSemantics.v
 QBlueSemanticsProof.v
+QBlueParTransJwt.v
 QBlueCompiler.v
 QBlueCompilerProof.v
 Main.v

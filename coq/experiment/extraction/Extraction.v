@@ -9,11 +9,16 @@ Require Import QBlue.QBlueSemantics.
 Require Import QBlue.QBlueType.
 Require Import QBlue.QBlueCompiler. *)
 
+
 Require Import QBlue.Main.
+Require Coq.extraction.ExtrOcamlBasic.
+Require ExtrOcamlList.
+Require ExtrOcamlR.
+Require ExtrOcamlNatZ.
+Require ExtrOcamlC.
 
 Set Extraction Optimize.
-
-Separate Extraction Main.run_test.
+Separate Extraction Main.lowp Main.c1.
 
 
 

@@ -11,8 +11,12 @@ Local Open Scope R_scope.
 Require Import List.
 Import ListNotations.
 Local Open Scope list_scope.
-
 From SQIR Require Import SQIR.
+
+Definition myC1 := RtoC (R1). 
+Definition R2 : R := R1 + R1.
+Definition R4 : R := R1 + R1 + R1 + R1.
+Definition R7 : R := R1 + R2 + R4.
 
 Definition paulimat_eqb (a b : paulimat) : bool :=
   match a, b with
@@ -33,11 +37,11 @@ Parameter exp_ugate : R -> lowprog -> ugate. (* exp(-i r H) *)
 
 Definition app_pauli (s1 s2 : paulimat) : (C * paulimat) :=
   match s1, s2 with
-  | paulii, x => (C1, x)
-  | x, paulii => (C1, x)
-  | paulix, paulix => (C1, paulii)
-  | pauliy, pauliy => (C1, paulii)
-  | pauliz, pauliz => (C1, paulii)
+  | paulii, x => (myC1, x)
+  | x, paulii => (myC1, x)
+  | paulix, paulix => (myC1, paulii)
+  | pauliy, pauliy => (myC1, paulii)
+  | pauliz, pauliz => (myC1, paulii)
   | paulix, pauliy => (Ci, pauliz)
   | pauliy, paulix => (Copp Ci, pauliz)
   | pauliy, pauliz => (Ci, paulix)
@@ -114,25 +118,25 @@ Fixpoint ten_app_plus (h1 : lowprog_ten) (h2l : lowprog) : lowprog :=
 Definition ladder_anni : lowprog :=
   let x := fun x => paulix in
   let y := fun x => pauliy in
-  (RtoC (1/2), 1%nat, x) :: (Cmult Ci (RtoC (1/2)), 1%nat, y) :: nil.
+  (RtoC (R1/R2), 1%nat, x) :: (Cmult Ci (RtoC (R1/R2)), 1%nat, y) :: nil.
 
 (* |1><0| = (-) = 1/2(X-iY) *)
 Definition ladder_creator : lowprog :=
   let x := fun x => paulix in
   let y := fun x => pauliy in
-(RtoC (1/2), 1%nat, x) :: (Cmult (-Ci) (RtoC (1/2)), 1%nat, y) :: nil.
+(RtoC (R1/R2), 1%nat, x) :: (Cmult (-Ci) (RtoC (R1/R2)), 1%nat, y) :: nil.
 
 (* ∣1><1∣= 1/2(I−Z) *)
 Definition projector : lowprog :=
   let x := fun x => paulii in
   let y := fun x => pauliz in
-(RtoC (1/2), 1%nat, x) :: (Cmult (-C1) (RtoC (1/2)), 1%nat, y) :: nil. 
+(RtoC (R1/R2), 1%nat, x) :: (Cmult (-myC1) (RtoC (R1/R2)), 1%nat, y) :: nil. 
 
 (* ∣0><0∣= 1/2(I+Z) *)
 Definition projector0 : lowprog :=
   let x := fun x => paulii in
   let y := fun x => pauliz in
-(RtoC (1/2), 1%nat, x) :: (RtoC (1/2), 1%nat, y) :: nil. 
+(RtoC (R1/R2), 1%nat, x) :: (RtoC (R1/R2), 1%nat, y) :: nil. 
 
 
 (* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
@@ -182,7 +186,7 @@ Definition boson_creator (Nb : nat) : lowprog :=
   let fix helper (n : nat) :=
     match n with 
     | 0 => []
-    | S n' => let amp := RtoC (sqrt (INR (n + 1))) in
+    | S n' => let amp := RtoC (sqrt (INR (n+1))) in
       let aterm := mult_ampli_hplus amp (state2pauli (Nat.add n 1) n Nb) in
       plus_plus_plus aterm (helper n') 
     end in
@@ -215,9 +219,9 @@ Definition boson_numerator (Nb : nat) : lowprog :=
 (* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
 Definition boson_creator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
-    let amp := RtoC (sqrt (INR (n + 1))) in
-    let left : lowprog := [(C1, n, fun x => paulii)] in
-    let right : lowprog := [(C1, Nat.sub Nb (Nat.add n 1), fun x => paulii)] in 
+    let amp := RtoC (sqrt (INR (n) + R1)) in
+    let left : lowprog := [(myC1, n, fun x => paulii)] in
+    let right : lowprog := [(myC1, Nat.sub Nb (Nat.add n 1), fun x => paulii)] in 
     let mid : lowprog := (plus_ten_plus ladder_anni ladder_creator) in
     let mid1 : lowprog := mult_ampli_hplus amp mid in
     plus_plus_plus (plus_plus_plus left mid1) right 
@@ -233,8 +237,8 @@ Definition boson_creator_bin (Nb : nat) : lowprog :=
 Definition boson_annihilator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
     let amp := RtoC (sqrt (INR n)) in
-    let left : lowprog := [(C1, Nat.sub n 1, fun _ => paulii)] in
-    let right : lowprog := [(C1, Nat.sub Nb n, fun _ => paulii)] in
+    let left : lowprog := [(myC1, Nat.sub n 1, fun _ => paulii)] in
+    let right : lowprog := [(myC1, Nat.sub Nb n, fun _ => paulii)] in
     let mid : lowprog := plus_ten_plus ladder_creator ladder_anni in
     let mid1 : lowprog := mult_ampli_hplus amp mid in
     plus_ten_plus (plus_ten_plus left mid1) right
@@ -251,8 +255,8 @@ Definition boson_annihilator_bin (Nb : nat) : lowprog :=
 Definition boson_numerator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
     let amp := RtoC (INR n) in
-    let left : lowprog := [(C1, n, fun _ => paulii)] in
-    let right : lowprog := [(C1, Nat.sub Nb n, fun _ => paulii)] in
+    let left : lowprog := [(myC1, n, fun _ => paulii)] in
+    let right : lowprog := [(myC1, Nat.sub Nb n, fun _ => paulii)] in
     let mid : lowprog := mult_ampli_hplus amp projector in
     plus_ten_plus (plus_ten_plus left mid) right
   in
@@ -270,8 +274,8 @@ Definition boson_numerator_bin (Nb : nat) : lowprog :=
 (* n: apply Z/I to the first n sites; par: the particle type of each site *)
 Definition fermion_zop_helper (p : option particle) : lowprog_ten :=
   match p with 
-  | Some Fermi => (C1, 1%nat, fun _ => pauliz)
-  | _ => (C1, 1%nat, fun _ => paulii)
+  | Some Fermi => (myC1, 1%nat, fun _ => pauliz)
+  | _ => (myC1, 1%nat, fun _ => paulii)
   end.
 
 (* get [Z, I]^{ten (n-1)} *)
@@ -361,18 +365,18 @@ Definition snd_map_h0 (input : hsnd) (sid : nat) (qbits : list nat)
   (par : list (option particle)) : lowprog := 
   let prebits := sum_pre_qubits qbits sid in
   let postbits := sum_post_qubits qbits sid in
-  let left := [(C1, prebits, fun x => paulii)] in 
-  let right := [(C1, postbits, fun x => paulii)] in 
+  let left := [(myC1, prebits, fun x => paulii)] in 
+  let right := [(myC1, postbits, fun x => paulii)] in 
   match input with 
   | anni (Bos Nb) => plus_ten_plus (plus_ten_plus left (boson_annihilator Nb)) right 
   | creator (Bos Nb) => plus_ten_plus (plus_ten_plus left (boson_creator Nb)) right 
   | anni Fem => plus_ten_plus (fermion_anni sid par) right
   | creator Fem => plus_ten_plus (fermion_creator sid par) right
   | hunit Fem => (
-    let mid := [(C1, 2%nat, fun x => paulii)] in
+    let mid := [(myC1, 2%nat, fun x => paulii)] in
     plus_ten_plus (plus_ten_plus left mid) right)
   | hunit (Bos Nb) => (
-    let mid := [(C1, Nb, fun x => paulii)] in
+    let mid := [(myC1, Nb, fun x => paulii)] in
     plus_ten_plus (plus_ten_plus left mid) right) 
   end.
 
@@ -412,16 +416,16 @@ Definition snd_map (input : highprog) : lowprog :=
 (* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
 Definition commutator_tt (h1 h2 : lowprog_ten) : lowprog :=
-  [ten_app_ten h1 h2] ++ (mult_ampli_hplus (-C1)%C [ten_app_ten h2 h1]).
+  [ten_app_ten h1 h2] ++ (mult_ampli_hplus (-myC1)%C [ten_app_ten h2 h1]).
 
 Definition commutator_st (h1 : lowprog) (h2 : lowprog_ten) : lowprog :=
   let l1 := plus_app_ten h1 h2 in
-  let l2 := mult_ampli_hplus (-C1) (ten_app_plus h2 h1) in
+  let l2 := mult_ampli_hplus (-myC1) (ten_app_plus h2 h1) in
   plus_plus_plus l1 l2.
 
 Definition commutator_ts (h1 : lowprog_ten) (h2 : lowprog) : lowprog :=
   let l1 := ten_app_plus h1 h2 in
-  let l2 := mult_ampli_hplus (-C1) (plus_app_ten h2 h1) in
+  let l2 := mult_ampli_hplus (-myC1) (plus_app_ten h2 h1) in
   plus_plus_plus l1 l2.
 
 (* Norm of H matrix *)
@@ -470,7 +474,7 @@ Fixpoint e_split (t : R) (hlist : lowprog) : lowprog :=
 (* Tight error bound for the second-order Suzuki formula. *)
 Definition commutator_ss (h1 : lowprog) (h2 : lowprog) : lowprog :=
   let l1 := plus_app_plus h1 h2 in
-  let l2 := mult_ampli_hplus (-C1) (plus_app_plus h2 h1) in
+  let l2 := mult_ampli_hplus (-myC1) (plus_app_plus h2 h1) in
   plus_plus_plus l1 l2.
 
 Definition suzuki_comm_sum_helper (hlist : lowprog) : (lowprog * lowprog) :=
@@ -553,9 +557,9 @@ Local Open Scope nat_scope.
 (* 1/2(I - Z_i Z_j) *)
 (* i: any qubit before j; j: the last qubit; k: length of one term *)
 Definition Hanc_sndq_helper (i j k: nat) : lowprog :=
-  let term1 := (RtoC(1/2), k, fun _ => paulii) in
+  let term1 := (RtoC(R1/R2), k, fun _ => paulii) in
   let f := fun idx => (if (Nat.eqb idx i || Nat.eqb idx j) then pauliz else paulii) in
-  let term2 := (RtoC(-1/2), k, f) in 
+  let term2 := (RtoC(-R1/R2), k, f) in 
   term1 :: term2 :: nil.
 
 (* sum_{1<=i<j}} 1/2(I - Z_i Z_j), sum over i from 1 to j-1 *)
@@ -591,8 +595,8 @@ Fixpoint Hanc_aterm_helper (pre post : lowprog_ten) (hori : lowprog) : lowprog :
 (* H_s^{anc} = sum_{1<=i<j} sum_{i<j<=k} [1/2 (I - Z_{s,i} Z_{s,j})] *)
 Definition Hanc_aterm (nc nht htid k : nat) : lowprog := 
   let hori : lowprog := Hanc_fstq k k in
-  let pre : lowprog_ten := (C1, nc + htid * k, fun _ => paulii) in 
-  let post := (C1, (nht-htid-1) * k, fun _ => paulii) in 
+  let pre : lowprog_ten := (myC1, nc + htid * k, fun _ => paulii) in 
+  let post := (myC1, (nht-htid-1) * k, fun _ => paulii) in 
   Hanc_aterm_helper pre post hori.
 
 
@@ -606,7 +610,7 @@ Definition Hanc_aterm (nc nht htid k : nat) : lowprog :=
 Definition HV_qcomp (nht htid ncid k kid : nat) (ht : lowprog_ten) : lowprog_ten := 
   match ht with (amp, nc, f) =>
     let id_anc := (nc + htid * k + kid) in
-    let cs : C := if kid =? 1 then amp else C1 in
+    let cs : C := if kid =? 1 then amp else myC1 in
     let g := fun idx => 
         (if (idx =? ncid) && (Nat.leb ncid nc) then f idx 
           else if idx =? id_anc then paulix 
@@ -713,7 +717,7 @@ Fixpoint inb {A : Type} (eqb : A -> A -> bool) (a : A) (l : list A) : bool :=
   end.
 
 Definition fill_pl (nbit : nat) (reg : list nat) (p : paulimat) : lowprog_ten :=
-  let f := (fun id => if (inb Nat.eqb id reg) then p else paulii) in (C1, nbit, f).
+  let f := (fun id => if (inb Nat.eqb id reg) then p else paulii) in (myC1, nbit, f).
 
 Local Close Scope nat_scope.
 
@@ -721,17 +725,17 @@ Local Close Scope nat_scope.
 (* H unitary gate on X and Z basis.
    nbit: # of bits in circuit; qid: id of the current bit *)
 Definition H_u (nbit qid : nat) : list ugate := 
-  let xu := exp_ugate (PI/4) [fill_pl nbit [qid] paulix] in
-  let zu := exp_ugate (PI/4) [fill_pl nbit [qid] pauliz] in
+  let xu := exp_ugate (PI/R4) [fill_pl nbit [qid] paulix] in
+  let zu := exp_ugate (PI/R4) [fill_pl nbit [qid] pauliz] in
   xu :: zu :: xu :: nil. 
 
 (* S = exp(-i pi/4 Z) *)
 Definition S_u (nbit qid : nat) : list ugate := 
-  let zu := exp_ugate (PI/4) [fill_pl nbit [qid] pauliz] in zu :: nil.
+  let zu := exp_ugate (PI/R4) [fill_pl nbit [qid] pauliz] in zu :: nil.
 
 (* S^+ = exp(-i 7 pi/4 Z) *)
 Definition SDag_u (nbit qid : nat) : list ugate := 
-  let zu := exp_ugate (7 * PI/4) [fill_pl nbit [qid] pauliz] in zu :: nil. 
+  let zu := exp_ugate (R7 * PI/R4) [fill_pl nbit [qid] pauliz] in zu :: nil. 
 
 (* Find the nonI in pauli_str. qid starts from the length of pauli_str. *)
 Fixpoint find_nonI (qid : nat) (pauli_str : nat -> paulimat) : list nat :=
@@ -800,8 +804,8 @@ Local Open Scope nat_scope.
 (* n: apply Z/I to the first n sites; par: the particle type of each site *)
 Definition fermion_zop_helper1 (p : particle) : lowprog_ten :=
   match p with 
-  | Fem => (C1, 1%nat, fun _ => pauliz)
-  | _ => (C1, 1%nat, fun _ => paulii)
+  | Fem => (myC1, 1%nat, fun _ => pauliz)
+  | _ => (myC1, 1%nat, fun _ => paulii)
   end.
 
 (* get [Z, I]^{ten (n-1)} *)
@@ -844,8 +848,8 @@ Definition bexp_map_hunit
   : lowprog :=
   let preb   := sum_pre_qubits  qbits sid in
   let postb  := sum_post_qubits qbits sid in
-  let left   := [(C1, preb,  fun _ => paulii)] in
-  let right  := [(C1, postb, fun _ => paulii)] in
+  let left   := [(myC1, preb,  fun _ => paulii)] in
+  let right  := [(myC1, postb, fun _ => paulii)] in
   match nth_error par sid with
   | Some (Bos nb) =>
       match flag with
@@ -854,7 +858,7 @@ Definition bexp_map_hunit
       | 1%nat =>
           plus_ten_plus (plus_ten_plus left (boson_creator nb)) right
       | _ =>
-          let mid := [(C1, nb, fun _ => paulii)] in
+          let mid := [(myC1, nb, fun _ => paulii)] in
           plus_ten_plus (plus_ten_plus left mid) right
       end
 
@@ -865,7 +869,7 @@ Definition bexp_map_hunit
       | 1%nat =>
           plus_ten_plus (fermion_creator1 sid par) right
       | _ =>
-          let mid := [(C1, 2%nat, fun _ => paulii)] in
+          let mid := [(myC1, 2%nat, fun _ => paulii)] in
           plus_ten_plus (plus_ten_plus left mid) right
       end
 
