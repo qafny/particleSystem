@@ -101,11 +101,11 @@ Definition uni_tp (zt1 zt2 : typeflag) : typeflag :=
 *)
 (* Typing rules *)
 Inductive typing : iota -> blueExp -> tauType -> Prop :=
-| T_opF : typing ([Fem]) HAnni (P,[Fem])
+| T_opF : typing ([Fem]) HAnni (PLAIN,[Fem])
 | T_opB : forall m,
-    typing ([Bos m]) HAnni (P,([Bos m]))
+    typing ([Bos m]) HAnni (PLAIN,([Bos m]))
 
-| T_ID : forall t, typing t HId (P,t)
+| T_ID : forall t, typing t HId (PLAIN,t)
 
 | T_DAG : forall t e tp,
     typing t e tp ->
@@ -113,7 +113,7 @@ Inductive typing : iota -> blueExp -> tauType -> Prop :=
 
 | T_HER : forall t e,
     rewrites_recur t (HDag e) e ->
-    typing t e (P,t) ->
+    typing t e (PLAIN, t) ->
     typing t e (HER,t)
 
 | T_TENSOR : forall  t1 t2 e e' zeta,

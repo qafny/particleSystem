@@ -2,11 +2,10 @@ Require Import Reals.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
 Require Import QuantumLib.Matrix.
-Require Import QBlue.QBlueSyntax.
-Require Import QBlue.QBlueSemantics.
-Require Import QBlue.QBlueSemanticsProof.
+Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueType.
-Require Import QBlue.QBlueCompiler.
+Require Import QBlue.QBlueCompile.
+Require Import QBlue.QBlueParTransJwt.
 Local Open Scope R_scope.
 
 Require Import List.
@@ -15,105 +14,12 @@ Local Open Scope list_scope.
 
 From SQIR Require Import SQIR. 
 
-(* Particle Transformation *)
-
-Lemma in_state_map_iff :
-  forall (l:psi) (τ:iota) (e:C * basisKet),
-    In e (state_map l τ) <->
-    exists x, In x l /\ state_map_basis x τ = e.
-Proof.
-  intros l τ e. unfold state_map. rewrite in_map_iff. firstorder. 
-Qed.
-
-Lemma WFKet_state_map_basis_bin :
-  forall (sty : iota) (s : C * basisKet),
-    WFKet sty (snd s) ->
-    WFKet (state_type_bin sty) (snd (state_map_basis s (state_type_bin sty))).
-Proof.
-  intros sty s IH.
-  destruct sty as [| a sty'].
-  - simpl in *. unfold state_map_basis. simpl in *.  
-Admitted.
-
-
-(* Sub lemma for proving particle_transoform_correctness.
-  Well-form state is kept when transforming from high-level to low-level *)
-Lemma WFState_state_map_bin: forall sty s, WFState sty s ->
-  WFState (state_type_bin sty) (state_map s (state_type_bin sty)).
-Proof.
-  intros sty s Hwf e Hin.
-  apply in_state_map_iff in Hin.
-  destruct Hin as [x [HxIn Heq]].
-  subst e.  
-  apply WFKet_state_map_basis_bin.
-  apply Hwf. easy.
-Qed. 
-  
-
-(* Theorem for particle transformation from low-level to high-level *)
-Theorem particle_transoform_correctness: forall n st_type e op_type s, 
-  typing st_type e op_type -> WFState st_type s -> exists s1,
-  let H' := bexp_to_lowprog e st_type in
-  let s' := state_map s st_type in
-  let st_type' := state_type_bin st_type in
-  let s1' := state_map s1 st_type' in
-  blue_sem n st_type e s s1 /\ WFState st_type' s1' /\ blue_sem_low H' s' s1'.
-  intros n st_type e op_type sin Hty Hwf.
-  Proof.
-    destruct (type_soundness st_type e op_type n sin Hty Hwf)
-    as [s1 [Hsem HWFr]].
-
-    exists s1.
-
-    repeat split.
-
-    - exact Hsem.
-    
-    - (* WFState (state_type_bin st_type) (state_map s1 (state_type_bin st_type)) *)
-    (* Any lemma that says mapping/bin-typing preserves WF works here *)
-    apply WFState_state_map_bin; exact HWFr.
-
-    
-    - admit. 
-      (* apply bexp_to_lowprog_sound; exact Hsem. *)
-
-  
-Admitted. 
-
-
-
-
-(* Trotterization: Tight error bound for the first-order Lie-Trotter formula *)
-(* A Theory of Trotter Error, by Andrew M. Childs etc *)
-Theorem lie_trotter_error_bound :
-  forall (t : R) (hlist : lowprog),
-  let approx := e_split t hlist in
-  let gold := expH t hlist in
-  Rle (norm (plus_plus_plus approx (mult_ampli_hplus (-C1) gold)))
-    (trotter_error_bound t hlist).
-
-Proof.
-  intros t hlist approx gold.
-  
-
-Admitted.
-
-
-Theorem suzuki_second_order_error_bound :
-  forall (t : R) (hlist : lowprog),
-  let approx := e_split_suzuki t hlist in
-  let gold := expH t hlist in
-  Rle (norm (plus_plus_plus approx (mult_ampli_hplus (-C1) gold)))
-      (suzuki_error_bound t hlist).
-Proof. Admitted.
-
-
 
 (*********** Qdrift ***************)
 Theorem qdrift_error_boundary : 
   forall (t : R),
   let N : R := INR (length L_sampledID) in
-  let boundary := 4 * lambda^2 * t^2 / N^2 in 
+  let boundary : R := 4 * lambda^2 * t^2 / N^2 in 
   qdrift_error t <= boundary.
 Proof.
 Admitted.

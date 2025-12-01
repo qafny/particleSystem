@@ -66,9 +66,9 @@ Definition iota : Set := (list particle).
 Definition stype := nat.
 *)
 
-Inductive typeflag : Set := P | U | HER. 
+Inductive typeflag : Set := PLAIN | U | HER. 
 
-Definition tauType :Set := typeflag * iota.
+Definition tauType : Set := typeflag * iota.
 
 Inductive blueExp := 
         | HId 
@@ -104,3 +104,6 @@ Inductive paulimat: Type :=
 (* lowprog_ten: (amplitude, length, f: index -> element *)
 Definition lowprog_ten := (C * nat * (nat -> paulimat)) %type.
 Definition lowprog := list lowprog_ten.
+
+(* unitary gate exp(-i r ZZZ) *)
+Definition ugate := (R * lowprog_ten) %type.

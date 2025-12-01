@@ -5,8 +5,14 @@ QBlueSyntax.v
 QBlueType.v
 QBlueSemantics.v
 QBlueSemanticsProof.v
+QBlueGadgtization.v
 QBlueParTransJwt.v
-QBlueCompiler.v
-QBlueCompilerProof.v
+QBlueParTransJwtProof.v
+QBlueTrotter.v
+QBlueTrotterProof.v
+QBlueQdrift.v
+QBlueQdriftProof.v
+QBlueSynth.v
+QBlueCompile.v
 Main.v
 

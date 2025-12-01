@@ -1,7 +1,7 @@
 (* Define the JWT *)
 Require Export QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
-Require Import QBlue.QBlueSemantics.
+
 
 Definition paulimat_eqb (a b : paulimat) : bool :=
   match a, b with
@@ -502,5 +502,50 @@ Fixpoint bexp_map (input : blueExp) (qbits : list nat) (par : list particle)
 Definition bexp_to_lowprog (input : blueExp) (input_type : iota) : lowprog :=
   let qbits := get_nqbit_bexp input_type in
   bexp_map input qbits input_type 0%nat.
+(*************** Another pass to transform blueExp to lowprog. End. ************)
+
+
+(* Transform state from high to low level (described in binary).
+  len: # of the sites of input; 
+  input: nat-based ket; input_type: Fem/(Bos m) for particle types since sid.
+  output: list nat, the bin-based ket; iota: change all particle types to (Bos 2). *)
+Fixpoint state_map_basis_helper (len : nat) (input : basisKet) (input_type : iota) : 
+  ((list nat) * iota) := 
+  match input_type with 
+  | [] => ([], [])
+  | ty::aty => 
+    let sid := Nat.sub len (length input_type) in
+    let (ket_app, ty_app) := state_map_basis_helper len input aty in
+    let klen : nat := 
+      (match ty with
+      | Fem => 1%nat
+      | Bos m => Nat.log2_up m 
+      end) in 
+    let newk : (list nat) := cnt2bin (input sid) klen in
+    let newt : iota := repeat (Bos 2) klen in
+    (newk ++ ket_app, newt ++ ty_app)
+  end.
+
+Definition state_map_basis (input_wamp : C * basisKet) (input_type : iota) : (C * basisKet) := 
+  let (amp, input) := input_wamp in
+  let (bin_ket, _) := state_map_basis_helper (length input_type) input input_type in
+  let output := fun x => nth x bin_ket 0%nat in
+  (amp, output).
+
+Definition state_map (input : psi) (input_type : iota) : psi :=
+  map (fun x => state_map_basis x input_type) input.
+
+Fixpoint state_type_bin (input : iota) : iota :=
+  match input with 
+  | [] => []
+  | ty :: ty_app => 
+    let klen : nat := 
+      (match ty with
+      | Fem => 1%nat
+      | Bos m => Nat.log2_up m 
+      end) in 
+      let newt := repeat (Bos 2) klen in
+      newt ++ (state_type_bin ty_app)
+  end.
 
 
