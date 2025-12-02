@@ -11,7 +11,7 @@ Parameter R2N : R -> nat.
 (* TODO: need prove z = fst z *)
 Fixpoint cal_lambda (input : lowprog) : R :=
   match input with
-  | [] => 0
+  | [] => 0 % R
   | (z, _, _) :: rem => Rplus (fst z) (cal_lambda rem)
   end.
 

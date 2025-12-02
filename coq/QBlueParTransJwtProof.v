@@ -1,17 +1,12 @@
-Require Import Reals.
-Require Import Psatz.
+
 Require Import QuantumLib.Complex.
-Require Import QuantumLib.Matrix.
+
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueSemantics.
 Require Import QBlue.QBlueSemanticsProof.
-Require Import QBlue.QBlueType.
 Require Import QBlue.QBlueParTransJwt.
-Local Open Scope R_scope.
+Require Import QBlue.QBlueType.
 
-Require Import List.
-Import ListNotations.
-Local Open Scope list_scope.
 
 From SQIR Require Import SQIR. 
 
