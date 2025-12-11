@@ -1,4 +1,7 @@
 (* Define the JWT *)
+Require Import QuantumLib.Quantum.
+Require Import QuantumLib.Matrix.
+
 Require Export QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
 
@@ -503,6 +506,44 @@ Definition bexp_to_lowprog (input : blueExp) (input_type : iota) : lowprog :=
   let qbits := get_nqbit_bexp input_type in
   bexp_map input qbits input_type 0%nat.
 (*************** Another pass to transform blueExp to lowprog. End. ************)
+
+
+(*********** Transform lowprog into Matrix. Needed for proving Hermitian **************)
+Definition pauli2mat (p : paulimat) : Square 2 :=
+  match p with
+  | paulix => σx 
+  | pauliy => σy 
+  | pauliz => σz 
+  | paulii => I 2 
+  end.
+
+(* get exp(-i t H) from t, H.
+n: # of paulimat in one pauli string *)  
+Fixpoint lowprogten2mat (amp : C) (n : nat) (f: nat->paulimat) : Matrix (2^n) (2^n) :=
+  match n with
+  | 0 => scale amp (I 1)
+  | S n' => kron (pauli2mat (f n')) (lowprogten2mat amp n' f)
+  end.
+
+Fixpoint lowprog2mat (ham : lowprog) (n : nat) : Matrix (2^n) (2^n) :=
+  match ham with
+  | [] => I (2^n)
+  | (amp, _, f) :: hx =>
+      Mplus (lowprogten2mat amp n f) (lowprog2mat hx n)
+  end.
+
+Definition is_hermitian_mat {n : nat} (M : Matrix n n) : Prop :=
+  M † = M.
+
+Definition is_hermitian_lowprog (H : lowprog) (n : nat) : Prop :=
+  is_hermitian_mat (lowprog2mat H n).
+(*
+Record HermitianLowprog := {
+  Hlp        : lowprog;
+  Hlp_hermitian : is_hermitian_lowprog Hlp;
+}. *)
+
+(*********** Transform lowprog into Matrix. **************)
 
 
 (* Transform state from high to low level (described in binary).

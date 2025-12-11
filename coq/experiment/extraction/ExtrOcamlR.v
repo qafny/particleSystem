@@ -1,5 +1,6 @@
 Require Coq.extraction.Extraction.
 Require Export Reals.
+Require Import QBlue.QBlueUtility.
 
 (* Custom extraction from R -> OCaml float. *)
 Definition R2 : R := 2.
@@ -37,6 +38,8 @@ Extract Inlined Constant IZR =>
 Extract Inlined Constant INR =>
 "(fun n -> Z.to_float n)".
 
+Extract Inlined Constant Rceil_Z =>
+  "fun x -> Z.of_int (int_of_float (ceil x))".
 
 (* Extracting the following to dummy values to supress warnings *)
 Extract Constant ClassicalDedekindReals.sig_forall_dec  => "failwith ""Invalid extracted value"" ".

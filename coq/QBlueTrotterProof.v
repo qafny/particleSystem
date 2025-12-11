@@ -5,20 +5,38 @@ Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
 Require Import QBlue.QBlueTrotter.
 
+(* TODO: How to instantialize norm? *)
+
+(* Norm of H matrix *) 
+Parameter norm : forall n : nat, Square n -> R.
+
 (* exp(-i t H) *)
-Parameter expH : R -> lowprog -> lowprog.
+Parameter expH : forall n : nat, R -> Square n -> Square n.
 
-(* This is the input for sythesization *)
-Definition ugate := (R * lowprog) %type.
-Parameter exp_ugate : R -> lowprog -> ugate. (* exp(-i r H) *)
-(* Norm of H matrix *)
-Parameter norm : lowprog -> R.
 
+(**** Approximate central value using 1st-order std Trotter ****)
+(* Approx = exp(-itH_1)exp(-itH_2) ... *)
+Fixpoint approx_trotter_exp (t : R) (hlist : lowprog) (n : nat) : Square (2^n) :=
+  match hlist with 
+  | [] => I (2^n)
+  | (amp, n, f) :: ht => Mmult (expH (2^n) t (lowprogten2mat amp n f)) (approx_trotter_exp t ht n)
+    end.
+
+(* Gold error: || e^{-i H t} - PI_i (e^{-i Hi t}) ||
+n: # of paulis in one pauli string *)
+Definition cal_1st_trotter_error (t : R) (lp : lowprog) : R :=
+  match lp with 
+  | [] => 0
+  | (_, n, _) :: rem =>
+    let exp_mat_gold := expH (2^n) t (lowprog2mat lp n) in 
+    let exp_mat_approx := approx_trotter_exp t lp n in
+    norm (2^n) (Mplus exp_mat_approx (scale (-R1) exp_mat_gold))
+  end.
 
 (* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
 Definition commutator_tt (h1 h2 : lowprog_ten) : lowprog :=
-  [ten_app_ten h1 h2] ++ (mult_ampli_hplus (-myC1)%C [ten_app_ten h2 h1]).
+  [ten_app_ten h1 h2] ++ (mult_ampli_hplus (-myC1) [ten_app_ten h2 h1]).
 
 Definition commutator_st (h1 : lowprog) (h2 : lowprog_ten) : lowprog :=
   let l1 := plus_app_ten h1 h2 in
@@ -41,6 +59,7 @@ Fixpoint drop_nth {A : Set} (n : nat) (l : list A) : list A :=
 (* Eval compute in drop_nth 2 [10; 20; 30; 40]. 
 Returns [30; 40] *)
 
+(* [sum_{i=γ1+1, n} H_i, H_γ1], γ1 starts from 0 *)
 Definition comm_sums (gamma1 : nat) (hlist : lowprog) : lowprog :=
   let subl := drop_nth gamma1 hlist in
   match subl with 
@@ -49,30 +68,50 @@ Definition comm_sums (gamma1 : nat) (hlist : lowprog) : lowprog :=
   end.
 
 (* Outer sum: ∑_{γ1=1}^Γ || ∑_{γ2=γ1+1}^Γ [Hγ2, Hγ1] || *)
-Fixpoint trotter_error_bound_helper (idx : nat) (hlist : lowprog) : R :=
+(* idx: γ1, start from 0; n: # of paulis in one string; hlist: trottered input lowprog *) 
+Fixpoint trotter_error_bound_helper (idx n : nat) (hlist : lowprog) : R :=
   match idx with
   | 0 => 0
-  | S k => let comm_sum := comm_sums idx hlist in
-      Rplus (norm comm_sum) (trotter_error_bound_helper k hlist)
+  | S k => let comm_sum := lowprog2mat (comm_sums idx hlist) n in
+      Rplus (norm (2 ^ n) comm_sum) (trotter_error_bound_helper k n hlist)
   end.
 
-Definition trotter_error_bound (t : R) (hlist : lowprog) : R :=
+(* 1st-order error: t^2/2 * ∑_{γ1=1}^Γ || ∑_{γ2=γ1+1}^Γ [Hγ2, Hγ1] *)
+Definition cal_1st_trotter_error_bound (t : R) (hlist : lowprog) : R :=
   let gamma := length hlist in
-  (t*t/2) * (trotter_error_bound_helper gamma hlist). 
+  match hlist with
+  | [] => 0
+  | (_, n, _) :: _ => (t*t/2) * (trotter_error_bound_helper gamma n hlist)
+  end. 
 
 
-(**** Approximate central value using 1st-order std Trotter ****)
-(* Approx = exp(-itH_1)exp(-itH_2) ... *)
-Fixpoint e_split (t : R) (hlist : lowprog) : lowprog :=
-    match hlist with [] => []
-    | h :: ht => plus_app_plus (expH t [h]) (e_split t ht)
-    end.
-
-(* Theorem First_order_trotter: .
+(* Trotterization: error bound for the first-order Lie-Trotter formula *)
+(* A Theory of Trotter Error, by Andrew M. Childs etc *)
+Theorem first_trotter_error_bound: forall (lp: lowprog) (t err err_bound : R),
+  err = cal_1st_trotter_error t lp
+  -> err_bound = cal_1st_trotter_error_bound t lp 
+  -> err <= err_bound.
 Proof.
-  
-Qed. *)
+Admitted.
 
+
+(**** Approximate central value using 2nd-order std Trotter ****)
+(* Approx = exp(-it/2 H_1)exp(-it/2 H_2) ... exp(-it/2 H_n)exp(-it/2 H_{n-1}) ... *)
+Definition approx_trotter_exp_2nd (t : R) (hlist : lowprog) (n : nat) : Square (2^n) := 
+  let term1 := approx_trotter_exp (t/2) (rev hlist) n in
+  let term2 := approx_trotter_exp (t/2) hlist n in
+  Mmult term1 term2.
+
+(* Gold error for 2nd-order trotter:
+n: # of paulis in one pauli string *)
+Definition cal_2nd_trotter_error (t : R) (lp : lowprog) : R :=
+  match lp with 
+  | [] => 0
+  | (_, n, _) :: rem =>
+    let exp_mat_gold := expH (2^n) t (lowprog2mat lp n) in 
+    let exp_mat_approx := approx_trotter_exp_2nd t lp n in
+    norm (2^n) (Mplus exp_mat_approx (scale (-R1) exp_mat_gold))
+  end.
 
 
 (* Tight error bound for the second-order Suzuki formula. *)
@@ -89,43 +128,30 @@ Definition suzuki_comm_sum_helper (hlist : lowprog) : (lowprog * lowprog) :=
     let t2 := commutator_ts x (commutator_ts x rem) in (t1, t2)
     end.
 
-Fixpoint suzuki_error_bound (t: R) (hlist : lowprog) : R :=
+Fixpoint suzuki_error_bound_helper (n : nat) (t: R) (hlist : lowprog) : R :=
   match hlist with
   | [] => 0
   | x :: ax => let (term1, term2) := suzuki_comm_sum_helper hlist in
-      Rplus (Rplus (Rdiv ((norm term1) * (pow t 3)) 12)
-                   (Rdiv ((norm term2) * (pow t 3)) 24))
-            (suzuki_error_bound t ax)
+      let t1 := lowprog2mat term1 n in
+      let t2 := lowprog2mat term2 n in
+      Rplus (Rplus (Rdiv ((norm (2 ^ n) t1) * (pow t 3)) 12)
+                   (Rdiv ((norm (2 ^ n) t2) * (pow t 3)) 24))
+            (suzuki_error_bound_helper n t ax)
   end.
 
-Definition e_split_suzuki (t : R) (hlist : lowprog) : lowprog := 
-  let term1 : lowprog := e_split t (rev hlist) in
-  let term2 : lowprog := e_split t hlist in
-  plus_app_plus term1 term2.
+(* 2nd-order error *)
+Definition cal_2nd_trotter_error_bound (t : R) (hlist : lowprog) : R :=
+  match hlist with
+  | [] => 0
+  | (_, n, _) :: _ => suzuki_error_bound_helper n t hlist
+  end.
 
 
-
-(* Trotterization: Tight error bound for the first-order Lie-Trotter formula *)
-(* A Theory of Trotter Error, by Andrew M. Childs etc *)
-Theorem lie_trotter_error_bound :
-  forall (t : R) (hlist : lowprog),
-  let approx := e_split t hlist in
-  let gold := expH t hlist in
-  Rle (norm (plus_plus_plus approx (mult_ampli_hplus (-C1) gold)))
-    (trotter_error_bound t hlist).
-
+Theorem second_trotter_error_bound: forall (lp: lowprog) (t err err_bound : R),
+  err = cal_2nd_trotter_error t lp
+  -> err_bound = cal_2nd_trotter_error_bound t lp 
+  -> err <= err_bound.
 Proof.
-  intros t hlist approx gold.
-  
-
 Admitted.
 
-
-Theorem suzuki_second_order_error_bound :
-  forall (t : R) (hlist : lowprog),
-  let approx := e_split_suzuki t hlist in
-  let gold := expH t hlist in
-  Rle (norm (plus_plus_plus approx (mult_ampli_hplus (-C1) gold)))
-      (suzuki_error_bound t hlist).
-Proof. Admitted.
  

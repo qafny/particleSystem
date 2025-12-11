@@ -76,3 +76,8 @@ Theorem particle_transoform_correctness: forall n st_type e op_type s,
 Admitted. 
 
 
+(* Theorem hermitian_high2low: forall (H : highprog) is_hermitian_high H ->
+high2low H = L-> wf_lowprog L.
+Proof.
+Admitted. *)
+
