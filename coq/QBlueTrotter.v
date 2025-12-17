@@ -20,23 +20,27 @@ Definition trotter_step (err t : R) (input : lowprog) : nat :=
   Rceil_nat (R2 * lambda * lambda * t * t / err).
 
 
-(* split input into small steps by standard trotterization *)
-Definition trotter_aten (N : nat) (aten : lowprog_ten) : lowprog :=
-  match aten with (z, n, f) =>
-  let z' : C := (Rdiv (fst z) (INR N), Rdiv (snd z) (INR N)) in
-  let fix helper n1 : lowprog := match n1 with 
-  | 0 => []
-  | S n1' => (z', n, f) :: (helper n1') 
-  end in helper N
-  end. 
+(* split input into small steps by standard trotterization 
+exp(-it (H1 + H2 + H3)) => exp(-it/N (H1 + H2 + H3)) 
+*)
+Fixpoint trotter_astep (N: nat) (ap : lowprog) : lowprog :=
+  match ap with
+  | [] => []
+  | (z, n, f) :: aap => 
+    let z' : C := (Rdiv (fst z) (INR N), Rdiv (snd z) (INR N)) in 
+    (z', n, f) :: (trotter_astep N aap)
+  end.
 
+Fixpoint trotter_nstep (N: nat) (ap : lowprog) : lowprog :=
+  match N with 
+  | 0 => []
+  | S n => plus_plus_plus ap (trotter_nstep n ap)
+  end.
 
 (* Low-level Hamiltonian after being trottered into more steps. *)
-Fixpoint trotter (err t: R) (input : lowprog) : lowprog :=
+Definition trotter (err t: R) (input : lowprog) : lowprog :=
   let N := trotter_step err t input in
-  match input with 
-  | [] => []
-  | x :: ax => plus_plus_plus (trotter_aten N x) (trotter err t ax)
-  end.
+  let astep := trotter_astep N input in
+  trotter_nstep N astep.
 
 

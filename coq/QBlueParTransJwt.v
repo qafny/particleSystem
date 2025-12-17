@@ -504,8 +504,8 @@ Fixpoint bexp_map (input : blueExp) (qbits : list nat) (par : list particle)
 (* Transform from blueExp to lowprog *)
 Definition bexp_to_lowprog (input : blueExp) (input_type : iota) : lowprog :=
   let qbits := get_nqbit_bexp input_type in
+  (*************** Another pass to transform blueExp to lowprog. End. ************)
   bexp_map input qbits input_type 0%nat.
-(*************** Another pass to transform blueExp to lowprog. End. ************)
 
 
 (*********** Transform lowprog into Matrix. Needed for proving Hermitian **************)
@@ -527,7 +527,7 @@ Fixpoint lowprogten2mat (amp : C) (n : nat) (f: nat->paulimat) : Matrix (2^n) (2
 
 Fixpoint lowprog2mat (ham : lowprog) (n : nat) : Matrix (2^n) (2^n) :=
   match ham with
-  | [] => I (2^n)
+  | [] => Zero
   | (amp, _, f) :: hx =>
       Mplus (lowprogten2mat amp n f) (lowprog2mat hx n)
   end.

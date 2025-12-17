@@ -1,5 +1,6 @@
 
 Require Import QuantumLib.Complex.
+Require Import QuantumLib.Quantum.
 
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueSemantics.
@@ -80,4 +81,51 @@ Admitted.
 high2low H = L-> wf_lowprog L.
 Proof.
 Admitted. *)
+
+
+Lemma WF_pauli2mat : forall p : paulimat, WF_Matrix (pauli2mat p).
+Proof.
+  intro p; destruct p.
+  - show_wf.
+  - show_wf.
+  - show_wf.
+  - apply WF_I.
+Qed.
+
+Lemma wf_lowprogten2mat :
+  forall (amp : C) (n : nat) (f : nat -> paulimat),
+    WF_Matrix (lowprogten2mat amp n f).
+Proof.
+  intros amp n f.
+  induction n as [| n' IH].
+  - simpl.
+    (* lowprogten2mat amp 0 f = scale amp (I 1) *)
+    auto with wf_db. 
+  - simpl.
+    (* kron (pauli2mat (f n')) (lowprogten2mat amp n' f) *)
+    apply WF_kron. 
+    -- easy.
+    -- easy.
+    -- apply WF_pauli2mat.
+    -- easy.  
+Qed.
+
+Lemma wf_lowprog2mat :
+  forall (lp : lowprog) (n : nat),
+    WF_Matrix (lowprog2mat lp n).
+Proof.
+  intros lp n.
+  induction lp as [| ten lpx IH].
+  - simpl. apply WF_Zero.
+  - simpl.
+    destruct ten as [[amp k] f].
+    unfold Mplus. apply WF_plus.  
+    -- apply wf_lowprogten2mat.
+    -- easy.
+Qed.
+
+  
+  
+
+
 
