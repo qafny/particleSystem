@@ -14,18 +14,6 @@ Parameter expH : forall n : nat, R -> Square n -> Square n.
 
 
 (**** Approximate central value using 1st-order std Trotter ****)
-(* Drop first n elements of a list. *)
-Fixpoint drop_nth {A : Set} (n : nat) (l : list A) : list A :=
-  match n, l with
-  | 0, _ => l
-  | S n', _ :: xs => drop_nth n' xs
-  | _, [] => []
-  end.
-
-(* Eval compute in drop_nth 2 [10; 20; 30; 40]. 
-Returns [30; 40] *)
-
-
 Fixpoint mult_exp_list (t : R) (d : nat) (l : lowprog) : Square (2^d) :=
   match l with
   | [] => I (2^d)
@@ -65,7 +53,7 @@ Definition exp_sum (t : R) (d : nat) (hlist : lowprog) : Square (2^d) :=
 
 
 Definition approx_transit_exp_aterm (t : R) (n d : nat) (hlist : lowprog) : Square (2^d) :=
-  let term_sum := drop_nth n hlist in 
+  let term_sum := skipn n hlist in 
     Mmult (exp_sum t d term_sum) (approx_mult_exp t n d hlist).
 
 
@@ -137,8 +125,8 @@ Definition expand_aterm (t : R) (k d : nat) (hlist : lowprog) : Square (2^d) :=
   | S k' => match (nth_error hlist k') with
     | None => Zero
     | Some a => 
-      let term_sum1 := drop_nth k hlist in
-      let term_sum2 := drop_nth k' hlist in
+      let term_sum1 := skipn k hlist in
+      let term_sum2 := skipn k' hlist in
         Mminus (Mmult (exp_sum t d term_sum1) (expH (2^d) t (lowprog2mat [a] d)))
         (exp_sum t d term_sum2) 
       end
@@ -150,7 +138,7 @@ Definition expand_aterm_approx (k d : nat) (hlist : lowprog) : Square (2^d) :=
   | S k' => match (nth_error hlist k') with
     | None => Zero
     | Some a => 
-      let term_sum := drop_nth k' hlist in 
+      let term_sum := skipn k hlist in 
       Mminus (Mmult (lowprog2mat term_sum d) (lowprog2mat [a] d))
       (Mmult (lowprog2mat [a] d)  (lowprog2mat term_sum d))
       end
@@ -211,12 +199,12 @@ Definition commutator_ts (h1 : lowprog_ten) (h2 : lowprog) : lowprog :=
 
 
 (* [sum_{i=γ1+1, n} H_i, H_γ1], γ1 starts from 0 *)
-Definition comm_sums (gamma1 : nat) (hlist : lowprog) : lowprog :=
+(* Definition comm_sums (gamma1 : nat) (hlist : lowprog) : lowprog :=
   let subl := drop_nth gamma1 hlist in
   match subl with 
   | [] => []
   | h :: rem => commutator_st rem h
-  end.
+  end. *)
 
 (* Outer sum: ∑_{γ1=1}^Γ || ∑_{γ2=γ1+1}^Γ [Hγ2, Hγ1] || *)
 (* idx: γ1, start from 0; n: # of paulis in one string; hlist: trottered input lowprog *) 
@@ -237,7 +225,7 @@ Definition cal_1st_trotter_error_bound (t : R) (hlist : lowprog) : R :=
 
 (* TODO: check Hermitian *)
 Theorem expmat_commnute_ineq: forall (n : nat) (m1 m2 : Square n) (t : R),
-  norm n (Mminus (Mmult (expH n t m2) (expH n t m1)) (expH n t (Mmult m1 m2)))
+  norm n (Mminus (Mmult (expH n t m2) (expH n t m1)) (expH n t (m1 .+ m2)))
   <= (t*t/2) * (norm n (Mminus (Mmult m2 m1) (Mmult m1 m2))).
 Proof.
   
@@ -261,18 +249,28 @@ Fixpoint sum_mat (d : nat) (matl : list (Square d)) : (Square d) :=
   | m :: am => m .+ (sum_mat d am)
   end.
 
+Theorem  zero_norm_eqzero: forall (d: nat),
+  norm d Zero = 0.
+Proof.
+Admitted.
+
+Axiom zero_expH_iszero: forall (d : nat) (t : R),
+  expH (2 ^ d) t Zero = Zero.
+
 Theorem matnorm_sum_triangle_ineq_list: forall (d : nat) (ml :  list (Square d)),
   norm d (sum_mat d ml) <= (sum_matnorm d ml).
 Proof.
   intros d ml.
   induction ml as [| m ml IH].
-  - simpl. admit.
+  - simpl.
+    rewrite zero_norm_eqzero. 
+    unfold Rle. right. ring.
   - simpl.
     eapply Rle_trans.
     + apply matnorm_sum_triangle_ineq.
     + apply Rplus_le_compat_l.
       easy.
-Admitted. 
+Qed. 
 
 Theorem matnorm_mult_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
   norm n (Mmult m1 m2) <= (norm n m1) * (norm n m2).
@@ -286,20 +284,20 @@ Theorem unitarymat_norm_eqone: forall (d : nat) (m: Square d),
 Proof.
 Admitted.
 
-
 Theorem expand_term_norm_bound: forall (t : R) (k d:nat) (hlist:lowprog),
   norm (2^d) (expand_transit_term t k d hlist) <= norm (2^d) (expand_aterm t k d hlist).
 Proof.
   intros t k d hlist.
   destruct k as [| k].
-  - simpl. admit.
+  - simpl. 
+    rewrite zero_norm_eqzero. apply Rle_refl. 
   - unfold expand_transit_term, approx_transit_exp_aterm, expand_aterm.
     destruct (nth_error hlist k) as [a|] eqn:Hnth.
     -- rewrite (approx_mult_exp_succ t d k hlist a Hnth).
       unfold Mminus, Mopp.
       rewrite <- Mmult_assoc.
-      set (A := Mmult (exp_sum t d (drop_nth (S k) hlist)) (expH (2 ^ d) t (lowprog2mat [a] d))).
-      set (B := exp_sum t d (drop_nth k hlist)).
+      set (A := Mmult (exp_sum t d (skipn (S k) hlist)) (expH (2 ^ d) t (lowprog2mat [a] d))).
+      set (B := exp_sum t d (skipn k hlist)).
       set (D := approx_mult_exp t k d hlist).
       rewrite <- Mscale_mult_dist_l.
       rewrite <- Mmult_plus_distr_r.
@@ -311,16 +309,15 @@ Proof.
         rewrite Rmult_1_r. 
         apply Rle_refl.
     -- apply nth_error_None in Hnth.
-      assert (Hdr: drop_nth (S k) hlist = []).
-       {unfold drop_nth. 
-       admit. }
-      assert (Hdr1: drop_nth k hlist = []).
-       {unfold drop_nth. 
-       admit. }
+      assert (Hdr: skipn (S k) hlist = []).
+       {apply skipn_all2. auto. }
+      assert (Hdr1: skipn k hlist = []).
+       {apply skipn_all2. auto. }
       rewrite Hdr, Hdr1.
       unfold exp_sum, lowprog2mat.
       assert (H0: expH (2 ^ d) t Zero = Zero).
-      { admit. }
+      { rewrite zero_expH_iszero.
+        reflexivity. }  
       rewrite H0.
       repeat rewrite Mmult_0_l.
       unfold Mminus, Mopp.
@@ -330,10 +327,53 @@ Proof.
 Admitted.
 
 
-Theorem expand_term_norm_bound1: forall (t : R) (k d:nat) (hlist:lowprog),
+Theorem expand_term_norm_bound1: forall (t : R) (k d : nat) (hlist:lowprog),
   norm (2^d) (expand_aterm t k d hlist) <= (t*t/2) * (norm (2^d) (expand_aterm_approx k d hlist)).
 Proof.
-Admitted.
+  intros t k d hlist.
+  unfold expand_aterm, expand_aterm_approx.
+  destruct k.
+  - rewrite zero_norm_eqzero. rewrite Rmult_0_r.
+    apply Rle_refl.
+  - destruct (hlist !! k) as [a | ] eqn:Hx.
+    -- specialize (nth_error_split hlist k Hx) as Hsplit.
+    destruct Hsplit as [l1 [l2 [Hl Hlen]]].
+    subst hlist.
+    assert (H1: skipn k (l1 ++ a :: l2) = a :: l2).
+    { rewrite skipn_app.
+      assert (H1 : skipn k l1 = []).
+      { apply skipn_all2. lia. }
+      rewrite H1.
+      replace (Nat.sub k (length l1)) with 0%nat by lia.
+      simpl. reflexivity. 
+    }
+    
+    assert (H2: skipn (S k) (l1 ++ a :: l2) = l2).
+    { rewrite skipn_app.
+      assert (H3 : skipn (S k) l1 = []).
+      { apply skipn_all2. lia. }
+      rewrite H3.
+      replace (Nat.sub (S k) (length l1)) with 1%nat by lia.
+      simpl. reflexivity.
+    }
+
+    rewrite H1, H2.
+    unfold exp_sum.
+    set (m1 := lowprog2mat [a] d).
+    set (m2 := lowprog2mat l2 d).
+    assert (H3: lowprog2mat (a :: l2) d = m1 .+ m2 ).
+    {
+      destruct a as [[amp n] f]. simpl.
+      subst m1 m2.
+      cbn [lowprog2mat].
+      rewrite Mplus_0_r. reflexivity.
+    }
+    rewrite H3.
+    apply expmat_commnute_ineq. 
+
+    -- rewrite zero_norm_eqzero. rewrite Rmult_0_r. 
+       apply Rle_refl. 
+  Qed.
 
 Lemma Mplus_opp_0 : forall (m n : nat) (A : Matrix m n), (Mopp A) .+ A = Zero.
 Proof. intros. lma. Qed. 
@@ -346,14 +386,16 @@ Lemma helper_norm_le_1est :
 Proof.
   intros t k d lp'.
   induction k as [|k IH].
-  - simpl. admit.
+  - simpl.
+    rewrite zero_norm_eqzero.
+    apply Rle_refl.
 
   - simpl.
     eapply Rle_trans.
     + apply matnorm_sum_triangle_ineq.   
     + apply Rplus_le_compat_l.
       exact IH.
-Admitted.
+Qed.
 
 
 Lemma helper_norm_le_2est : forall t k d lp,
