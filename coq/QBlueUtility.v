@@ -11,4 +11,4 @@ Parameter Rceil_Z : R -> Z.
 
 Definition Rceil_nat (x : R) : nat :=
   Z.to_nat (Rceil_Z x).
-  
+

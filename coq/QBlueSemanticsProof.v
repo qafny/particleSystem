@@ -50,7 +50,7 @@ f: mapping to record the # of particles per site *)
 Definition ket_minus_one_fem (g : nat) (amp : C) (f : basisKet) : list (C * basisKet) :=
   match anni_sem (f 0) with
   | None => []
-  | Some (c, m') => [(Cmult (C1 ^ g) (Cmult c amp), update f 0 m')]
+  | Some (c, m') => [(Cmult (Cpow (-C1) g) (Cmult c amp), update f 0 m')]
   end.
 
 Fixpoint tysound_hanni_fem (g : nat) (s : psi) : psi := 
@@ -74,7 +74,7 @@ Fixpoint tysound_hanni_bos (s : psi) : psi :=
 Definition ket_plus_one_fem (g : nat) (amp : C) (f : basisKet) : list (C * basisKet) :=
   match create_sem 1 (f 0) with
   | None => []
-  | Some (c, m') => [(Cmult (C1 ^ g) (Cmult c amp), update f 0 m')]
+  | Some (c, m') => [(Cmult (Cpow (-C1) g) (Cmult c amp), update f 0 m')]
   end.
 
 Fixpoint tysound_hdag_fem (g : nat) (s : psi) : psi := 

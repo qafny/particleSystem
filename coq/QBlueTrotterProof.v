@@ -6,14 +6,16 @@ Require Import QBlue.QBlueParTransJwt.
 Require Import QBlue.QBlueTrotter.
 
 
-(* Norm of H matrix *) 
+(* L2-norm of a n*n matrix  *) 
 Parameter norm : forall n : nat, Square n -> R.
 
 (* exp(-i t H) *)
 Parameter expH : forall n : nat, R -> Square n -> Square n.
 
 
-(**** Approximate central value using 1st-order std Trotter ****)
+(**** Approximate central value using 1st-order std Trotter
+Approx = exp(-itH_k) exp(-itH_{k-1}) ... exp(-itH_{1})
+d: d paulis in one tensor product ****)
 Fixpoint mult_exp_list (t : R) (d : nat) (l : lowprog) : Square (2^d) :=
   match l with
   | [] => I (2^d)
@@ -21,16 +23,15 @@ Fixpoint mult_exp_list (t : R) (d : nat) (l : lowprog) : Square (2^d) :=
   end.
 
 (* Approx = exp(-itH_k) exp(-itH_{k-1}) ... exp(-itH_{1})
-d: d paulis in one tensor product;
-n: first n pauli strings go to PI(exp)
-*)
-Definition approx_mult_exp (t : R) (n d : nat) (hlist : lowprog) : Square (2^d) :=
-  mult_exp_list t d (firstn n hlist).
+d: d paulis in one tensor product 
+k: first k pauli strings go to Approx *)
+Definition approx_mult_exp (t : R) (k d : nat) (hlist : lowprog) : Square (2^d) :=
+  mult_exp_list t d (firstn k hlist).
 
-Lemma mult_exp_list_app :
-  forall t d (l1 l2 : lowprog),
-    mult_exp_list t d (l1 ++ l2)
-    = Mmult (mult_exp_list t d l2) (mult_exp_list t d l1).
+
+Lemma mult_exp_list_app : forall t d (l1 l2 : lowprog),
+  mult_exp_list t d (l1 ++ l2)
+  = Mmult (mult_exp_list t d l2) (mult_exp_list t d l1).
 Proof.
   intros t d l2.
   induction l2 as [| a l2 IH].
@@ -46,22 +47,22 @@ Proof.
 Admitted.
 
 
-
-(* exp(-it hlist) *)
+(* exp(-it * lp) *)
 Definition exp_sum (t : R) (d : nat) (hlist : lowprog) : Square (2^d) :=
   expH (2^d) t (lowprog2mat hlist d).  
 
+(* Define transitional term for proving trotterization:
+exp(-it* (sum_{k+1}^N Hi) x exp(-itH_{k} x ... x exp(-itH_{k1})) *)
+Definition approx_transit_exp_aterm (t : R) (k d : nat) (hlist : lowprog) : Square (2^d) :=
+  let term_sum := skipn k hlist in 
+    Mmult (exp_sum t d term_sum) (approx_mult_exp t k d hlist).
 
-Definition approx_transit_exp_aterm (t : R) (n d : nat) (hlist : lowprog) : Square (2^d) :=
-  let term_sum := skipn n hlist in 
-    Mmult (exp_sum t d term_sum) (approx_mult_exp t n d hlist).
-
-
+(* approx_mult_exp(lp::a) = exp(a) x approx_mult_exp(lp) *)
 Theorem approx_mult_exp_succ :
   forall (t : R) (d n : nat) (hlist : lowprog) (a : lowprog_ten),
-    nth_error hlist n = Some a ->
-    approx_mult_exp t (S n) d hlist =
-      Mmult (expH (2^d) t (lowprog2mat [a] d)) (approx_mult_exp t n d hlist).
+  nth_error hlist n = Some a 
+  -> approx_mult_exp t (S n) d hlist
+  = Mmult (expH (2^d) t (lowprog2mat [a] d)) (approx_mult_exp t n d hlist).
 Proof.
   intros t d n hlist a Hnth.
   unfold approx_mult_exp.
@@ -71,27 +72,27 @@ Proof.
   subst hlist.
 
   (* rewrite firstn n and firstn (S n) of (l1 ++ a :: l2) *)
-  assert (Hfirstn_n :
-    firstn n (l1 ++ a :: l2) = l1).
+  assert (Hfirstn_n : firstn n (l1 ++ a :: l2) = l1).
   { (* using Hlen : length l1 = n *)
     rewrite <- Hlen.
     rewrite firstn_app.
-    cbn. (* firstn (length l1) (a::l2) = [] because length l1 - length l1 = 0 *)
+    cbn.
     rewrite Nat.sub_diag.
     cbn.
-    rewrite firstn_all. admit.
+    rewrite firstn_all. 
+    rewrite app_nil_r. reflexivity.
   }
 
-  assert (Hfirstn_Sn :
-    firstn (S n) (l1 ++ a :: l2) = l1 ++ [a]).
+  assert (Hfirstn_Sn : firstn (S n) (l1 ++ a :: l2) = l1 ++ [a]).
   {
     rewrite <- Hlen.
     rewrite firstn_app.
     (* (S (length l1) - length l1) = 1 *)
     replace (Nat.sub (S (length l1)) (length l1)) with 1%nat by lia.
-    cbn. (* firstn 1 (a::l2) = [a] *)
-  admit.
-    }
+    rewrite firstn_all2 by lia.
+    simpl.
+    reflexivity.
+  }
 
   rewrite Hfirstn_n, Hfirstn_Sn.
 
@@ -104,21 +105,17 @@ Proof.
 Admitted.
 
 
-
-(* One termL exp_sum(k+1 to N) Pi_exp(1 to k) - exp_sum(k to N) Pi_exp(1 to k-1) 
-  n: from 1 to N, N is length hlist. if n = 0, return Zero.
-  d: d paulis in one tensor.
-  flag: 0: normal
-        1: trimmed with Pi under norm *)
-
+(* transitional terms for proving trotterization:
+exp(-it* (sum_{k+1}^N Hi) x exp(-itH_{k} x ... x exp(-itH_{1})) 
+- exp(-it* (sum_{k}^N Hi) x exp(-itH_{k+1} x ... x exp(-itH_{1}))  *)
 Definition expand_transit_term (t:R) (k d:nat) (hlist:lowprog) : Square (2^d) :=
   match k with
   | 0 => Zero
-  | S k' =>
-      Mminus (approx_transit_exp_aterm t k d hlist) (approx_transit_exp_aterm t k' d hlist)
+  | S k' => Mminus (approx_transit_exp_aterm t k d hlist) (approx_transit_exp_aterm t k' d hlist)
   end.
 
-
+(* transitional terms for proving trotterization:
+exp(-it* (sum_{k+1}^N Hi) x exp(-itH_{k})) - exp(-it* (sum_{k}^N Hi)) *)
 Definition expand_aterm (t : R) (k d : nat) (hlist : lowprog) : Square (2^d) :=
   match k with
   | 0 => Zero
@@ -132,6 +129,9 @@ Definition expand_aterm (t : R) (k d : nat) (hlist : lowprog) : Square (2^d) :=
       end
     end.
 
+
+(* transitional terms for proving trotterization:
+[sum_{k+1}^N Hi, Hk] *)
 Definition expand_aterm_approx (k d : nat) (hlist : lowprog) : Square (2^d) :=
   match k with
   | 0 => Zero
@@ -144,7 +144,7 @@ Definition expand_aterm_approx (k d : nat) (hlist : lowprog) : Square (2^d) :=
       end
     end.
 
-
+(* transitional terms for proving trotterization *)
 Fixpoint expand_1st_trotter_error_helper (t : R) (k d : nat) (hlist : lowprog) : Square (2^d) :=
   match k with 
   | 0 => Zero
@@ -156,11 +156,11 @@ Definition expand_1st_trotter_error (t : R) (d : nat) (hlist : lowprog) : Square
   let N := length hlist in 
   expand_1st_trotter_error_helper t N d hlist.
 
+(* norm each term in expand_1st_trotter_error *)  
 Fixpoint expand_1st_trotter_error_1est_helper (t : R) (k d : nat) (hlist : lowprog) : R :=
   match k with 
   | 0 => 0
-  | S k' => 
-  norm (2^d) (expand_transit_term t k d hlist) 
+  | S k' => norm (2^d) (expand_transit_term t k d hlist) 
   + (expand_1st_trotter_error_1est_helper t k' d hlist) 
   end.
   
@@ -169,9 +169,7 @@ Definition expand_1st_trotter_error_1st (t : R) (d : nat) (hlist : lowprog) : R 
   expand_1st_trotter_error_1est_helper t N d hlist.
 
 
-
-(* Gold error: || e^{-i H t} - PI_i (e^{-i Hi t}) ||
-n: # of paulis in one pauli string *)
+(* Gold error: || e^{-i H t} - PI_i (e^{-i Hi t}) || *)
 Definition cal_1st_trotter_error (t : R) (lp : lowprog) : R :=
   match lp with 
   | [] => 0
@@ -207,7 +205,7 @@ Definition commutator_ts (h1 : lowprog_ten) (h2 : lowprog) : lowprog :=
   end. *)
 
 (* Outer sum: ∑_{γ1=1}^Γ || ∑_{γ2=γ1+1}^Γ [Hγ2, Hγ1] || *)
-(* idx: γ1, start from 0; n: # of paulis in one string; hlist: trottered input lowprog *) 
+(* k: γ1, start from 0; d: # of paulis in one string; hlist: trottered input lowprog *) 
 Fixpoint trotter_error_bound_helper (k d : nat) (hlist : lowprog) : R :=
   match k with
   | 0 => 0
@@ -224,6 +222,7 @@ Definition cal_1st_trotter_error_bound (t : R) (hlist : lowprog) : R :=
   end. 
 
 (* TODO: check Hermitian *)
+(* norm(exp(A+B) - exp(A) exp(B)) <= [A, B] *)
 Theorem expmat_commnute_ineq: forall (n : nat) (m1 m2 : Square n) (t : R),
   norm n (Mminus (Mmult (expH n t m2) (expH n t m1)) (expH n t (m1 .+ m2)))
   <= (t*t/2) * (norm n (Mminus (Mmult m2 m1) (Mmult m1 m2))).
@@ -237,40 +236,15 @@ Theorem matnorm_sum_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
 Proof.
 Admitted.
 
-Fixpoint sum_matnorm (d : nat) (matl : list (Square d)) : R :=
-  match matl with 
-  | [] => 0
-  | m :: am => (norm d m) + (sum_matnorm d am)
-  end.
-
-Fixpoint sum_mat (d : nat) (matl : list (Square d)) : (Square d) :=
-  match matl with 
-  | [] => Zero 
-  | m :: am => m .+ (sum_mat d am)
-  end.
 
 Theorem  zero_norm_eqzero: forall (d: nat),
   norm d Zero = 0.
 Proof.
 Admitted.
 
-Axiom zero_expH_iszero: forall (d : nat) (t : R),
-  expH (2 ^ d) t Zero = Zero.
+Axiom zero_expH_isI: forall (d : nat) (t : R),
+  expH d t Zero = I d.
 
-Theorem matnorm_sum_triangle_ineq_list: forall (d : nat) (ml :  list (Square d)),
-  norm d (sum_mat d ml) <= (sum_matnorm d ml).
-Proof.
-  intros d ml.
-  induction ml as [| m ml IH].
-  - simpl.
-    rewrite zero_norm_eqzero. 
-    unfold Rle. right. ring.
-  - simpl.
-    eapply Rle_trans.
-    + apply matnorm_sum_triangle_ineq.
-    + apply Rplus_le_compat_l.
-      easy.
-Qed. 
 
 Theorem matnorm_mult_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
   norm n (Mmult m1 m2) <= (norm n m1) * (norm n m2).
@@ -284,6 +258,17 @@ Theorem unitarymat_norm_eqone: forall (d : nat) (m: Square d),
 Proof.
 Admitted.
 
+Lemma Mplus_opp_0 : forall (m n : nat) (A : Matrix m n), A .+ (Mopp A) = Zero.
+Proof. 
+  intros. lma.
+Qed. 
+
+
+(* sublemma for proving 1st trotter:
+norm(exp(-it* (sum_{k+1}^N Hi) x exp(-itH_{k} x ... x exp(-itH_{1})) 
+- exp(-it* (sum_{k}^N Hi) x exp(-itH_{k+1} x ... x exp(-itH_{1}))) 
+<= norm(exp(-it* (sum_{k+1}^N Hi) x exp(-itH_{k})) - exp(-it* (sum_{k}^N Hi))) 
+*)
 Theorem expand_term_norm_bound: forall (t : R) (k d:nat) (hlist:lowprog),
   norm (2^d) (expand_transit_term t k d hlist) <= norm (2^d) (expand_aterm t k d hlist).
 Proof.
@@ -315,18 +300,23 @@ Proof.
        {apply skipn_all2. auto. }
       rewrite Hdr, Hdr1.
       unfold exp_sum, lowprog2mat.
-      assert (H0: expH (2 ^ d) t Zero = Zero).
-      { rewrite zero_expH_iszero.
-        reflexivity. }  
+      assert (H0: approx_mult_exp t (S k) d hlist = approx_mult_exp t k d hlist).
+      {
+        unfold approx_mult_exp.
+        repeat rewrite firstn_all2 by lia.
+        easy.
+      }
+
       rewrite H0.
-      repeat rewrite Mmult_0_l.
-      unfold Mminus, Mopp.
-      rewrite Mplus_0_l.
-      rewrite Mscale_0_r. 
-      apply Rle_refl. 
+      unfold Mminus.
+      rewrite Mplus_opp_0.
+      apply Rle_refl.
 Admitted.
 
 
+(* sublemma for proving 1st trotter:
+ norm(exp(-it* (sum_{k+1}^N Hi) x exp(-itH_{k})) - exp(-it* (sum_{k}^N Hi))
+ <= norm([sum_{k+1}^N Hi, H_k]) *)
 Theorem expand_term_norm_bound1: forall (t : R) (k d : nat) (hlist:lowprog),
   norm (2^d) (expand_aterm t k d hlist) <= (t*t/2) * (norm (2^d) (expand_aterm_approx k d hlist)).
 Proof.
@@ -373,12 +363,10 @@ Proof.
 
     -- rewrite zero_norm_eqzero. rewrite Rmult_0_r. 
        apply Rle_refl. 
-  Qed.
-
-Lemma Mplus_opp_0 : forall (m n : nat) (A : Matrix m n), (Mopp A) .+ A = Zero.
-Proof. intros. lma. Qed. 
+Qed.
 
 
+(* sublemma for proving 1st trotter *)
 Lemma helper_norm_le_1est :
   forall t k d lp',
     norm (2^d) (expand_1st_trotter_error_helper t k d lp')
@@ -422,18 +410,17 @@ Proof.
       apply expand_term_norm_bound1.
 Qed. 
 
+
 (* Trotterization: error bound for the first-order Lie-Trotter formula *)
 (* A Theory of Trotter Error, by Andrew M. Childs etc *)
 Theorem first_trotter_error_bound: forall (lp: lowprog) (t err err_bound : R),
   err = cal_1st_trotter_error t lp
   -> err_bound = cal_1st_trotter_error_bound t lp 
   -> err <= err_bound.
-
-  Proof.
+Proof.
   intros lp t err err_bound H H1.
   subst err.
   unfold cal_1st_trotter_error.
-
   destruct lp as [| l lpa].
 
   (* lp is [] *)
@@ -447,12 +434,10 @@ Theorem first_trotter_error_bound: forall (lp: lowprog) (t err err_bound : R),
   
   assert (H2: expand_1st_trotter_error t d lp' ≡ Mminus sterm eterm).
   {
-
     unfold expand_1st_trotter_error. 
-        induction (length lp').
+    induction (length lp').
     -- simpl.
     unfold Mminus.
-    rewrite Mplus_comm.
     rewrite Mplus_opp_0. reflexivity.
     
     -- simpl.
@@ -463,34 +448,33 @@ Theorem first_trotter_error_bound: forall (lp: lowprog) (t err err_bound : R),
     unfold Mminus.
     repeat rewrite Mplus_assoc.
     rewrite (Matrix.M_is_monoid_obligation_3 (2^d) (2^d) (Mopp B) B (Mopp eterm)).
-    
+    rewrite (Mplus_comm (2 ^ d) (2 ^ d) (Mopp B) B).
     rewrite Mplus_opp_0. 
     rewrite Mplus_0_l.
     subst A sterm.
     reflexivity. 
-    }
+  }
        
-  
   (* change ≡ to = *)
   apply mat_equiv_eq_iff in H2.
   
-    -- rewrite <- H2.
-    assert (norm (2 ^ d) (expand_1st_trotter_error t d lp') <=
-    expand_1st_trotter_error_1st t d lp').
-    {     
-      unfold expand_1st_trotter_error, expand_1st_trotter_error_1st.
-      apply helper_norm_le_1est.
-    }
+  -- rewrite <- H2.
+  assert (norm (2 ^ d) (expand_1st_trotter_error t d lp') <=
+  expand_1st_trotter_error_1st t d lp').
+  {     
+    unfold expand_1st_trotter_error, expand_1st_trotter_error_1st.
+    apply helper_norm_le_1est.
+  }
 
-    eapply Rle_trans.
-    + apply H.
-    + subst err_bound.
-      inversion Hlp; subst.
-      unfold expand_1st_trotter_error_1st, cal_1st_trotter_error_bound.
-     apply helper_norm_le_2est. 
+  eapply Rle_trans.
+  + apply H.
+  + subst err_bound.
+    inversion Hlp; subst.
+    unfold expand_1st_trotter_error_1st, cal_1st_trotter_error_bound.
+    apply helper_norm_le_2est. 
 
-    -- admit. 
-    -- admit. 
+  -- admit. 
+  -- admit. 
 
     (* apply WF_plus.
     auto with wf_db. 
@@ -558,5 +542,3 @@ Theorem second_trotter_error_bound: forall (lp: lowprog) (t err err_bound : R),
   -> err <= err_bound.
 Proof.
 Admitted.
-
- 

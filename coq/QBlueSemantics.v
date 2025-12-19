@@ -54,7 +54,6 @@ Fixpoint Cpow (c : C) (n : nat) : C :=
   | S k => c * Cpow c k
   end.
 
-Notation "c ^ n" := (Cpow c n) : C_scope.
 
 (* nat: contex number, record occupied fermions
   iota: state type; blueExp: op; psi: input and output state (C amplitude, nat->nat site_id :  ) *)
@@ -62,10 +61,10 @@ Inductive blue_sem : nat -> iota -> blueExp -> psi -> psi -> Prop :=
  | s_id : forall n t s, blue_sem n t HId s s
  | f_anni_1: forall n s, anni_sem (snd s 0) = None -> blue_sem n ([Fem]) HAnni ([s]) (nil)
  | f_anni_2: forall n s c m, anni_sem (snd s 0) = Some (c,m) 
-     -> blue_sem n ([Fem]) HAnni ([s]) ([(Cmult (C1 ^ n) (Cmult c (fst s)), (update (snd s) 0 m))]) 
+     -> blue_sem n ([Fem]) HAnni ([s]) ([(Cmult (Cpow (-C1) n) (Cmult c (fst s)), (update (snd s) 0 m))]) 
  | f_crea_1: forall n s, create_sem 1 (snd s 0) = None -> blue_sem n ([Fem]) (HDag HAnni) ([s]) (nil)
  | f_crea_2: forall n s c m, create_sem 1 (snd s 0) = Some (c,m)
-     -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(Cmult (C1 ^ n) (Cmult c (fst s)), (update (snd s) 0 m))])
+     -> blue_sem n ([Fem]) (HDag HAnni) ([s]) ([(Cmult (Cpow (-C1) n) (Cmult c (fst s)), (update (snd s) 0 m))])
  | b_anni_1: forall n j s, anni_sem (snd s 0) = None -> blue_sem n ([Bos j]) HAnni ([s]) (nil)
  | b_anni_2: forall n j s c m, anni_sem (snd s 0) = Some (c,m)
                -> blue_sem n ([Bos j]) HAnni ([s]) ([(Cmult c (fst s), (update (snd s) 0 m))])

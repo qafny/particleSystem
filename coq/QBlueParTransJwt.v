@@ -521,7 +521,7 @@ Definition pauli2mat (p : paulimat) : Square 2 :=
 n: # of paulimat in one pauli string *)  
 Fixpoint lowprogten2mat (amp : C) (n : nat) (f: nat->paulimat) : Matrix (2^n) (2^n) :=
   match n with
-  | 0 => scale amp (I 1)
+  | 0 => scale amp (I (1 % nat))
   | S n' => kron (pauli2mat (f n')) (lowprogten2mat amp n' f)
   end.
 
