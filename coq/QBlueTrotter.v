@@ -17,7 +17,7 @@ Fixpoint cal_lambda (input : lowprog) : R :=
 
 Definition trotter_step (err t : R) (input : lowprog) : nat := 
   let lambda := cal_lambda input in
-  Rceil_nat (R2 * lambda * lambda * t * t / err).
+	ceilR_N (R2 * lambda * lambda * t * t / err).
 
 
 (* split input into small steps by standard trotterization 

@@ -28,18 +28,10 @@ Extract Inlined Constant acos => "acos".
 Extract Inlined Constant PI => "Float.pi".
 
 (*Chagned by Teddy*)
-(* Extract Inlined Constant IZR => "float_of_int".
 Extract Inlined Constant INR => "float_of_int".
-Extract Inlined Constant IZR => "Z.to_float".
-*)
-Extract Inlined Constant IZR =>
-"(fun z -> Z.to_float z)".
+Extract Inlined Constant IZR => "(fun n -> Z.to_float n)".
 
-Extract Inlined Constant INR =>
-"(fun n -> Z.to_float n)".
 
-Extract Inlined Constant Rceil_Z =>
-  "fun x -> Z.of_int (int_of_float (ceil x))".
 
 (* Extracting the following to dummy values to supress warnings *)
 Extract Constant ClassicalDedekindReals.sig_forall_dec  => "failwith ""Invalid extracted value"" ".

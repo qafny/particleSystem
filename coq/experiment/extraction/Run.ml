@@ -7,6 +7,9 @@ let () =
   Printf.printf "C1 = %s\n" (string_of_complex c1)
 
 
+let () = 
+  Printf.printf "ceil R4nat = %d\n" (m1)
+
 (* test lowprog *)
 (* let string_of_paulimat = function
   | paulix -> "X"

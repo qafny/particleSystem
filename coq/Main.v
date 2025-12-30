@@ -9,13 +9,16 @@ Definition exp1 := HPlus HId HAnni.
 Definition it1 := Fem :: nil.
 
 Definition exp2 := HTensor HAnni HId.
-Definition it2 := Fem :: (Bos 4) :: nil.
+Definition it2 := Fem :: (Bos 4%nat) :: nil.
 
 Definition c1 := myC1.
-Definition err : R := 0.1.
-Definition t : R := 0.1.
-Definition lowp := translate err t exp2 it2. 
+Definition m1 : nat := ceilR_N R4.
 
+
+Definition err : R := R1.
+Definition t : R := R1.
+
+Definition lowp := translate err t exp2 it2. 
 
 (* entry for running compiler 
  

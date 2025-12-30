@@ -14,11 +14,11 @@ Require Import QBlue.Main.
 Require Coq.extraction.ExtrOcamlBasic.
 Require ExtrOcamlList.
 Require ExtrOcamlR.
-Require ExtrOcamlNatZ.
+Require ExtrOcamlNatZ1.
 Require ExtrOcamlC.
 
 Set Extraction Optimize.
-Separate Extraction Main.lowp Main.c1.
+Separate Extraction Main.lowp Main.c1 Main.m1.
 
 
 

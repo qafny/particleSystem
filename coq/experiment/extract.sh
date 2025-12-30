@@ -12,7 +12,7 @@ cd experiment/extraction
 echo "Extracting code..."
 coqc -R ../.. QBlue ExtrOcamlList.v
 coqc -R ../.. QBlue ExtrOcamlR.v
-coqc -R ../.. QBlue ExtrOcamlNatZ.v
+coqc -R ../.. QBlue ExtrOcamlNatZ1.v
 coqc -R ../.. QBlue ExtrOcamlC.v
 coqc -R ../.. QBlue Extraction.v
 
@@ -21,9 +21,9 @@ echo "Deleting unneeded files..."
 rm -f *.glob *.mli *.vo*
 
 # Remove empty/unused files.
-rm -f  ClassicalDedekindReals.ml ConstructiveCauchyReals.ml Nat0.ml \
-   QArith_base.ml Rdefinitions.ml Ring_theory.ml Rpow_def.ml Rtrigo1.ml \
-   Specif.ml ZArith_dec.ml
+ rm -f  ClassicalDedekindReals.ml ConstructiveCauchyReals.ml Nat0.ml \
+   Rpow_def.ml Rtrigo1.ml \
+   ZArith_dec.ml Ring_theory.ml QArith_base.ml Rdefinitions.ml Specif.ml 
 
 # Move the remaining extracted files to the 'ml' subdirectory.
 echo "Moving generated files to ml/..."

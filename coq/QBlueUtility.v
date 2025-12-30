@@ -7,8 +7,5 @@ Definition R2 : R := R1 + R1.
 Definition R4 : R := R1 + R1 + R1 + R1.
 Definition R7 : R := R1 + R2 + R4.
 
-Parameter Rceil_Z : R -> Z.
-
-Definition Rceil_nat (x : R) : nat :=
-  Z.to_nat (Rceil_Z x).
-
+Parameter ceilR_N: R -> nat. 
+Parameter ceilR_Z: R -> Z. 
