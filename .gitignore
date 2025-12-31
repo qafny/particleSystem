@@ -12,6 +12,7 @@ extra/*
 *.conf
 .lia.cache
 compile_coq.*
+Makefile
 
 # Ignore coq_makefile-generated files
 .coqdeps.d
