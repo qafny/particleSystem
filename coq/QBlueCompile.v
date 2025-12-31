@@ -11,19 +11,23 @@ Require Import QBlue.QBlueTrotter.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueSemantics.
 Require Import QBlue.QBlueType.
-Require Import QBlue.QBlueSynth.
+Require Import QBlue.QBlueSynthDigital.
 
 
-Definition translate (err t : R) (exp : blueExp) (it : iota) : list ugate := 
+(* Translate from high-level hamiltonian to IBM digital gates
+err: tolerance; t: time;
+exp: high-level hamiltonian;
+it: high-level hamiltonian type;
+nbit: number of qubits for exp, length of it *)
+Definition translate1 (err t : R) (exp : blueExp) (it : iota) (nbit : nat) : base_ucom nbit := 
   let lowp1 : lowprog := bexp_to_lowprog exp it in
   let lowp : lowprog := trotter err t lowp1 in
-  let nbit := length it in
-  let fix helper (input_prog : lowprog) : list ugate :=
-    match input_prog with 
-    | [] => []
-    | (_, _, x) :: ax => (synth_analog_indiana t nbit x) ++ (helper ax)
-    end in
-  helper lowp.
+  synth_digital_ibm t nbit lowp.
+
+  
+Definition translate (err t : R) (exp : blueExp) (it : iota) : lowprog := 
+  let lowp1 : lowprog := bexp_to_lowprog exp it in
+  let lowp : lowprog := trotter err t lowp1 in lowp.
 
   
 

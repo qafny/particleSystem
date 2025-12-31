@@ -1,8 +1,4 @@
-(* Require Import Reals.
-Require Import QuantumLib.Complex.
-
-Require Import QBlue.QBlueUtility.*)
-From SQIR Require Import SQIR.
+(* Do synthesization upon different hardware *)
 
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
@@ -10,49 +6,6 @@ Require Import QBlue.QBlueParTransJwt.
 
 (* This is the input for sythesization *)
 Parameter exp_ugate : R -> lowprog_ten -> ugate. (* exp(-i r H) *)
-
-(* synthesization *)
-(* 1. to basic gates of CNOT, H, Rz, Collect parity on the last qubit *)
-(* Map X and Y to Z, X = HZH, Y=Rz(pi/2) HZH Rz(-pi/2) *)
-(* nbit: # of bits in circuit; curbit: id of the pauli in the string; s: the current pauli to convert 
-return: the converting matrix: for Y, return Rz; H and H; Rz) *)
-Definition map_pauli2gate_zbase_lr (nbit curbit: nat) (s : paulimat)
-: ((base_ucom nbit) * (base_ucom nbit)) :=
-  match s with 
-  | pauliy => (useq (P curbit) (H curbit), useq (H curbit) (PDAG curbit))
-  | paulix => (H curbit, H curbit) 
-  | _ => (ID curbit,  ID curbit)
-  end.
-
-(* Return the CNOT connecting the current bit and target bit, the middle part of the circuit *)
-Definition map_pauli2gate_zbase_m (nbit curbit tarbit : nat) (s : paulimat) : base_ucom nbit :=
-  if curbit =? tarbit then ID curbit else
-  match s with 
-  | paulii => ID curbit
-  | _ => CNOT curbit tarbit
-  end.
-
-(* Helper function for converting digital circuits using H, S and CNOT *)
-(* nqubit: # of bits in circuit; qid: current bit; pauli_str: pauli string
-left mid right: auxilla for saving the converted circuit *)
-Fixpoint synth_digital_helper (nqubit qid : nat) (pauli_str : nat -> paulimat)
-  (left mid right : base_ucom nqubit)
-  : (base_ucom nqubit) * (base_ucom nqubit) * (base_ucom nqubit) :=
-  match qid with
-  | 0 => ((left, mid), right)
-  | S qid' =>
-      let (cur1, cur3) := map_pauli2gate_zbase_lr nqubit qid' (pauli_str qid') in
-      let cur2 := map_pauli2gate_zbase_m nqubit qid' 0 (pauli_str qid') in
-      synth_digital_helper nqubit qid' pauli_str (useq left cur1) (useq mid cur2) (useq right cur3)
-  end.
-
-(* Synthesization
-nqubit: # of bits in circuit; pauli_str: pauli string;
-return: sequence of unitary gate of the converted circuit *)
-Definition synth_digital (nqubit : nat) (pauli_str : nat -> paulimat) : base_ucom nqubit :=
-  let (left_mid, right) := synth_digital_helper nqubit nqubit pauli_str SKIP SKIP SKIP in
-  let (left, mid) := left_mid in
-  useq left (useq mid right).
 
 
 (* 2. to gates of IBM analog, X, Z, ZZ gates *)
