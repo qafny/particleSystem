@@ -1,17 +1,10 @@
 (* Define the trotterization step, Lie-Trotter fomular, qdrift *)
 Require Import QuantumLib.Matrix.
 
+Require Import QBlue.QBlueProofUtility.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
 Require Import QBlue.QBlueTrotter.
-
-
-(* L2-norm of a n*n matrix  *) 
-Parameter norm : forall n : nat, Square n -> R.
-
-(* exp(-i t H) *)
-Parameter expH : forall n : nat, R -> Square n -> Square n.
-
 
 (**** Approximate central value using 1st-order std Trotter
 Approx = exp(-itH_k) exp(-itH_{k-1}) ... exp(-itH_{1})
