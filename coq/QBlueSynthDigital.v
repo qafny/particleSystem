@@ -32,7 +32,10 @@ Definition ucom_abit (nbit curbit tarbit : nat) (s : paulimat) : base_ucom nbit 
 NOTE: CNOT gates have the bit 0 as target *)
 Fixpoint helper_digital_ibm_ulist (nbit curbit tarbit: nat) (pauli_str : nat -> paulimat)
   : base_ucom nbit := 
-  let aux := ucom_abit nbit curbit tarbit (pauli_str curbit) in
+  let aux := if Nat.ltb curbit nbit then 
+    ucom_abit nbit curbit tarbit (pauli_str curbit) 
+    else SKIP
+  in
   match curbit with
   | 0 => aux
   | S cur' => useq aux (helper_digital_ibm_ulist nbit cur' tarbit pauli_str)
@@ -41,11 +44,15 @@ Fixpoint helper_digital_ibm_ulist (nbit curbit tarbit: nat) (pauli_str : nat -> 
 
 Definition synth_digital_ibm_apauli (amp : R) (nbit : nat) (pauli_str : nat -> paulimat)
   : base_ucom nbit := 
-  let tarbit := 0%nat in
-  (* Rz(2r) = exp(-irZ), NOTE: should have prove amp is real in trotter *)
-  let mid := Rz (R2 * amp) nbit in
-  let ulist := helper_digital_ibm_ulist nbit 0%nat tarbit pauli_str in
-  useq (useq ulist mid) (invert ulist).
+  match nbit with
+  | 0 => SKIP
+  | S n =>
+    let tarbit := 0%nat in
+    (* Rz(2r) = exp(-irZ), NOTE: should have prove amp is real in trotter *)
+    let mid := Rz (R2 * amp) nbit in
+    let ulist := helper_digital_ibm_ulist nbit n tarbit pauli_str in
+    useq (useq ulist mid) (invert ulist)
+  end.
 
 
 (* Synthesization of IBM digital

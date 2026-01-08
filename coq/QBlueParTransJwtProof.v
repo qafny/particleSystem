@@ -2,14 +2,16 @@
 Require Import QuantumLib.Complex.
 Require Import QuantumLib.Quantum.
 
+Require Import QBlue.QBlueProofUtility.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueSemantics.
 Require Import QBlue.QBlueSemanticsProof.
 Require Import QBlue.QBlueParTransJwt.
 Require Import QBlue.QBlueType.
 
-
 From SQIR Require Import SQIR. 
+
+
 
 (* Particle Transformation *)
 
