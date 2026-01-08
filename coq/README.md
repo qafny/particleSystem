@@ -26,6 +26,25 @@ opam install coq-quickchick
 * We require Coq version >= 8.12. We have tested compilation with 8.12.2, 8.13.2, and 8.14.0.
 * opam error messages and warnings are typically informative, so if you run into trouble then make sure you read the console output.
 
+# install the QuantumLib library
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam update
+opam install coq-quantumlib.1.7.0
+
+# Optional, if you want to compile the proofs in examples/shor
+opam install coq-interval
+opam pin coq-euler https://github.com/taorunz/euler.git
+
+# install the SQIR library
+To install SQIR, run opam pin coq-sqir https://github.com/inQWIRE/SQIR.git
+
+To pull subsequent updates, run opam install coq-sqir.
+
+To import SQIR files, use Require Import SQIR.FILENAME
+
+
+
+
 ## Compiling & Running QBlue
 
 Run `make` in the top-level directory to compile our Coq proofs.
