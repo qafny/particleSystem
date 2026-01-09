@@ -18,7 +18,7 @@ Require Import QuantumLib.Complex.
 (* Don’t let Coq define its own List module in OCaml *)
 Extraction Blacklist List.
 Extract Inlined Constant List.length => "(fun l -> (Stdlib.List.length l))".
-Extract Inlined Constant app => "List.append".
+Extract Inlined Constant app => " (@) ".
 Extract Inlined Constant rev => "List.rev".
 Extract Inlined Constant rev_append => "List.rev_append".
 Extract Inlined Constant List.map => "List.map".
