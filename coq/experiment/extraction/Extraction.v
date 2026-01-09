@@ -1,5 +1,6 @@
 From Coq Require Import Extraction.
 Require Import Reals. 
+Require Import Coq.Reals.Cauchy.ConstructiveRcomplete.
 Require Import Psatz.
 Require Import List. 
 
@@ -45,6 +46,7 @@ Extract Inlined Constant Ropp => "((-.) 0.0)".
 Extract Inlined Constant Rinv => "((/.) 1.0)".
 Extract Inlined Constant Rminus => "( -. )".
 Extract Inlined Constant Rdiv => "( /. )".
+Extract Inlined Constant Rfloor => "(fun a -> int_of_float (floor a))".
 Extract Inlined Constant sqrt => "sqrt".
 Extract Inlined Constant pow => "(fun a b -> a ** Z.to_float b)".
 Extract Inlined Constant cos => "cos".
