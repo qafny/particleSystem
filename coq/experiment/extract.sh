@@ -10,10 +10,6 @@ cd experiment/extraction
 
 # Perform extraction.
 echo "Extracting code..."
-coqc -R ../.. QBlue ExtrOcamlList.v
-coqc -R ../.. QBlue ExtrOcamlR.v
-coqc -R ../.. QBlue ExtrOcamlNatZ1.v
-coqc -R ../.. QBlue ExtrOcamlC.v
 coqc -R ../.. QBlue Extraction.v
 
 # Remove unneeded files.
