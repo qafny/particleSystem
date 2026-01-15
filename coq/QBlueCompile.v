@@ -3,7 +3,7 @@ Require Import Reals.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
 Require Import QuantumLib.Matrix.
-From SQIR Require Import SQIR.
+From SQIR Require Import ExtractionGateSet.
 
 Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueParTransJwt.
@@ -19,7 +19,8 @@ err: tolerance; t: time;
 exp: high-level hamiltonian;
 it: high-level hamiltonian type;
 nbit: number of qubits for exp, length of it *)
-Definition translate1 (err t : R) (exp : blueExp) (it : iota) (nbit : nat) : base_ucom nbit := 
+Definition translate1 (err t : R) (exp : blueExp) (it : iota) (nbit : nat) 
+  : ucom ExtractionGateSet.U :=
   let lowp1 : lowprog := bexp_to_lowprog exp it in
   let lowp : lowprog := trotter err t lowp1 in
   synth_digital_ibm t nbit lowp.

@@ -1,52 +1,53 @@
-From Coq Require Import Extraction.
-Require Import Reals. 
-Require Import Coq.Reals.Cauchy.ConstructiveRcomplete.
-Require Import Psatz.
-Require Import List. 
+From QBlue Require Import Main.
+From QBlue Require Import QBlueUtility.
 
+Require Coq.extraction.Extraction.
 
-Require Import QBlue.Main.
+(* Standard utilities for bools, options, etc. *)
 Require Coq.extraction.ExtrOcamlBasic.
 
-Require Export Reals.
-Require Import QBlue.QBlueUtility.
-Require Import QuantumLib.Complex.
+(* A few common functions not included in ExtrOcamlBasic. *)
+Extract Inlined Constant fst => "fst".
+Extract Inlined Constant snd => "snd".
+Extract Inlined Constant negb => "not".
 
-(* A few common list functions *)
-(* Extract Constant length => "(fun l -> Z.of_int (List.length l))". *)
-
-
-(* Don’t let Coq define its own List module in OCaml *)
-Extraction Blacklist List.
-Extract Inlined Constant List.length => "(fun l -> (Stdlib.List.length l))".
-Extract Inlined Constant app => " (@) ".
-Extract Inlined Constant rev => "List.rev".
-Extract Inlined Constant rev_append => "List.rev_append".
-Extract Inlined Constant List.map => "List.map".
-Extract Inlined Constant fold_right => "(fun f a l -> List.fold_right f l a)".
-Extract Inlined Constant forallb => "List.for_all".
+(* Most List functions have the same mapping, no need to define 
+ open the following if the mapping is needed *)
+Require Export List.
+(*
+Extract Inlined Constant List.fold_right => "(fun f a l -> List.fold_right f l a)".
 Extract Inlined Constant List.tl => "List.tl".
+Extract Inlined Constant List.forallb => "List.for_all".
+Extract Inlined Constant List.existsb => "List.exists".
+Extract Inlined Constant List.filter => "List.filter".
 Extract Inlined Constant List.hd_error => "(fun l -> List.nth_opt l 0)".
+*)
 
+(* Standard extraction from nat -> OCaml int and Z -> OCaml int. *)
+Require Export QArith.
+Require Coq.extraction.ExtrOcamlNatInt.
+Require Coq.extraction.ExtrOcamlZInt.
+
+(* Inline a few operations. *)
+Extraction Inline plus mult Nat.eq_dec.
+Extraction Inline Z.add Z.sub Z.mul.
+
+(* Otherwise sub will be extracted to the (undefined) string "sub". *)
+Extract Inlined Constant Init.Nat.sub => "(-)".
 
 
 (* Custom extraction from R -> OCaml float. *)
-Definition R2 : R := 2.
-Definition R4 : R := 4.
-Definition R8 : R := 8.
+Require Export Reals Reals.ROrderedType.
 Extract Inlined Constant R => "float".
 Extract Inlined Constant R0 => "0.0".
 Extract Inlined Constant R1 => "1.0".
 Extract Inlined Constant R2 => "2.0".
-Extract Inlined Constant R4 => "4.0".
-
 Extract Inlined Constant Rplus => "( +. )".
 Extract Inlined Constant Rmult => "( *. )".
 Extract Inlined Constant Ropp => "((-.) 0.0)".
 Extract Inlined Constant Rinv => "((/.) 1.0)".
 Extract Inlined Constant Rminus => "( -. )".
 Extract Inlined Constant Rdiv => "( /. )".
-Extract Inlined Constant Rfloor => "(fun a -> int_of_float (floor a))".
 Extract Inlined Constant sqrt => "sqrt".
 Extract Inlined Constant pow => "(fun a b -> a ** Z.to_float b)".
 Extract Inlined Constant cos => "cos".
@@ -55,50 +56,31 @@ Extract Inlined Constant tan => "tan".
 Extract Inlined Constant atan => "atan".
 Extract Inlined Constant acos => "acos".
 Extract Inlined Constant PI => "Float.pi".
-
-(*Chagned by Teddy*)
-Extract Inlined Constant INR => "float_of_int".
-(*
-Extract Inlined Constant IZR => "(fun n -> Z.to_float n)".
-*)
-
-
+Extract Inlined Constant Reqb => "( = )".
+Extract Inlined Constant Rlt => "( < )".
+Extract Inlined Constant IZR => "Float.of_int".
 (* Extracting the following to dummy values to supress warnings *)
 Extract Constant ClassicalDedekindReals.sig_forall_dec  => "failwith ""Invalid extracted value"" ".
 Extract Constant ClassicalDedekindReals.DRealRepr  => "failwith ""Invalid extracted value"" ".
 
+(* map R->Nat to ocaml Float.ceil function *)
+Extract Constant ceilR_N =>
+"fun (r: float) ->
+  let k = int_of_float (Float.ceil r) in
+  if k <= 0 then 0 else k".
 
-(* Standard extraction from nat -> OCaml int. *)
-Require Coq.extraction.ExtrOcamlNatInt.
-Extract Inductive nat => int [ "0" "succ" ] (* fix to bug in current lib *)
-  "(fun fO fS n -> if n=0 then fO () else fS (max 0 (n-1)))".
-Extract Inlined Constant Init.Nat.eqb => "(=)".
-Extract Inlined Constant Init.Nat.leb => "(<=)".
-Extract Inlined Constant Init.Nat.ltb => "(<)".
-Extract Inlined Constant Init.Nat.mul => "( * )".
-Extract Inlined Constant Init.Nat.add => "(+)".
-Extract Inlined Constant Init.Nat.sub => "(fun x y -> max 0 (x-y))".
-(* Extract Inlined Constant C38168 => "38168".  manually extracting large constants *)
-
-(*
-Extract Inlined Constant N.of_nat => "(fun x -> x)". (* id *)
-*)
-
-(* Extract Constant id_nat => "fun x : int -> x".  add type annotation *) 
-
-
-(* Custom extraction from R -> OCaml float. *)
-Extract Inlined Constant C => "float * float".
+(* Extract from C to (float * float) *)
+Require Import QuantumLib.Complex.
+Extract Inlined Constant C => "(float * float)".
 Extract Inlined Constant RtoC => "(fun x -> (x, 0.0))".
 Extract Inlined Constant Ci => "(0.0, 1.0)".
-
 Extract Inlined Constant Cmult => "(fun (a1, a2) (b1, b2) -> (a1 *. b1 -. a2 *. b2, a1 *. b2 +. a2 *. b1))".
 Extract Inlined Constant Complex.Copp => "(fun (a, b) -> (-. a, -. b))".
 
-Locate ceilR_N.
 
 Set Extraction Optimize.
-Separate Extraction Main.lowp.
+Separate Extraction Main.lowp Main.c1 Main.m1.
+
 
 
 
