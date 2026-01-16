@@ -1,9 +1,6 @@
 {
 
 open Common
-
-exception EndInput
-
 }
 
 let numeric = ['0' - '9']
