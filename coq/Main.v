@@ -20,18 +20,5 @@ Definition t : R := R1.
 
 Definition lowp := translate1 err t exp2 it2 (length it2).
 
-(* entry for running compiler 
- 
-Definition run_test (exp : blueExp) (it : iota) : list ugate := 
-  let lowp := bexp_to_lowprog exp it in
-  let fix helper (pro : lowprog) :=  
-    match pro with
-    | (C, n, pau) :: ax => (synth_analog_ibm 1 n pau) ++ (helper ax)
-    | _ => []
-    end in
-  helper lowp.
-
-Compute run_test exp2 it2.
-Compute run_test exp1 it1. *)
 
 
