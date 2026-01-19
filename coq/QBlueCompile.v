@@ -30,7 +30,7 @@ Definition translate (err t : R) (exp : blueExp) (it : iota) : lowprog :=
   let lowp1 : lowprog := bexp_to_lowprog exp it in
   let lowp : lowprog := trotter err t lowp1 in lowp.
 
-  
+
 
 (*
 (* synthesization *)
@@ -39,7 +39,7 @@ Definition translate (err t : R) (exp : blueExp) (it : iota) : lowprog :=
 (* nbit: # of bits in circuit; curbit: id of the pauli in the string; s: the current pauli to convert 
 return: the converting matrix: for Y, return Rz; H and H; Rz) *)
 Definition map_pauli2gate_zbase_lr (nbit curbit: nat) (s : paulimat)
-: ((base_ucom nbit) * (base_ucom nbit)) :=
+:uuu ((base_ucom nbit) * (base_ucom nbit)) :=
   match s with 
   | pauliy => (useq (P curbit) (H curbit), useq (H curbit) (PDAG curbit))
   | paulix => (H curbit, H curbit) 
@@ -165,5 +165,116 @@ Definition synth_analog_indiana (t : R) (nbit : nat) (pauli_str : nat -> paulima
   let (left, right) := synth_analog_indiana_helper ml nbit pauli_str in
   left ++ [mid] ++ right.
 *)
+
+
+Require Import List.
+Require Import Nat.
+Import ListNotations.
+
+(* Existing types *)
+Parameter Hamiltonian : Type.
+Parameter IR : Type.
+
+(* Existing cost type and projections *)
+Parameter Cost : Type.
+Parameter gate_count : Cost -> nat.
+Parameter sim_time   : Cost -> nat.
+
+Record HamSim := {
+  ham_sim_apply : Hamiltonian -> IR;
+  ham_sim_cost  : Hamiltonian -> Cost
+}.
+
+Record Synth := {
+  synth_apply : IR -> IR;
+  synth_cost  : IR -> Cost
+}.
+
+(*
+Parameter trotter       : HamSim.
+Parameter qdrift        : HamSim.
+Parameter marqsim       : HamSim.
+Parameter taylor        : HamSim.
+Parameter quantum_walk  : HamSim.
+
+Parameter synth_digital_ibm : Synth.
+(* others can be added later *)
+
+Definition ham_sim_list1 : list HamSim :=
+  [trotter; qdrift; marqsim; taylor; quantum_walk].
+
+Definition synth_list1 : list Synth :=
+  [synth_digital_ibm].
+
+Record Pipeline1 := {
+  p_ham_sim1 : HamSim;
+  p_synth1   : Synth
+}. *)
+
+Parameter cost_add : Cost -> Cost -> Cost.
+
+(* Definition pipeline_cost (H : Hamiltonian) (p : Pipeline1) (err t : R) : Cost :=
+  let c1 := p.(p_ham_sim1).(ham_sim_cost) H in
+  let ir := p.(p_ham_sim1).(ham_sim_apply) H in
+  let c2 := p.(p_synth1).(synth_cost) ir in
+  cost_add c1 c2. *)
+
+Record Pipeline := {
+  p_ham_sim : R -> R -> lowprog -> lowprog;
+  p_synth   : nat -> lowprog -> ucom ExtractionGateSet.U
+}.
+
+Definition get_cost (p : Pipeline) 
+  (err t : R) (lp : lowprog) (nbit : nat) : nat  :=
+  let lowp : lowprog := p.(p_ham_sim) err t lp in
+  let c := p.(p_synth) nbit lowp in 0%nat.
+
+
+Definition cost_better (c1 c2 : Cost) : bool :=
+  Nat.ltb (gate_count c1) (gate_count c2)
+  || (Nat.eqb (gate_count c1) (gate_count c2)
+      && Nat.ltb (sim_time c1) (sim_time c2)).
+
+
+Definition ham_sim_list : list (R -> R -> lowprog -> lowprog) :=
+  [trotter].
+
+Definition synth_list : list (R -> nat -> lowprog -> ucom ExtractionGateSet.U) :=
+  [synth_digital_ibm].
+
+Definition all_pipelines : list Pipeline :=
+  flat_map
+    (fun hs =>
+       map (fun sy =>
+              {| p_ham_sim := hs;
+                 p_synth   := sy |})
+           synth_list)
+    ham_sim_list. 
+
+
+Fixpoint greedy_best_pipeline
+  (H : lowprog) (err t : R)
+  (ps : list Pipeline)
+  (best : Pipeline)
+  (nbit : nat)
+  : Pipeline :=
+  match ps with
+  | [] => best
+  | p :: ps' =>
+      let c_best := get_cost best err t H nbit in
+      let c_p    := get_cost p err t H nbit in
+      if c_p <? c_best 
+      then greedy_best_pipeline H err t ps' p nbit
+      else greedy_best_pipeline H err t ps' best nbit
+  end.
+
+
+
+Definition qblue_compile (H : lowprog) (err t : R)
+(trotter_l : list HamSim) (synth_l : list Synth)
+: Pipeline :=
+  greedy_best_pipeline H err t () [].
+
+
 
 
