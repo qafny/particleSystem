@@ -29,7 +29,5 @@ for f in *.ml; do
   [ "$f" != "Run.ml" ] && mv "$f" ml/
 done
 
-echo "Building extracted code..."
-dune build run.exe
 
 

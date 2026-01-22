@@ -18,7 +18,7 @@ Definition m1 : nat := ceilR_N R4.
 Definition err : R := R1.
 Definition t : R := R1.
 
-Definition lowp := translate1 err t exp2 it2 (length it2).
+Definition lowp := translate_highp2circ err t exp2 it2 (length it2).
 
 
 

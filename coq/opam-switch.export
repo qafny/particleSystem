@@ -1,0 +1,88 @@
+opam-version: "2.0"
+compiler: [
+  "base-bigarray.base"
+  "base-threads.base"
+  "base-unix.base"
+  "ocaml.4.12.0"
+  "ocaml-base-compiler.4.12.0"
+  "ocaml-config.2"
+  "ocaml-options-vanilla.1"
+]
+roots: [
+  "coq.8.16.1"
+  "coq-interval.4.11.3"
+  "coq-quantumlib.1.7.0"
+  "coq-sqir.1.3.2"
+  "ocaml-base-compiler.4.12.0"
+  "voqc.0.3.0"
+  "zarith.1.14"
+]
+installed: [
+  "base-bigarray.base"
+  "base-threads.base"
+  "base-unix.base"
+  "conf-clang.2"
+  "conf-findutils.1"
+  "conf-gmp.5"
+  "conf-pkg-config.4"
+  "coq.8.16.1"
+  "coq-bignums.9.0.0+coq8.16"
+  "coq-coquelicot.3.4.4"
+  "coq-flocq.4.2.1"
+  "coq-interval.4.11.3"
+  "coq-mathcomp-ssreflect.1.19.0"
+  "coq-quantumlib.1.7.0"
+  "coq-sqir.1.3.2"
+  "dune.3.21.0"
+  "menhir.20250912"
+  "menhirCST.20250912"
+  "menhirLib.20250912"
+  "menhirSdk.20250912"
+  "ocaml.4.12.0"
+  "ocaml-base-compiler.4.12.0"
+  "ocaml-config.2"
+  "ocaml-options-vanilla.1"
+  "ocamlfind.1.9.8"
+  "openQASM.0.4.0"
+  "voqc.0.3.0"
+  "zarith.1.14"
+]
+pinned: "coq-sqir.1.3.2"
+package "coq-sqir" {
+  opam-version: "2.0"
+  version: "1.3.2"
+  synopsis: "Coq library for reasoning about quantum circuits"
+  description: """\
+inQWIRE's SQIR is a Coq library for reasoning
+ about quantum circuits"""
+  maintainer: "inQWIRE Developers"
+  authors: "inQWIRE"
+  license: "MIT"
+  homepage: "https://github.com/inQWIRE/SQIR"
+  bug-reports: "https://github.com/inQWIRE/SQIR/issues"
+  depends: [
+    "dune" {>= "3.8"}
+    "coq-interval" {>= "4.9.0"}
+    "coq-quantumlib" {>= "1.6.0"}
+    "coq" {>= "8.16"}
+    "odoc" {with-doc}
+  ]
+  build: [
+    ["dune" "subst"] {dev}
+    [
+      "dune"
+      "build"
+      "-p"
+      name
+      "-j"
+      jobs
+      "@install"
+      "@runtest" {with-test}
+      "@doc" {with-doc}
+    ]
+  ]
+  dev-repo: "git+https://github.com/inQWIRE/SQIR.git"
+  url {
+    src: "git+https://github.com/inQWIRE/SQIR.git"
+  }
+}
