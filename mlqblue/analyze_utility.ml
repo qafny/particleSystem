@@ -1,15 +1,29 @@
 open Printf
+open Lexing
+open Parserlib.Parser
+open Parserlib.Lexer
+
 open ExtractionGateSet
 open Voqc.Qasm
 open Voqc.Qasm
 open Voqc.Main
 open QBlueCompile
-	
+
+
+
+let parse_pauli input =
+ let lexbuf = Lexing.from_string input in
+  try
+     Parserlib.Parser.program Parserlib.Lexer.token lexbuf 
+    with
+  | Parserlib.Parser.Error ->
+      Printf.eprintf "Parser error near offset %d (lexeme=%S)\n"
+        (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf);
+    exit 1	
 
 (* 0.1 lowprog -> circ *)
 let lowgrog_to_circ lp =
   translate_lowp2circ 1.0 1.0 lp 5
-
 
 
 let rec get_dim_aux (u : coq_U ucom) (acc : int) : int =
@@ -137,7 +151,7 @@ let gen_counts_dir dirname =
     let (c, n) = read_qasm_and_optimize af in
     fprintf rst "%s, %d, %d\n" af n (count_total c) in
 
-  let qasm_files = Stdlib.List.map (fun f -> Filename.concat dirname f)
+  let qasm_files = List.map (fun f -> Filename.concat dirname f)
     (Stdlib.List.filter (fun x -> Filename.extension x = ".qasm") (Array.to_list (Sys.readdir dirname))) in
 	
   Stdlib.List.iter helper qasm_files;;

@@ -1,7 +1,4 @@
 (*  the rewrite rules and typing system of QBlue *)
-
-Require Import List.
-Import ListNotations.
 Require Import QuantumLib.Complex.
 Require Import QuantumLib.VectorStates.
 Require Import QBlue.QBlueSyntax.

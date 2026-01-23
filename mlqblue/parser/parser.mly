@@ -7,13 +7,13 @@
 %token PLUS TIMES NEG XPau YPau ZPau IPau EOF
 
 /* Define the "goal" nonterminal of the grammar: */
-%start main
-%type <Syntax.lowprog> main
+%start program
+%type <Syntax.lowprog> program
 
 %%
 
 
-main:
+program:
   terms EOF { $1 }
 
 terms:

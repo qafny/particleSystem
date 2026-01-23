@@ -1,5 +1,8 @@
-From QBlue Require Import Main.
+From SQIR Require Import ExtractionGateSet.
+
 From QBlue Require Import QBlueUtility.
+From QBlue Require Import QBlueCompile.
+
 
 Require Coq.extraction.Extraction.
 
@@ -13,15 +16,22 @@ Extract Inlined Constant negb => "not".
 
 (* Most List functions have the same mapping, no need to define 
  open the following if the mapping is needed *)
-Require Export List.
-(*
-Extract Inlined Constant List.fold_right => "(fun f a l -> List.fold_right f l a)".
-Extract Inlined Constant List.tl => "List.tl".
-Extract Inlined Constant List.forallb => "List.for_all".
-Extract Inlined Constant List.existsb => "List.exists".
-Extract Inlined Constant List.filter => "List.filter".
-Extract Inlined Constant List.hd_error => "(fun l -> List.nth_opt l 0)".
-*)
+(* Blacklist make extraction produce List0 rather than List, which can shadow Stdlib.List funcs *)
+Extraction Blacklist List.
+Require Import List.
+Extract Inlined Constant List.fold_left => "(fun f l acc -> Stdlib.List.fold_left f acc l)".
+Extract Inlined Constant List.fold_right => "(fun f acc l -> Stdlib.List.fold_right f l acc)".
+Extract Inlined Constant List.nth_error => "Stdlib.List.nth_opt".
+Extract Inlined Constant List.hd_error => "(fun l -> Stdlib.List.nth_opt l 0)".
+Extract Inlined Constant List.length => "Stdlib.List.length".
+Extract Inlined Constant List.app => "Stdlib.List.append".
+Extract Inlined Constant List.map => "Stdlib.List.map".
+Extract Inlined Constant List.rev => "Stdlib.List.rev".
+Extract Inlined Constant List.rev_append => "Stdlib.List.rev_append".
+Extract Inlined Constant List.forallb => "Stdlib.List.for_all".
+Extract Inlined Constant List.existsb => "Stdlib.List.exists".
+Extract Inlined Constant List.filter => "Stdlib.List.filter".
+Extract Inlined Constant List.tl => "Stdlib.List.tl".
 
 (* Standard extraction from nat -> OCaml int and Z -> OCaml int. *)
 Require Export QArith.
@@ -59,6 +69,7 @@ Extract Inlined Constant PI => "Float.pi".
 Extract Inlined Constant Reqb => "( = )".
 Extract Inlined Constant Rlt => "( < )".
 Extract Inlined Constant IZR => "Float.of_int".
+Extract Inlined Constant INR => "Float.of_int".
 (* Extracting the following to dummy values to supress warnings *)
 Extract Constant ClassicalDedekindReals.sig_forall_dec  => "failwith ""Invalid extracted value"" ".
 Extract Constant ClassicalDedekindReals.DRealRepr  => "failwith ""Invalid extracted value"" ".
@@ -79,9 +90,11 @@ Extract Inlined Constant Complex.Copp => "(fun (a, b) -> (-. a, -. b))".
 
 
 Set Extraction Optimize.
-Separate Extraction Main.lowp Main.c1 Main.m1.
+Cd "./extracted".
+Separate Extraction
+  QBlueCompile.translate_highp2circ QBlueCompile.translate_lowp2circ
 
-
-
+  (* gate decomposition pass *)
+  ExtractionGateSet.decompose_to_voqc_gates.
 
 

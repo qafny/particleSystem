@@ -1,0 +1,12 @@
+(library
+ (name parserlib)
+ (modules syntax parser lexer)
+ (libraries menhirLib))
+
+(menhir
+ (modules parser))
+
+(ocamllex
+ (modules lexer))
+
+

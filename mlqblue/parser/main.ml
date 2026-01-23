@@ -1,7 +1,7 @@
-(* main.ml *)
+open Parser
+open Lexer
 open Revert_to_lowprog
 
-(* main.ml *)
 let () =
   let input =
     if Array.length Sys.argv >= 2 then Sys.argv.(1)
@@ -9,9 +9,9 @@ let () =
   in
   let lexbuf = Lexing.from_string input in
   try
-    let prog = Parser.main Lexer.token lexbuf in
+    let prog = Parser.program Lexer.token lexbuf in
     (* Print exactly for this case: 1 pauli per term *)
-    Printf.printf "Parsed as: %s\n" (Revert_to_lowprog.string_of_lowprog ~n:1 prog;
+    Printf.printf "Parsed as: %s\n" (Revert_to_lowprog.string_of_lowprog ~n:100 prog;
     );
   with
   | Parser.Error ->

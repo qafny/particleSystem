@@ -6,12 +6,7 @@ Run `bash extract.sh` in the current directory. This will extract our Coq defini
 
 
 >> bash extract.sh
-   This will extract our Coq definitions to OCaml and compile the resulting OCaml code.
+   This will extract our Coq definitions to OCaml in `ml` directory.
 
->> ./run.sh
-   Optinal, skip extraction and generate executable
-
->> ./extraction/_build/default/run.exe
-   run the experiments   
 
 

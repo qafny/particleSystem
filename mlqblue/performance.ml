@@ -24,7 +24,5 @@ let parse_args () : string =
   else !f
 *)
 
-
-
-
+parse_pauli "+1.10 * XXX"
 
