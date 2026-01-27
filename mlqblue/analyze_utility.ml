@@ -1,4 +1,7 @@
 open Printf
+open QBlueSyntax
+open QBlueCompile
+
 open Lexing
 open Parserlib.Parser
 open Parserlib.Lexer
@@ -7,11 +10,10 @@ open ExtractionGateSet
 open Voqc.Qasm
 open Voqc.Qasm
 open Voqc.Main
-open QBlueCompile
 
 
 
-let parse_pauli input =
+let parse_pauli input : lowprog =
  let lexbuf = Lexing.from_string input in
   try
      Parserlib.Parser.program Parserlib.Lexer.token lexbuf 

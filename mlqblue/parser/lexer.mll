@@ -20,12 +20,14 @@ rule token = parse
         | eof             { EOF }
           (* binary operators *)
         | "+"    { PLUS }
+        | "-"   { MINUS }
         | "*"   { TIMES }
         | "X"    { XPau }
         | "Y"    { YPau }
         | "Z"    { ZPau }
         | "I"   { IPau }
-        | numeric+'.'(numeric*) as s { FLOAT (float_of_string s) }
+		| numeric+'.'(numeric*) as s { FLOAT (float_of_string s) }
+        | _ as c { failwith ("Unexpected character: " ^ String.make 1 c) }
 
 {(* do not modify this function: *)
 let lextest s = token (Lexing.from_string s)

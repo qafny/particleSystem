@@ -1,4 +1,4 @@
-open Syntax
+open QBlueSyntax
 
 let string_of_paulimat = function
   | Coq_paulix -> "X"

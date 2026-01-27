@@ -1,7 +1,7 @@
 (library
  (name parserlib)
- (modules syntax parser lexer)
- (libraries menhirLib))
+ (modules parser lexer)
+ (libraries menhirLib qbluelib))
 
 (menhir
  (modules parser))
