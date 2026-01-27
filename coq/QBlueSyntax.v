@@ -102,7 +102,7 @@ Inductive paulimat: Type :=
 | paulii.
 
 (* lowprog_ten: (amplitude, length, f: index -> element *)
-Definition lowprog_ten := (C * nat * (nat -> paulimat)) %type.
+Definition lowprog_ten := (C * (nat -> paulimat)) %type.
 Definition lowprog := list lowprog_ten.
 
 (* unitary gate exp(-i r ZZZ) *)

@@ -63,6 +63,6 @@ Fixpoint synth_digital_ibm (t : R) (nbit : nat) (input : lowprog)
   : ucom ExtractionGateSet.U :=
   match input with
   | [] => SKIP
-  | (amp, _, f) :: app => useq (synth_digital_ibm_apauli (t * (fst amp)) nbit f) 
+  | (amp, f) :: app => useq (synth_digital_ibm_apauli (t * (fst amp)) nbit f) 
   (synth_digital_ibm t nbit app)
   end.

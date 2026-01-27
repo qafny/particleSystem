@@ -108,7 +108,7 @@ Inductive blue_sem_low : lowprog -> psi -> psi -> Prop :=
  | bl_top : forall e s s1, forall_map (blue_sem_low e) s s1 -> blue_sem_low e s s1 
  | bl_ten : forall cprog cin cout l fpau fin fout, 
         (cout, fout) = apply_pauli l fpau fin -> 
-        blue_sem_low [(cprog, l, fpau)] [(cin, fin)] [(Cmult (Cmult cprog cin) cout, fout)].     
+        blue_sem_low [(cprog, fpau)] [(cin, fin)] [(Cmult (Cmult cprog cin) cout, fout)].     
         
 
 (* To make sure the state matches its type *)                 

@@ -16,25 +16,25 @@ Fixpoint inb {A : Type} (eqb : A -> A -> bool) (a : A) (l : list A) : bool :=
   | x :: xs => if eqb x a then true else inb eqb a xs
   end.
 
-Definition fill_pl (nbit : nat) (reg : list nat) (p : paulimat) : lowprog_ten :=
-  let f := (fun id => if (inb Nat.eqb id reg) then p else paulii) in (myC1, nbit, f).
+Definition fill_pl (reg : list nat) (p : paulimat) : lowprog_ten :=
+  let f := (fun id => if (inb Nat.eqb id reg) then p else paulii) in (myC1, f).
 
 
 (* H = exp(-i pi/4 X) exp(-i pi/4 Z) exp(-i pi/4 X). For IBM *)
 (* H unitary gate on X and Z basis.
    nbit: # of bits in circuit; qid: id of the current bit *)
-Definition H_u (nbit qid : nat) : list ugate := 
-  let xu := exp_ugate (PI/R4) (fill_pl nbit [qid] paulix) in
-  let zu := exp_ugate (PI/R4) (fill_pl nbit [qid] pauliz) in
+Definition H_u (qid : nat) : list ugate := 
+  let xu := exp_ugate (PI/R4) (fill_pl [qid] paulix) in
+  let zu := exp_ugate (PI/R4) (fill_pl [qid] pauliz) in
   xu :: zu :: xu :: nil. 
 
 (* S = exp(-i pi/4 Z) *)
-Definition S_u (nbit qid : nat) : list ugate := 
-  let zu := exp_ugate (PI/R4) (fill_pl nbit [qid] pauliz) in zu :: nil.
+Definition S_u (qid : nat) : list ugate := 
+  let zu := exp_ugate (PI/R4) (fill_pl [qid] pauliz) in zu :: nil.
 
 (* S^+ = exp(-i 7 pi/4 Z) *)
-Definition SDag_u (nbit qid : nat) : list ugate := 
-  let zu := exp_ugate (R7 * PI/R4) (fill_pl nbit [qid] pauliz) in zu :: nil. 
+Definition SDag_u (qid : nat) : list ugate := 
+  let zu := exp_ugate (R7 * PI/R4) (fill_pl [qid] pauliz) in zu :: nil. 
 
 (* Find the nonI in pauli_str. qid starts from the length of pauli_str. *)
 Fixpoint find_nonI (qid : nat) (pauli_str : nat -> paulimat) : list nat :=
@@ -50,9 +50,9 @@ Fixpoint synth_analog_ibm_helper (ml : list nat) (nbit : nat) (pauli_str : nat -
   match ml with 
   | [] => ([], [])
   | m :: ax => let (left, right) := synth_analog_ibm_helper ax nbit pauli_str in
-    let hu := H_u nbit m in
-    let su := S_u nbit m in 
-    let sdagu := SDag_u nbit m in
+    let hu := H_u m in
+    let su := S_u m in 
+    let sdagu := SDag_u m in
     let (app1, app2) := 
       match (pauli_str m) with 
       | paulix => (hu, hu)
@@ -65,7 +65,7 @@ Definition synth_analog_ibm (t : R) (nbit : nat) (pauli_str : nat -> paulimat)
   : list ugate :=
   let ml := find_nonI nbit pauli_str in 
   if Nat.leb (length ml) 2 then
-    let mid := exp_ugate t (fill_pl nbit ml pauliz) in
+    let mid := exp_ugate t (fill_pl ml pauliz) in
     let (left, right) := synth_analog_ibm_helper ml nbit pauli_str in
     left ++ [mid] ++ right
   else [].
@@ -77,9 +77,9 @@ Fixpoint synth_analog_indiana_helper (ml : list nat) (nbit : nat) (pauli_str : n
   match ml with 
   | [] => ([], [])
   | m :: ax => let (left, right) := synth_analog_indiana_helper ax nbit pauli_str in
-    let hu := H_u nbit m in
-    let su := S_u nbit m in 
-    let sdagu := SDag_u nbit m in
+    let hu := H_u m in
+    let su := S_u m in 
+    let sdagu := SDag_u m in
     let (app1, app2) := 
       match (pauli_str m) with 
       | pauliy => (su, sdagu)
@@ -91,7 +91,7 @@ Fixpoint synth_analog_indiana_helper (ml : list nat) (nbit : nat) (pauli_str : n
 Definition synth_analog_indiana (t : R) (nbit : nat) (pauli_str : nat -> paulimat) 
   : list ugate :=
   let ml := find_nonI nbit pauli_str in 
-  let mid := exp_ugate t (fill_pl nbit ml paulix) in
+  let mid := exp_ugate t (fill_pl ml paulix) in
   let (left, right) := synth_analog_indiana_helper ml nbit pauli_str in
   left ++ [mid] ++ right.
 

@@ -31,24 +31,24 @@ Definition app_pauli (s1 s2 : paulimat) : (C * paulimat) :=
 
 
 (* (a x b) x (c x d), all items are tensor *)
-Definition ten_ten_ten (p1 p2: lowprog_ten) : lowprog_ten :=
-  let '(z1, m, f) := p1 in
-  let '(z2, n, g) := p2 in   
-  (Cmult z1 z2, Nat.add m n, fun x => if x <? m then f x else g (Nat.sub x m)). 
+Definition ten_ten_ten (m1 m2: nat) (p1 p2: lowprog_ten) : lowprog_ten :=
+  let '(z1, f) := p1 in
+  let '(z2, g) := p2 in   
+  (Cmult z1 z2, fun x => if x <? m1 then f x else g (Nat.sub x m2)). 
 
 (* (a + b) x (c + d) *)
-Fixpoint plus_ten_plus (p1: lowprog) (p2: lowprog) : lowprog := 
+Fixpoint plus_ten_plus (m1 m2: nat) (p1: lowprog) (p2: lowprog) : lowprog := 
   match p1 with [] => p2
   | x::ax => let fix helper (t: lowprog_ten) (tl: lowprog) : lowprog:=
     (match tl with [] => []
-    | y::ay => (ten_ten_ten t y) :: (helper t ay) 
+    | y::ay => (ten_ten_ten m1 m2 t y) :: (helper t ay) 
     end) in
-  (helper x p2) ++ (plus_ten_plus ax p2)
+  (helper x p2) ++ (plus_ten_plus m1 m2 ax p2)
   end.
 
 (* (a x b) o (c x d), left and right must have equal number of terms *)
 Definition ten_app_ten_helper (z1 : C) (m: nat) (f: nat -> paulimat) (p2: lowprog_ten) : lowprog_ten :=
-  match p2 with (z2, m, g) => (* p2 must have the same length as m. *)
+  let (z2, g) := p2 in 
     let fix helper (idx : nat) : C * (nat -> paulimat) :=
       let (zz, pp) := app_pauli (f idx) (g idx) in
       match idx with 
@@ -60,71 +60,68 @@ Definition ten_app_ten_helper (z1 : C) (m: nat) (f: nat -> paulimat) (p2: lowpro
       end
     in
     let (zcom, fcom) := helper m in
-    (Cmult z1 (Cmult z2 zcom), m, fcom)
-  end.
+    (Cmult z1 (Cmult z2 zcom), fcom).
 
-Definition ten_app_ten (p1 p2: lowprog_ten) : lowprog_ten :=
-  match p1 with
-  | (z, m, f) => ten_app_ten_helper z m f p2
-  end.
+Definition ten_app_ten (m: nat) (p1 p2: lowprog_ten) : lowprog_ten :=
+  let  (z, f) := p1 in
+  ten_app_ten_helper z m f p2. 
         
-Fixpoint plus_app_plus (p1 p2: lowprog) : lowprog :=
-  match p1 with [] => p2
+Fixpoint plus_app_plus (m : nat) (p1 p2: lowprog) : lowprog :=
+  match p1 with 
+  | [] => p2
   | x::ax => let fix helper (a : lowprog_ten) (l : lowprog) : lowprog :=  
     (match l with [] => []
-    | b :: bx => (ten_app_ten a b) :: (helper a bx)
+    | b :: bx => (ten_app_ten m a b) :: (helper a bx)
     end) in
-  (helper x p2) ++ (plus_app_plus ax p2)
+  (helper x p2) ++ (plus_app_plus m ax p2)
   end.
 
 Definition plus_plus_plus (p1 p2: lowprog) : lowprog := p1 ++ p2.
 
-Fixpoint plus_app_ten (h1l : lowprog) (h2 : lowprog_ten) : lowprog :=
+Fixpoint plus_app_ten (m : nat) (h1l : lowprog) (h2 : lowprog_ten) : lowprog :=
   match h1l with 
   | [] => []
-  | h1 :: rem => (ten_app_ten h1 h2) :: (plus_app_ten rem h2) 
+  | h1 :: rem => (ten_app_ten m h1 h2) :: (plus_app_ten m rem h2) 
   end.
 
-Fixpoint ten_app_plus (h1 : lowprog_ten) (h2l : lowprog) : lowprog :=
+Fixpoint ten_app_plus (m : nat) (h1 : lowprog_ten) (h2l : lowprog) : lowprog :=
   match h2l with 
   | [] => []
-  | h2 :: rem => (ten_app_ten h1 h2) :: (ten_app_plus h1 rem) 
+  | h2 :: rem => (ten_app_ten m h1 h2) :: (ten_app_plus m h1 rem) 
   end.
 
 (* transformation for boson qubit mapping *)
 (* ladder operator *)
 (* |0><1| = (+) = 1/2(X+iY) *)
 Definition ladder_anni : lowprog :=
-  let x := fun x => paulix in
-  let y := fun x => pauliy in
-  (RtoC (R1/R2), 1%nat, x) :: (Cmult Ci (RtoC (R1/R2)), 1%nat, y) :: nil.
+  let x := fun n => paulix in
+  let y := fun n => pauliy in
+  (RtoC (R1/R2), x) :: (Cmult Ci (RtoC (R1/R2)), y) :: nil.
 
 (* |1><0| = (-) = 1/2(X-iY) *)
 Definition ladder_creator : lowprog :=
   let x := fun x => paulix in
   let y := fun x => pauliy in
-(RtoC (R1/R2), 1%nat, x) :: (Cmult (-Ci) (RtoC (R1/R2)), 1%nat, y) :: nil.
+(RtoC (R1/R2), x) :: (Cmult (-Ci) (RtoC (R1/R2)), y) :: nil.
 
 (* ∣1><1∣= 1/2(I−Z) *)
 Definition projector : lowprog :=
   let x := fun x => paulii in
   let y := fun x => pauliz in
-(RtoC (R1/R2), 1%nat, x) :: (Cmult (-myC1) (RtoC (R1/R2)), 1%nat, y) :: nil. 
+(RtoC (R1/R2), x) :: (Cmult (-myC1) (RtoC (R1/R2)), y) :: nil. 
 
 (* ∣0><0∣= 1/2(I+Z) *)
 Definition projector0 : lowprog :=
   let x := fun x => paulii in
   let y := fun x => pauliz in
-(RtoC (R1/R2), 1%nat, x) :: (RtoC (R1/R2), 1%nat, y) :: nil. 
+(RtoC (R1/R2), x) :: (RtoC (R1/R2), y) :: nil. 
 
 
 (* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
 Fixpoint mult_ampli_hplus (z : C) (p : lowprog) : lowprog :=
-  let helper (t : lowprog_ten) : lowprog_ten := 
-    match t with (z1, m, f) => (Cmult z z1, m, f) end in
   match p with [] => []
-  | x :: ax => (helper x) :: (mult_ampli_hplus z ax)
-  end.
+  | x :: ax => ((Cmult z (fst x)), (snd x)) :: (mult_ampli_hplus z ax)
+  end.  
 
 
 (* arXiv:2307.06580v. Eq. 34-36 *)
@@ -160,35 +157,40 @@ Definition state2pauli (n1 n2 Nq : nat) : lowprog :=
   let n2l := cnt2bin n2 Nq in
   state2pauli_helper n1l n2l.
 
+
+(* Nb: max capacity of a bosonic site *)  
 Definition boson_creator (Nb : nat) : lowprog :=
-  let nterm : nat := Nat.sub (Nat.pow 2 Nb) 2 in
+  let Nq := Nat.log2_up (Nb + 1) in
+  let nterm : nat := ((Nat.pow 2 Nq) - 1)%nat in
   let fix helper (n : nat) :=
     match n with 
     | 0 => []
-    | S n' => let amp := RtoC (sqrt (INR (n+1))) in
-      let aterm := mult_ampli_hplus amp (state2pauli (Nat.add n 1) n Nb) in
-      plus_plus_plus aterm (helper n') 
+    | S n' => let amp := RtoC (sqrt (INR (n))) in
+      let aterm := mult_ampli_hplus amp (state2pauli n n' Nq) in
+      plus_plus_plus aterm (helper n')
     end in
   helper nterm.
 
 Definition boson_annihilator (Nb : nat) : lowprog :=
-  let nterm : nat := Nat.sub (Nat.pow 2 Nb) 2 in
+  let Nq := Nat.log2_up (Nb + 1) in
+  let nterm : nat := ((Nat.pow 2 Nq) - 1)%nat in
   let fix helper (n : nat) :=
     match n with 
     | 0 => []
-    | S n' => let amp := RtoC (sqrt (INR (n + 1))) in
-      let aterm := mult_ampli_hplus amp (state2pauli n (Nat.add n 1) Nb) in
-      plus_plus_plus aterm (helper n') 
+    | S n' => let amp := RtoC (sqrt (INR (n))) in
+      let aterm := mult_ampli_hplus amp (state2pauli n' n Nq) in
+      plus_plus_plus aterm (helper n')
     end in
   helper nterm.
 
 Definition boson_numerator (Nb : nat) : lowprog :=
-  let nterm : nat := Nat.sub (Nat.pow 2 Nb) 1 in
+  let Nq := Nat.log2_up (Nb + 1) in 
+  let nterm : nat := Nat.pow 2 Nq in
   let fix helper (n : nat) :=
     match n with 
     | 0 => []
     | S n' => let amp := RtoC (INR n) in
-      let aterm := mult_ampli_hplus amp (state2pauli n n Nb) in
+      let aterm := mult_ampli_hplus amp (state2pauli n' n' Nq) in
       plus_plus_plus aterm (helper n') 
     end in
   helper nterm.
@@ -196,14 +198,17 @@ Definition boson_numerator (Nb : nat) : lowprog :=
 
 (* The following method are based on onehot. Not used. To be consistent with fermion *)  
 (* b_i^+ = SUM_{0 to Nb-1} sqrt(n+1) I_0 x ... x (+)_n x (-)_(n+1) ... x I_Nb *)
+(* Nb: max number of boson particles in one site *)
 Definition boson_creator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
     let amp := RtoC (sqrt (INR (n) + R1)) in
-    let left : lowprog := [(myC1, n, fun x => paulii)] in
-    let right : lowprog := [(myC1, Nat.sub Nb (Nat.add n 1), fun x => paulii)] in 
-    let mid : lowprog := (plus_ten_plus ladder_anni ladder_creator) in
+    let nleft := n in
+    let nright := Nat.sub Nb (Nat.add n 1) in
+    let left : lowprog := [(myC1, fun x => paulii)] in
+    let right : lowprog := [(myC1, fun x => paulii)] in 
+    let mid : lowprog := (plus_ten_plus 1%nat 1%nat ladder_anni ladder_creator) in
     let mid1 : lowprog := mult_ampli_hplus amp mid in
-    plus_plus_plus (plus_plus_plus left mid1) right 
+    plus_ten_plus (nleft + 1%nat) nright (plus_ten_plus nleft 1%nat left mid1) right 
   in
   let fix helper (n : nat) : lowprog :=
     match n with
@@ -216,11 +221,13 @@ Definition boson_creator_bin (Nb : nat) : lowprog :=
 Definition boson_annihilator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
     let amp := RtoC (sqrt (INR n)) in
-    let left : lowprog := [(myC1, Nat.sub n 1, fun _ => paulii)] in
-    let right : lowprog := [(myC1, Nat.sub Nb n, fun _ => paulii)] in
-    let mid : lowprog := plus_ten_plus ladder_creator ladder_anni in
+    let nleft := Nat.sub n 1 in
+    let nright := Nat.sub Nb n in 
+    let left : lowprog := [(myC1, fun _ => paulii)] in
+    let right : lowprog := [(myC1, fun _ => paulii)] in
+    let mid : lowprog := plus_ten_plus 1 1 ladder_creator ladder_anni in
     let mid1 : lowprog := mult_ampli_hplus amp mid in
-    plus_ten_plus (plus_ten_plus left mid1) right
+    plus_ten_plus (nleft + 1) nright (plus_ten_plus nleft 1 left mid1) right
   in
   let fix helper (n : nat) : lowprog :=
     match n with
@@ -234,10 +241,12 @@ Definition boson_annihilator_bin (Nb : nat) : lowprog :=
 Definition boson_numerator_bin (Nb : nat) : lowprog :=
   let term (n : nat) : lowprog :=
     let amp := RtoC (INR n) in
-    let left : lowprog := [(myC1, n, fun _ => paulii)] in
-    let right : lowprog := [(myC1, Nat.sub Nb n, fun _ => paulii)] in
+    let nleft := n in
+    let nright := Nat.sub Nb n in
+    let left : lowprog := [(myC1, fun _ => paulii)] in
+    let right : lowprog := [(myC1, fun _ => paulii)] in
     let mid : lowprog := mult_ampli_hplus amp projector in
-    plus_ten_plus (plus_ten_plus left mid) right
+    plus_ten_plus (nleft + 1) nright (plus_ten_plus nleft 1 left mid) right
   in
   let fix helper (n : nat) : lowprog :=
     match n with
@@ -247,78 +256,45 @@ Definition boson_numerator_bin (Nb : nat) : lowprog :=
   in if Nb <? 0 then [] else helper Nb.
 
 
-(*************** Transform highprog to lowprog. ************)
+(*************** Transform blueExp to lowprog. Another pass is highprog -> lowprog ************)
+Local Open Scope nat_scope.
 (* Jordan-Wigner transformation for fermions *)
 (* a_n^+ = Z_1 x Z_2 ... Z_n-1 x (-)_n, only apply z to the sites of fermion *)
-(* n: apply Z/I to the first n sites; par: the particle type of each site *)
-Definition fermion_zop_helper (p : option particle) : lowprog_ten :=
+(* n: # bits; idx: idx_th bit is apply by the ladder op; (idx-1) bits from 0th are applied I/Z;
+  par: the particle type of each site *)
+Definition fermion_zop (p : option particle) : paulimat :=
   match p with 
-  | Some Fermi => (myC1, 1%nat, fun _ => pauliz)
-  | _ => (myC1, 1%nat, fun _ => paulii)
+  | Some Fem => pauliz
+  | _ => paulii (* Bos or None; NOTE to check length of par list is long enough so it never will be None *)
   end.
 
-(* get [Z, I]^{ten (n-1)} *)
-Fixpoint fermion_zop (n : nat) (par : list (option particle)) : lowprog :=
-  match n, par with 
-  | 0, _ => [] 
-  | _, [] => []
-  | S n', x :: ax => (fermion_zop_helper x) :: (fermion_zop n' ax)
-  end.
+Definition fermion_creator (n idx : nat) (par : list particle) : lowprog :=
+  let nleft := idx in
+  let nright := (n - idx - 1)%nat in
+  let left : lowprog := [(myC1, fun k => fermion_zop (nth_error par k))] in
+  let right : lowprog := [(myC1, fun _ => paulii)] in
+  plus_ten_plus nleft (nright+1)%nat left (plus_ten_plus 1%nat nright ladder_creator right).
 
-Definition fermion_creator (n : nat) (par : list (option particle)) : lowprog :=
-  let left : lowprog := fermion_zop (Nat.sub n 1) par in
-  plus_ten_plus left ladder_creator.
 
-Definition fermion_anni (n : nat) (par : list (option particle)) : lowprog :=
-  let left : lowprog := fermion_zop (Nat.sub n 1) par in
-  plus_ten_plus left ladder_anni.
- 
+Definition fermion_anni (n idx : nat) (par : list particle) : lowprog :=
+  let nleft := idx in
+  let nright := (n - idx - 1)%nat in
+  let left : lowprog := [(myC1, fun k => fermion_zop (nth_error par k))] in
+  let right : lowprog := [(myC1, fun _ => paulii)] in
+  plus_ten_plus nleft (nright+1)%nat left (plus_ten_plus 1%nat nright ladder_anni right).
+
 
 (* Get the number of qubits in each site. *)
-Definition get_nqbit_hsnd (input : hsnd) : nat :=
+Definition get_nqbit_bexp_unit (input : particle) : nat :=
   match input with
-  | anni (Bos n) | creator (Bos n) | hunit (Bos n) => n
-  | anni Fem | creator Fem | hunit Fem => 2
+  | Bos n => Nat.log2_up (n+1)
+  | Fem => 1
   end.
 
-
-Fixpoint get_nqbit_ten (len : nat) (f : nat -> list hsnd) : list nat :=
-  match len with 
-  | 0 => []
-  | S n => match (f n) with 
-    | [] => [] (* no snd in this site *)
-    | x :: ax => (* e1 o e2 ... o en *)
-    (get_nqbit_hsnd x) :: (get_nqbit_ten n f)
-    end
-  end.
-
-Definition get_nqbit (input : highprog) : list nat :=
-  match input with 
+Fixpoint get_nqbit_bexp (input :iota) : list nat :=
+  match input with
   | [] => []
-  | (_, len, f) :: ax => get_nqbit_ten len f (* just take the first one to get the nqubits *)
-  end.
-
-(* Get the particle type of each site. *)
-Definition get_particle_vs_site_hsnd (input : hsnd) : option particle :=
-  match input with 
-    | anni p | creator p | hunit p => Some p
-   
-  end.
-
-Fixpoint get_particle_vs_site_ten (len : nat) (f : nat -> list hsnd) : list (option particle) :=
-  match len with 
-  | 0 => []
-  | S n => match (f n) with 
-    | [] => [] (* no snd in this site *)
-    | x :: ax => (* e1 o e2 ... o en *)
-    (get_particle_vs_site_hsnd x) :: (get_particle_vs_site_ten n f)
-    end
-  end.
-
-Definition get_particle_vs_site (input : highprog) : list (option particle) :=
-  match input with 
-  | [] => []
-  | (_, len, f) :: ax => get_particle_vs_site_ten len f
+  | x :: ax => (get_nqbit_bexp_unit x) :: get_nqbit_bexp ax
   end.
 
 (* count the number of qubits before and after the target site *)
@@ -339,102 +315,6 @@ Fixpoint sum_post_qubits (input : list nat) (sid : nat) : nat :=
 (* Compute sum_pre_qubits [3; 5; 2; 7] 1.
 Compute sum_post_qubits [3; 5; 2; 7] 1. *)
 
-(* Transform a creator / annhialator. sid: its site id. qbits: # of qubits in each site *)
-Definition snd_map_h0 (input : hsnd) (sid : nat) (qbits : list nat) 
-  (par : list (option particle)) : lowprog := 
-  let prebits := sum_pre_qubits qbits sid in
-  let postbits := sum_post_qubits qbits sid in
-  let left := [(myC1, prebits, fun x => paulii)] in 
-  let right := [(myC1, postbits, fun x => paulii)] in 
-  match input with 
-  | anni (Bos Nb) => plus_ten_plus (plus_ten_plus left (boson_annihilator Nb)) right 
-  | creator (Bos Nb) => plus_ten_plus (plus_ten_plus left (boson_creator Nb)) right 
-  | anni Fem => plus_ten_plus (fermion_anni sid par) right
-  | creator Fem => plus_ten_plus (fermion_creator sid par) right
-  | hunit Fem => (
-    let mid := [(myC1, 2%nat, fun x => paulii)] in
-    plus_ten_plus (plus_ten_plus left mid) right)
-  | hunit (Bos Nb) => (
-    let mid := [(myC1, Nb, fun x => paulii)] in
-    plus_ten_plus (plus_ten_plus left mid) right) 
-  end.
-
-(* transform e1 o e2 *)
-Fixpoint snd_map_h1 (sid : nat) (input : list hsnd) (qbits : list nat) 
-  (par : list (option particle)) : lowprog := 
-  match input with [] => []
-    | x :: ax => plus_app_plus (snd_map_h0 x sid qbits par) (snd_map_h1 sid ax qbits par) end.
-
-(* transform e1 x e2 *)
-Definition snd_map_h2 (input : highprog_ten) (qbits : list nat) 
-  (par : list (option particle)) : lowprog := 
-  match input with (z, m, f) =>
-  let fix helper (id: nat) : lowprog :=
-    match id with 0 => []
-    | S m' => plus_ten_plus (snd_map_h1 id (f id) qbits par) (helper m')
-    end
-    in mult_ampli_hplus z (helper m)
-  end.
-
-(* transform e1 + e2 *)
-Fixpoint snd_map_h3 (input : list highprog_ten) (qbits : list nat) 
-  (par : list (option particle)) : lowprog :=
-  match input with 
-  | [] => []
-  | x :: ax => plus_plus_plus (snd_map_h2 x qbits par) (snd_map_h3 ax qbits par)
-  end.
-
-(* Transform from high program to low *)
-Definition snd_map (input : highprog) : lowprog :=
-  let qubits := get_nqbit input in
-  let particle := get_particle_vs_site input in
-  snd_map_h3 input qubits particle.
-(*************** Transform highprog to lowprog. End. ************)
-
-
-
-(*************** Transform blueExp to lowprog. Another pass is highprog -> lowprog ************)
-Local Open Scope nat_scope.
-(* Jordan-Wigner transformation for fermions *)
-(* a_n^+ = Z_1 x Z_2 ... Z_n-1 x (-)_n, only apply z to the sites of fermion *)
-(* n: apply Z/I to the first n sites; par: the particle type of each site *)
-Definition fermion_zop_helper1 (p : particle) : lowprog_ten :=
-  match p with 
-  | Fem => (myC1, 1%nat, fun _ => pauliz)
-  | _ => (myC1, 1%nat, fun _ => paulii)
-  end.
-
-(* get [Z, I]^{ten (n-1)} *)
-Fixpoint fermion_zop1 (n : nat) (par : list particle) : lowprog :=
-  match n, par with 
-  | 0%nat, _ => [] 
-  | _, [] => []
-  | S n', x :: ax => (fermion_zop_helper1 x) :: (fermion_zop1 n' ax)
-  end.
-
-Definition fermion_creator1 (n : nat) (par : list particle) : lowprog :=
-  let left : lowprog := fermion_zop1 (Nat.sub n 1) par in
-  plus_ten_plus left ladder_creator.
-
-Definition fermion_anni1 (n : nat) (par : list particle) : lowprog :=
-  let left : lowprog := fermion_zop1 (Nat.sub n 1) par in
-  plus_ten_plus left ladder_anni.
- 
-
-(* Get the number of qubits in each site. *)
-Definition get_nqbit_bexp_unit (input : particle) : nat :=
-  match input with
-  | Bos n => n
-  | Fem => 2
-  end.
-
-Fixpoint get_nqbit_bexp (input :iota) : list nat :=
-  match input with
-  | [] => []
-  | x :: ax => (get_nqbit_bexp_unit x) :: get_nqbit_bexp ax
-  end.
-
-
 (* Transform a creator / annhialator / ID. *)
 Definition bexp_map_hunit
   (sid : nat) (* sid: its site id. *)
@@ -442,31 +322,26 @@ Definition bexp_map_hunit
   (par : iota) (* particle type of each site *)
   (flag : nat) (* flag: 0: anni, 1: creator, 2: id *)
   : lowprog :=
-  let preb   := sum_pre_qubits  qbits sid in
-  let postb  := sum_post_qubits qbits sid in
-  let left   := [(myC1, preb,  fun _ => paulii)] in
-  let right  := [(myC1, postb, fun _ => paulii)] in
+  let nleft   := sum_pre_qubits  qbits sid in
+  let nright  := sum_post_qubits qbits sid in
+  let IDten := [(myC1, fun _ => paulii)] in
   match nth_error par sid with
   | Some (Bos nb) =>
+      let nq := Nat.log2_up (nb + 1) in (* nq: @ of bits for (Bos nb) type *)
       match flag with
       | 0%nat =>
-          plus_ten_plus (plus_ten_plus left (boson_annihilator nb)) right
+          plus_ten_plus (nleft + nq) nright (plus_ten_plus nleft nq IDten (boson_annihilator nb)) IDten
       | 1%nat =>
-          plus_ten_plus (plus_ten_plus left (boson_creator nb)) right
-      | _ =>
-          let mid := [(myC1, nb, fun _ => paulii)] in
-          plus_ten_plus (plus_ten_plus left mid) right
+          plus_ten_plus (nleft + nq) nright (plus_ten_plus nleft nq IDten (boson_creator nb)) IDten
+      | _ => IDten
       end
 
   | Some Fem =>
       match flag with
-      | 0%nat =>
-          plus_ten_plus (fermion_anni1 sid par) right
-      | 1%nat =>
-          plus_ten_plus (fermion_creator1 sid par) right
-      | _ =>
-          let mid := [(myC1, 2%nat, fun _ => paulii)] in
-          plus_ten_plus (plus_ten_plus left mid) right
+      (* position id (from 0th) of nleft is applied ladder op *)
+      | 0%nat => fermion_anni (nleft + 1 + nright)%nat nleft par
+      | 1%nat => fermion_creator (nleft + 1 + nright)%nat nleft par 
+      | _ => IDten
       end
 
   | _ => []
@@ -486,7 +361,7 @@ Fixpoint count_sites (input : blueExp) : nat :=
 (* helper func to transform blueExp to lowprog *)
 Fixpoint bexp_map (input : blueExp) (qbits : list nat) (par : list particle)
   (st_id : nat) : lowprog :=
-  match input with 
+  match input with
   | HId => bexp_map_hunit st_id qbits par 2
   | HAnni => bexp_map_hunit st_id qbits par 0
   | HDag x => match x with
@@ -494,19 +369,28 @@ Fixpoint bexp_map (input : blueExp) (qbits : list nat) (par : list particle)
     | _ => []
     end
   | HPlus e1 e2 => plus_plus_plus (bexp_map e1 qbits par st_id) (bexp_map e2 qbits par st_id)
-  | HApp e1 e2 => plus_app_plus (bexp_map e1 qbits par st_id) (bexp_map e2 qbits par st_id) 
-  | HTensor e1 e2 => 
-    let nsite := count_sites e1 in
-    plus_ten_plus (bexp_map e1 qbits par st_id) (bexp_map e2 qbits par (st_id + nsite))
+  | HApp e1 e2 => 
+    let par1 := skipn st_id qbits in
+    let nsite := count_sites e1 in 
+    let nq := sum_pre_qubits par1 nsite in (* calculate the qubits of this exp *)
+    plus_app_plus nq (bexp_map e1 qbits par st_id) (bexp_map e2 qbits par st_id)
+  
+  | HTensor e1 e2 =>
+    let par1 := skipn st_id qbits in
+    let nsite1 := count_sites e1 in
+    let nq1 := sum_pre_qubits par1 nsite1 in
+    let par2 := skipn nsite1 par1 in
+    let nsite2 := count_sites e2 in 
+    let nq2 := sum_pre_qubits par2 nsite2 in
+    plus_ten_plus nq1 nq2 (bexp_map e1 qbits par st_id) (bexp_map e2 qbits par (st_id + nsite1))
   end.
+
 
 (* Transform from blueExp to lowprog *)
 Definition bexp_to_lowprog (input : blueExp) (input_type : iota) : lowprog :=
   let qbits := get_nqbit_bexp input_type in
-  (*************** Another pass to transform blueExp to lowprog. End. ************)
   bexp_map input qbits input_type 0%nat.
-
-
+(*************** Another pass to transform blueExp to lowprog. End. ************)
 
 
 
@@ -554,3 +438,112 @@ Fixpoint state_type_bin (input : iota) : iota :=
   end.
 
 
+(*************** Transform highprog to lowprog. ************)
+(* Currently this pass require the form e1 + e2, e1 := e3 tensor e4, e3 := e5 app e6, e5 := anni | creator | hunit.
+If this high level will be used later, need to debug *)
+(*
+(* Jordan-Wigner transformation for fermions 
+Quantum chemistry beyond Born-Oppenheimer approximation by Libor Veis Eq 17-18 *)
+(* a_n^+ = Z_1 x Z_2 ... Z_n-1 x (-)_n, only apply z to the sites of fermion *)
+(* idx: position of the bit of ladder op; apply Z (same fermion)/I (other) to bits before it; 
+n: total bits;
+par: the particle type of each site *)
+
+(* Get the number of qubits in each site. *)
+Definition get_nqbit_hsnd (input : hsnd) : nat :=
+  match input with
+  | anni (Bos n) | creator (Bos n) | hunit (Bos n) => n
+  | anni Fem | creator Fem | hunit Fem => 2
+  end.
+
+
+Fixpoint get_nqbit_ten (len : nat) (f : nat -> list hsnd) : list nat :=
+  match len with 
+  | 0 => []
+  | S n => match (f n) with 
+    | [] => [] (* no snd in this site *)
+    | x :: ax => (* e1 o e2 ... o en *)
+    (get_nqbit_hsnd x) :: (get_nqbit_ten n f)
+    end
+  end.
+
+Definition get_nqbit (input : highprog) : list nat :=
+  match input with 
+  | [] => []
+  | (_, len, f) :: ax => get_nqbit_ten len f (* just take the first one to get the nqubits *)
+  end.
+
+(* Get the particle type of each site. *)
+Definition get_particle_vs_site_hsnd (input : hsnd) : particle :=
+  match input with 
+    | anni p | creator p | hunit p => p
+  end.
+
+Fixpoint get_particle_vs_site_ten (len : nat) (f : nat -> list hsnd) : list particle :=
+  match len with 
+  | 0 => []
+  | S n => match (f n) with 
+    | [] => [] (* no snd in this site *)
+    | x :: ax => (* e1 o e2 ... o en *)
+    (get_particle_vs_site_hsnd x) :: (get_particle_vs_site_ten n f)
+    end
+  end.
+
+Definition get_particle_vs_site (input : highprog) : list particle :=
+  match input with 
+  | [] => []
+  | (_, len, f) :: ax => get_particle_vs_site_ten len f
+  end.
+
+
+(* Transform a creator / annhialator. sid: its site id. qbits: # of qubits in each site *)
+Definition snd_map_h0 (input : hsnd) (sid : nat) (qbits : list nat) 
+  (par : list particle) : lowprog := 
+  let nleft := sum_pre_qubits qbits sid in
+  let nright := sum_post_qubits qbits sid in
+  let IDten := [(myC1, fun x => paulii)] in 
+  match input with 
+  | anni (Bos Nb) => plus_ten_plus (nleft+Nb)%nat nright 
+    (plus_ten_plus nleft Nb IDten (boson_annihilator Nb)) IDten 
+  | creator (Bos Nb) => plus_ten_plus (nleft+Nb)%nat nright 
+    (plus_ten_plus nleft Nb IDten (boson_creator Nb)) IDten 
+  | anni Fem => fermion_anni (nleft + nright + 2)%nat sid par
+  | creator Fem => fermion_creator (nleft + nright + 2)%nat sid par
+  | hunit Fem => [(myC1, fun x => paulii)]
+  | hunit (Bos Nb) => [(myC1, fun x => paulii)]
+  end.
+
+(* transform e1 o e2 *)
+Fixpoint snd_map_h1 (sid : nat) (input : list hsnd) (qbits : list nat) 
+  (par : list particle) : lowprog := 
+  match input with [] => []
+    | x :: ax => plus_app_plus (fold_left Nat.add qbits 0%nat)
+     (snd_map_h0 x sid qbits par) (snd_map_h1 sid ax qbits par) 
+  end.
+
+(* transform e1 x e2 *)
+Definition snd_map_h2 (input : highprog_ten) (qbits : list nat) 
+  (par : list particle) : lowprog := 
+  match input with (z, m, f) =>
+  let fix helper (id: nat) : lowprog :=
+    match id with 0 => []
+    | S m' => plus_ten_plus (snd_map_h1 id (f id) qbits par) (helper m')
+    end
+    in mult_ampli_hplus z (helper m)
+  end.
+
+(* transform e1 + e2 *)
+Fixpoint snd_map_h3 (input : list highprog_ten) (qbits : list nat) 
+  (par : list (option particle)) : lowprog :=
+  match input with 
+  | [] => []
+  | x :: ax => plus_plus_plus (snd_map_h2 x qbits par) (snd_map_h3 ax qbits par)
+  end.
+
+(* Transform from high program to low *)
+Definition snd_map (input : highprog) : lowprog :=
+  let qubits := get_nqbit input in
+  let particle := get_particle_vs_site input in
+  snd_map_h3 input qubits particle.
+(*************** Transform highprog to lowprog. End. ************)
+*)

@@ -12,7 +12,7 @@ Require Import QBlue.QBlueParTransJwt.
 Fixpoint cal_lambda (input : lowprog) : R :=
   match input with
   | [] => R0
-  | (z, _, _) :: rem => Rplus (fst z) (cal_lambda rem)
+  | (z, _) :: rem => Rplus (fst z) (cal_lambda rem)
   end.
 
 Definition trotter_step (err t : R) (input : lowprog) : nat := 
@@ -26,9 +26,9 @@ exp(-it (H1 + H2 + H3)) => exp(-it/N (H1 + H2 + H3))
 Fixpoint trotter_astep (N: nat) (ap : lowprog) : lowprog :=
   match ap with
   | [] => []
-  | (z, n, f) :: aap => 
+  | (z, f) :: aap => 
     let z' : C := (Rdiv (fst z) (INR N), Rdiv (snd z) (INR N)) in 
-    (z', n, f) :: (trotter_astep N aap)
+    (z', f) :: (trotter_astep N aap)
   end.
 
 Fixpoint trotter_nstep (N: nat) (ap : lowprog) : lowprog :=

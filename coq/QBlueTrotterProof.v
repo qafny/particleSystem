@@ -163,10 +163,10 @@ Definition expand_1st_trotter_error_1st (t : R) (d : nat) (hlist : lowprog) : R 
 
 
 (* Gold error: || e^{-i H t} - PI_i (e^{-i Hi t}) || *)
-Definition cal_1st_trotter_error (t : R) (lp : lowprog) : R :=
+Definition cal_1st_trotter_error (t : R) (d : nat) (lp : lowprog) : R :=
   match lp with 
   | [] => 0
-  | (_, d, _) :: rem =>
+  | _ =>
     let exp_mat_gold := approx_transit_exp_aterm t (length lp) d lp in 
     let exp_mat_approx := approx_transit_exp_aterm t 0%nat d lp in
     norm (2^d) (Mminus exp_mat_gold exp_mat_approx)
@@ -175,17 +175,17 @@ Definition cal_1st_trotter_error (t : R) (lp : lowprog) : R :=
 
 (* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
-Definition commutator_tt (h1 h2 : lowprog_ten) : lowprog :=
-  [ten_app_ten h1 h2] ++ (mult_ampli_hplus (-myC1) [ten_app_ten h2 h1]).
+Definition commutator_tt (d : nat) (h1 h2 : lowprog_ten) : lowprog :=
+  [ten_app_ten d h1 h2] ++ (mult_ampli_hplus (-myC1) [ten_app_ten d h2 h1]).
 
-Definition commutator_st (h1 : lowprog) (h2 : lowprog_ten) : lowprog :=
-  let l1 := plus_app_ten h1 h2 in
-  let l2 := mult_ampli_hplus (-myC1) (ten_app_plus h2 h1) in
+Definition commutator_st (d : nat) (h1 : lowprog) (h2 : lowprog_ten) : lowprog :=
+  let l1 := plus_app_ten d h1 h2 in
+  let l2 := mult_ampli_hplus (-myC1) (ten_app_plus d h2 h1) in
   plus_plus_plus l1 l2.
 
-Definition commutator_ts (h1 : lowprog_ten) (h2 : lowprog) : lowprog :=
-  let l1 := ten_app_plus h1 h2 in
-  let l2 := mult_ampli_hplus (-myC1) (plus_app_ten h2 h1) in
+Definition commutator_ts (d : nat) (h1 : lowprog_ten) (h2 : lowprog) : lowprog :=
+  let l1 := ten_app_plus d h1 h2 in
+  let l2 := mult_ampli_hplus (-myC1) (plus_app_ten d h2 h1) in
   plus_plus_plus l1 l2.
 
 
@@ -207,11 +207,11 @@ Fixpoint trotter_error_bound_helper (k d : nat) (hlist : lowprog) : R :=
   end.
 
 (* 1st-order error: t^2/2 * ∑_{γ1=1}^Γ || ∑_{γ2=γ1+1}^Γ [Hγ2, Hγ1] *)
-Definition cal_1st_trotter_error_bound (t : R) (hlist : lowprog) : R :=
+Definition cal_1st_trotter_error_bound (t : R) (d : nat) (hlist : lowprog) : R :=
   let gamma := length hlist in
   match hlist with
   | [] => 0
-  | (_, d, _) :: _ => (t*t/2) * (trotter_error_bound_helper gamma d hlist)
+  | _ => (t*t/2) * (trotter_error_bound_helper gamma d hlist)
   end. 
 
 (* TODO: check Hermitian *)
@@ -382,8 +382,8 @@ Qed.
 Lemma helper_norm_le_2est : forall t k d lp,
   expand_1st_trotter_error_1est_helper t k d lp 
   <= (t*t/2) * trotter_error_bound_helper k d lp.
-Proof.
   intros t k d lp.
+  Proof.
   induction k as [|k IH].
   - simpl. 
     rewrite Rmult_0_r. 
@@ -406,12 +406,12 @@ Qed.
 
 (* Trotterization: error bound for the first-order Lie-Trotter formula *)
 (* A Theory of Trotter Error, by Andrew M. Childs etc *)
-Theorem first_trotter_error_bound: forall (lp: lowprog) (t err err_bound : R),
-  err = cal_1st_trotter_error t lp
-  -> err_bound = cal_1st_trotter_error_bound t lp 
+Theorem first_trotter_error_bound: forall (d : nat) (lp: lowprog) (t err err_bound : R),
+  err = cal_1st_trotter_error t d lp
+  -> err_bound = cal_1st_trotter_error_bound t d lp 
   -> err <= err_bound.
 Proof.
-  intros lp t err err_bound H H1.
+  intros d lp t err err_bound H H1.
   subst err.
   unfold cal_1st_trotter_error.
   destruct lp as [| l lpa].
@@ -421,7 +421,7 @@ Proof.
 
   - (* lp has at least one tensor term *)
   remember (l::lpa) as lp' eqn:Hlp.
-  destruct l as [[amp d] f].
+  destruct l as [amp f].
   set (eterm := approx_transit_exp_aterm t 0%nat d lp').
   set(sterm := approx_transit_exp_aterm t (length lp') d lp').
   
@@ -486,10 +486,10 @@ Definition approx_trotter_exp_2nd (t : R) (hlist : lowprog) (d : nat) : Square (
 
 (* Gold error for 2nd-order trotter:
 n: # of paulis in one pauli string *)
-Definition cal_2nd_trotter_error (t : R) (lp : lowprog) : R :=
+Definition cal_2nd_trotter_error (t : R) (n : nat) (lp : lowprog) : R :=
   match lp with 
   | [] => 0
-  | (_, n, _) :: rem =>
+  | _ =>
     let exp_mat_gold := expH (2^n) t (lowprog2mat lp n) in 
     let exp_mat_approx := approx_trotter_exp_2nd t lp n in
     norm (2^n) (Mplus exp_mat_approx (scale (-R1) exp_mat_gold))
@@ -497,23 +497,23 @@ Definition cal_2nd_trotter_error (t : R) (lp : lowprog) : R :=
 
 
 (* Tight error bound for the second-order Suzuki formula. *)
-Definition commutator_ss (h1 : lowprog) (h2 : lowprog) : lowprog :=
-  let l1 := plus_app_plus h1 h2 in
-  let l2 := mult_ampli_hplus (-myC1) (plus_app_plus h2 h1) in
+Definition commutator_ss (d : nat) (h1 : lowprog) (h2 : lowprog) : lowprog :=
+  let l1 := plus_app_plus d h1 h2 in
+  let l2 := mult_ampli_hplus (-myC1) (plus_app_plus d h2 h1) in
   plus_plus_plus l1 l2.
 
-Definition suzuki_comm_sum_helper (hlist : lowprog) : (lowprog * lowprog) :=
+Definition suzuki_comm_sum_helper (d : nat) (hlist : lowprog) : (lowprog * lowprog) :=
   match hlist with 
   | [] => ([], [])
   | x :: rem => 
-    let t1 := commutator_ss rem (commutator_st rem x) in
-    let t2 := commutator_ts x (commutator_ts x rem) in (t1, t2)
+    let t1 := commutator_ss d rem (commutator_st d rem x) in
+    let t2 := commutator_ts d x (commutator_ts d x rem) in (t1, t2)
     end.
 
 Fixpoint suzuki_error_bound_helper (n : nat) (t: R) (hlist : lowprog) : R :=
   match hlist with
   | [] => 0
-  | x :: ax => let (term1, term2) := suzuki_comm_sum_helper hlist in
+  | x :: ax => let (term1, term2) := suzuki_comm_sum_helper n hlist in
       let t1 := lowprog2mat term1 n in
       let t2 := lowprog2mat term2 n in
       Rplus (Rplus (Rdiv ((norm (2 ^ n) t1) * (pow t 3)) 12)
@@ -522,16 +522,16 @@ Fixpoint suzuki_error_bound_helper (n : nat) (t: R) (hlist : lowprog) : R :=
   end.
 
 (* 2nd-order error *)
-Definition cal_2nd_trotter_error_bound (t : R) (hlist : lowprog) : R :=
+Definition cal_2nd_trotter_error_bound (t : R) (d : nat) (hlist : lowprog) : R :=
   match hlist with
   | [] => 0
-  | (_, n, _) :: _ => suzuki_error_bound_helper n t hlist
+  | _ => suzuki_error_bound_helper d t hlist
   end.
 
 
-Theorem second_trotter_error_bound: forall (lp: lowprog) (t err err_bound : R),
-  err = cal_2nd_trotter_error t lp
-  -> err_bound = cal_2nd_trotter_error_bound t lp 
+Theorem second_trotter_error_bound: forall (d : nat) (lp: lowprog) (t err err_bound : R),
+  err = cal_2nd_trotter_error t d lp
+  -> err_bound = cal_2nd_trotter_error_bound t d lp 
   -> err <= err_bound.
 Proof.
 Admitted.
