@@ -1,4 +1,5 @@
 open Printf
+open Str
 open QBlueSyntax
 open QBlueCompile
 
@@ -12,20 +13,46 @@ open Voqc.Qasm
 open Voqc.Main
 
 
+(* -2 read files of strings *)
+let read_string_file (filename : string) : string =
+  let _ = Printf.printf "---- Analyzing %s: ----\n" filename in
+  let ic = open_in filename in
+  let n = in_channel_length ic in
+  let s = really_input_string ic n in
+  close_in ic; s
 
+
+(* find dimension of string *)
+let get_dim_pauli (input : string) : int =
+  let helper s =  
+  let re = regexp "\\*[ \t\r\n]*\\([IXYZ]+\\)\\([ \t\r\n]\\|[+-]\\|$\\)" in
+  try
+    ignore (search_forward re s 0);   (* find first occurrence anywhere *)
+    Some (matched_group 1 s)
+  with Not_found ->
+    None
+  in
+
+  match (helper input) with
+  | None -> 0
+  | Some op -> String.length op
+
+
+(* -1 parse string into lowprog *)
 let parse_pauli input : lowprog =
  let lexbuf = Lexing.from_string input in
   try
      Parserlib.Parser.program Parserlib.Lexer.token lexbuf 
-    with
+  with
   | Parserlib.Parser.Error ->
       Printf.eprintf "Parser error near offset %d (lexeme=%S)\n"
         (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf);
     exit 1	
 
+
 (* 0.1 lowprog -> circ *)
-let lowgrog_to_circ lp =
-  translate_lowp2circ 1.0 1.0 lp 5
+let lowgrog_to_circ err t nq lp =
+  translate_lowp2circ err t lp nq
 
 
 let rec get_dim_aux (u : coq_U ucom) (acc : int) : int =
@@ -114,8 +141,12 @@ let log2up m = int_of_float (ceil (log10 (float_of_int (2 * m)) /. log10 2.0))
 
 (* 2.1 qasm file -> optimize -> gate count *)
 let read_qasm_and_optimize fname =
-  let (c, n) = read_qasm fname in 
-  (optimize c, n);;
+  let (c0, n) = read_qasm fname in 
+  let c1 = convert_to_rzq c0 in
+  let cg = make_lnn_ring 5 in
+  let la = trivial_layout 5 in
+  let c2 = decompose_swaps (swap_route c1 la cg (lnn_ring_path_finding_fun 5)) cg in
+  (optimize c2, n);;
 
 
 (* 2.2 qasm file -> optimize path 2 -> gate count *)
@@ -142,10 +173,11 @@ let read_qasm_and_optimize1 fname =
   (c3, n);;
 
 
-(* 3. write result.txt for a bunch of files under a dir *)
-let gen_counts_dir dirname =
+(* 3. write result.txt for a bunch of qasm files under a dir *)
+let summarize_results dirname =
+  let rst_file = "result." ^ dirname in
 
-  let rst = open_out "result.txt" in
+  let rst = open_out rst_file in
 
   let _ = fprintf rst "Name, #qubits, #gates\n" in
 
@@ -159,9 +191,23 @@ let gen_counts_dir dirname =
   Stdlib.List.iter helper qasm_files;;
 
 
+(* flow from input string to qasm file *)
+let string_to_qasm (str_input : string) (err : float) (t : float) (fout : string) =
+  let lp = parse_pauli str_input in
+  let nqbit = get_dim_pauli str_input in
+  let ham = lowgrog_to_circ err t nqbit lp in
+  write_qasm_file fout ham;;
+
+
+let string_files_to_qasm_files (err : float) (t : float) (input_files : string list) (out_dir : string) = 
+  let helper af =
+    let s = read_string_file af in
+	let fout = af ^ ".qasm" in
+	string_to_qasm s err t fout in
+  Stdlib.List.iter helper input_files;;
+
 
 (*
-
 (* Argument parsing *)
 let parse_args () : string =
   let f = ref "" in
