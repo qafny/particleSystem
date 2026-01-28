@@ -1,5 +1,6 @@
 {
 open Parser
+exception LexError of string
 }
 
 let numeric = ['0' - '9']
@@ -27,7 +28,8 @@ rule token = parse
         | "Z"    { ZPau }
         | "I"   { IPau }
 		| numeric+'.'(numeric*) as s { FLOAT (float_of_string s) }
-        | _ as c { failwith ("Unexpected character: " ^ String.make 1 c) }
+        | _ as c { raise (LexError ("Unexpected character: " ^ String.make 1 c)) }
+		   
 
 {(* do not modify this function: *)
 let lextest s = token (Lexing.from_string s)

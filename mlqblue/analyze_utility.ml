@@ -39,15 +39,18 @@ let get_dim_pauli (input : string) : int =
 
 
 (* -1 parse string into lowprog *)
-let parse_pauli input : lowprog =
- let lexbuf = Lexing.from_string input in
+let parse_pauli (input : string) : (lowprog, string) result =
+  let lexbuf = Lexing.from_string input in
   try
-     Parserlib.Parser.program Parserlib.Lexer.token lexbuf 
+    Ok (Parserlib.Parser.program Parserlib.Lexer.token lexbuf)
   with
   | Parserlib.Parser.Error ->
-      Printf.eprintf "Parser error near offset %d (lexeme=%S)\n"
-        (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf);
-    exit 1	
+      Error (Printf.sprintf "Parser error near offset %d (lexeme=%S)"
+               (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf))
+  | Parserlib.Lexer.LexError msg ->
+      Error (Printf.sprintf "Lexer error near offset %d (lexeme=%S): %s"
+               (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf) msg)
+
 
 
 (* 0.1 lowprog -> circ *)
@@ -188,18 +191,24 @@ let summarize_results dirname rst_file =
 
 
 (* flow from input string to qasm file *)
-let string_to_qasm (str_input : string) (err : float) (t : float) (fout : string) =
-  let lp = parse_pauli str_input in
-  let nqbit = get_dim_pauli str_input in
-  let ham = lowgrog_to_circ err t nqbit lp in
-  write_qasm_file fout ham;;
+let string_to_qasm ?(filename="") (str_input : string) (err : float) (t : float) (fout : string) =
+  match parse_pauli str_input with 
+  | Ok lp ->
+    let nqbit = get_dim_pauli str_input in
+    let ham = lowgrog_to_circ err t nqbit lp in
+    write_qasm_file fout ham
+
+    (* skip this file *)
+  | Error msg ->
+    Printf.eprintf "Skipping file %s: %s\n" filename msg;
+    ()
 
 
 let string_files_to_qasm_files (err : float) (t : float) (input_files : string list) (out_dir : string) = 
   let helper af =
     let s = read_string_file af in
 	let fout = af ^ ".qasm" in
-	string_to_qasm s err t fout in
+	string_to_qasm ~filename:af s err t fout in
   Stdlib.List.iter helper input_files;;
 
 
