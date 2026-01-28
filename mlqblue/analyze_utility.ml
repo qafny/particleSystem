@@ -139,38 +139,36 @@ let log2up m = int_of_float (ceil (log10 (float_of_int (2 * m)) /. log10 2.0))
 
 
 
-(* 2.1 qasm file -> optimize -> gate count *)
-let read_qasm_and_optimize fname =
-  let (c0, n) = read_qasm fname in 
-  let c1 = convert_to_rzq c0 in
-  let cg = make_lnn_ring 5 in
-  let la = trivial_layout 5 in
-  let c2 = decompose_swaps (swap_route c1 la cg (lnn_ring_path_finding_fun 5)) cg in
-  (optimize c2, n);;
-
-
-(* 2.2 qasm file -> optimize path 2 -> gate count *)
-let read_qasm_and_optimize1 fname = 
-  let (c0, n) = read_qasm fname in
+(* 2. qasm file -> optimize -> gate count *)
+let print_optimization_detail n c0 c1 c2 c3 = 
   let _ = printf "Input circuit has %d gates and uses %d qubits.\n" (count_total c0) n in
   
-  (* Convert to the RzQ gate set and print more statistics *)
-  let c1 = convert_to_rzq c0 in
   let _ = printf "After decomposition to the RzQ gate set, the circuit uses %d gates : { H : %d, X : %d, Rzq : %d, CX : %d }.\n"
             (count_total c1) (count_H c1) (count_X c1) (count_Rzq c1) (count_CX c1) in
   
+  let _ = printf "After mapping to 5bit LNN ring arch, the circuit uses %d gates : { H : %d, X : %d, Rzq : %d, CX : %d }.\n"
+            (count_total c2) (count_H c2) (count_X c2) (count_Rzq c2) (count_CX c2) in
+  
+  printf "After optimization, the circuit uses %d gates : { U1 : %d, U2 : %d, U3 : %d, CX : %d }.\n"
+    (count_total c3) (count_U1 c3) (count_U2 c3) (count_U3 c3) (count_CX c3);;
+
+		
+let read_qasm_and_optimize ?(verbose=false) fname =
+  let (c0, n) = read_qasm fname in 
+
+  (* Convert to the RzQ gate set and print more statistics *)
+  let c1 = convert_to_rzq c0 in
+
   (* Map to the 5 qubit LNN ring architecture *)
   let cg = make_lnn_ring 5 in
   let la = trivial_layout 5 in
   let c2 = decompose_swaps (swap_route c1 la cg (lnn_ring_path_finding_fun 5)) cg in
-  let _ = printf "After mapping to 5bit LNN ring arch, the circuit uses %d gates : { H : %d, X : %d, Rzq : %d, CX : %d }.\n"
-            (count_total c2) (count_H c2) (count_X c2) (count_Rzq c2) (count_CX c2) in
-  
+
   (* Optimize again *)
   let c3 = optimize c2 in
-  let _ = printf "After optimization, the circuit uses %d gates : { U1 : %d, U2 : %d, U3 : %d, CX : %d }.\n"
-    (count_total c3) (count_U1 c3) (count_U2 c3) (count_U3 c3) (count_CX c3) in
-  (c3, n);;
+  if verbose then print_optimization_detail n c0 c1 c2 c3;
+  (c0, c3, n);;
+
 
 
 (* 3. write result.txt for a bunch of qasm files under a dir *)
@@ -179,11 +177,11 @@ let summarize_results dirname =
 
   let rst = open_out rst_file in
 
-  let _ = fprintf rst "Name, #qubits, #gates\n" in
+  let _ = fprintf rst "Name, #qubits, #gates (original), #gates (optimized), #U2 gates (optimized)\n" in
 
   let helper af = 
-    let (c, n) = read_qasm_and_optimize af in
-    fprintf rst "%s, %d, %d\n" af n (count_total c) in
+    let (c0, c1, n) = read_qasm_and_optimize af in
+    fprintf rst "%s, %d, %d, %d, %d\n" af n (count_total c0) (count_total c1) (count_U2 c1) in
 
   let qasm_files = List.map (fun f -> Filename.concat dirname f)
     (Stdlib.List.filter (fun x -> Filename.extension x = ".qasm") (Array.to_list (Sys.readdir dirname))) in
@@ -205,26 +203,5 @@ let string_files_to_qasm_files (err : float) (t : float) (input_files : string l
 	let fout = af ^ ".qasm" in
 	string_to_qasm s err t fout in
   Stdlib.List.iter helper input_files;;
-
-
-(*
-(* Argument parsing *)
-let parse_args () : string =
-  let f = ref "" in
-  let usage = "usage: " ^ Sys.argv.(0) ^ " -f string" in
-  let speclist = [
-    ("-f", Arg.Set_string f, ": input program");
-  ] in
-  Arg.parse speclist (fun x -> raise (Arg.Bad ("Bad argument: " ^ x))) usage;
-  if !f = "" 
-  then (
-    Printf.eprintf "ERROR: Input file (-f) required.\n";
-    exit 2) 
-  else !f
-
-
-let fout = parse_args ();;
-gen_qasm_from_lowp (Main.lowp) fout;;
-*)
 
 

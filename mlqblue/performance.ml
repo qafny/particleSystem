@@ -5,9 +5,9 @@ open Analyze_utility
 
 
 let analyze_one_circuit (str_input : string) (err : float) (t :  float) =
-  let fout = "tmp.qasm" in
+  let fout = ".tmp.qasm" in
   let _ = string_to_qasm str_input err t fout in
-  read_qasm_and_optimize1 fout;;
+  read_qasm_and_optimize  ~verbose:true fout;;
  
 
 let is_txt_file (path : string) : bool =
@@ -62,7 +62,7 @@ let run (err : float) (t : float) (path : string) : unit =
 let () =
   (* default values when -e / -t are not provided *)
   let err = ref 1.0 in
-  let t   = ref 1.0 in
+  let t   = ref 0.01 in
   let path : string option ref = ref None in
 
   let set_path s =

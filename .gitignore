@@ -17,6 +17,7 @@ Makefile
 mlqblue/qbluelib
 extract_coq/ml
 extract_coq/src/extracted
+.tmp*
 
 # Ignore coq_makefile-generated files
 .coqdeps.d
