@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1191caec9346cb45f4803d28128cf2077c3f84b4c2bf6494f629fe816b8fb72a
-size 640
+## QBlue Benchmark Datasets
+
+This directory contains benchmark datasets of qubit Hamiltonians expressed as sums of Pauli strings.
+The datasets include molecular Hamiltonians generated under different fermion-to-qubit mappings
+(e.g., Jordan–Wigner and Bravyi–Kitaev) and are used for benchmarking Hamiltonian simulation
+and synthesis pipelines.
+
+These Hamiltonians can be generated using **Qiskit Nature**, starting from second-quantized
+electronic structure problems and mapping them to qubit operators.
+
+Some large benchmark files are stored using **Git LFS**. After cloning the repository, run:
+
+    git lfs install
+    git lfs pull
+

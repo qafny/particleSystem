@@ -19,6 +19,8 @@ extract_coq/ml
 extract_coq/src/extracted
 .tmp*
 
+*.DS_Store
+
 # Ignore coq_makefile-generated files
 .coqdeps.d
 CoqMakefile

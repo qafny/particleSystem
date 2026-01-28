@@ -17,14 +17,14 @@
 
 3. compile, run ```dune build```
 
-4. run performance: ```dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>]```
+4. run performance: ```dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-o <string>]```
 
 - the first argument can be a txt-format file containing hamiltonian, it will translate this hamiltonian and print out the results; 
-	or a directory containing these files, it will generate the txt-format file named "result_*" at the same level of the input directory.
+	or a directory containing these files, it will generate the txt-format file named by the -o flag in the current directory.
 
 - flag `-e`, followed by the input error for the hamiltonian translation. If not set, the default error is 1.0.
 
 - flag `-t`, followed by the input phase `t` in `exp(-itH)`. If not set, the default error is 0.01.
 
-
+- flag `-o`, followed by the input string to save the results. USE THIS ONLY WHEN input is a directory. If not set, the default error is `result.txt`.
 

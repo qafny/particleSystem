@@ -172,9 +172,7 @@ let read_qasm_and_optimize ?(verbose=false) fname =
 
 
 (* 3. write result.txt for a bunch of qasm files under a dir *)
-let summarize_results dirname =
-  let rst_file = "result." ^ dirname in
-
+let summarize_results dirname rst_file =
   let rst = open_out rst_file in
 
   let _ = fprintf rst "Name, #qubits, #gates (original), #gates (optimized), #U2 gates (optimized)\n" in

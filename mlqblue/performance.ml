@@ -37,13 +37,13 @@ let rec collect_txt_files (dir : string) : string list =
   loop []
 
 
-let run (err : float) (t : float) (path : string) : unit =
+let run (err : float) (t : float) (fout : string) (path : string) : unit =
   match (Unix.lstat path).st_kind with
   | Unix.S_DIR ->
       let files = collect_txt_files path in
       let out_dir = path ^ "_qasm" in
       string_files_to_qasm_files err t files out_dir;
-      summarize_results path
+      summarize_results path fout
 
   | Unix.S_REG ->
       if not (is_txt_file path) then (
@@ -61,8 +61,9 @@ let run (err : float) (t : float) (path : string) : unit =
 (* CLI entrypoint *)
 let () =
   (* default values when -e / -t are not provided *)
-  let err = ref 1.0 in
-  let t   = ref 0.01 in
+  let err  = ref 1.0 in
+  let t    = ref 0.01 in
+  let fout = ref "result.txt" in
   let path : string option ref = ref None in
 
   let set_path s =
@@ -74,12 +75,13 @@ let () =
   let speclist =
     [
       ("-e", Arg.Set_float err, "Set err (float). Default: 1.0");
-      ("-t", Arg.Set_float t,   "Set t (float). Default: 1.0");
+      ("-t", Arg.Set_float t,   "Set t (float). Default: 0.01");
+      ("-o", Arg.Set_string fout,   "Set o (string). Default: result.txt");
     ]
   in
 
   let usage =
-    "Usage: dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>]"
+    "Usage: dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-o <string>]"
   in
 
   Arg.parse speclist set_path usage;
@@ -92,6 +94,6 @@ let () =
         exit 2
   in
 
-  run !err !t path
+  run !err !t !fout path
 
 
