@@ -17,7 +17,7 @@ Fixpoint inb {A : Type} (eqb : A -> A -> bool) (a : A) (l : list A) : bool :=
   end.
 
 Definition fill_pl (reg : list nat) (p : paulimat) : lowprog_ten :=
-  let f := (fun id => if (inb Nat.eqb id reg) then p else paulii) in (myC1, f).
+  let f := (fun id => if (inb Nat.eqb id reg) then p else paulii) in (C1, f).
 
 
 (* H = exp(-i pi/4 X) exp(-i pi/4 Z) exp(-i pi/4 X). For IBM *)

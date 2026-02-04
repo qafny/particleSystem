@@ -7,10 +7,11 @@ From SQIR Require Import ExtractionGateSet.
 
 Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueParTransJwt.
-Require Import QBlue.QBlueTrotter.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueSemantics.
 Require Import QBlue.QBlueType.
+Require Import QBlue.QBlueTrotter.
+Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueSynthDigital.
 
 
@@ -31,10 +32,15 @@ Definition translate (err t : R) (exp : blueExp) (it : iota) : lowprog :=
   let lowp : lowprog := trotter err t lowp1 in lowp.
 
 
-Definition translate_lowp2circ (err t : R) (lp : lowprog) (nbit : nat)
-  : ucom ExtractionGateSet.U := 
+Definition translate_lowp2circ_std (err t : R) (lp : lowprog) (nbit : nat) : ucom ExtractionGateSet.U := 
   let lowp : lowprog := trotter err t lp in 
   synth_digital_ibm t nbit lowp.
+
+Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) 
+: ucom ExtractionGateSet.U := 
+  let lowp : lowprog := trotter_qdrift err t lp in 
+  synth_digital_ibm t nbit lowp.
+
 
 
 Record Pipeline := {

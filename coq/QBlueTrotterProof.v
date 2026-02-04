@@ -176,16 +176,16 @@ Definition cal_1st_trotter_error (t : R) (d : nat) (lp : lowprog) : R :=
 (* The error bound for the Lie-Trotter *)
 (* Commutator: [A, B] = AB - BA *)
 Definition commutator_tt (d : nat) (h1 h2 : lowprog_ten) : lowprog :=
-  [ten_app_ten d h1 h2] ++ (mult_ampli_hplus (-myC1) [ten_app_ten d h2 h1]).
+  [ten_app_ten d h1 h2] ++ (mult_ampli_hplus (-C1) [ten_app_ten d h2 h1]).
 
 Definition commutator_st (d : nat) (h1 : lowprog) (h2 : lowprog_ten) : lowprog :=
   let l1 := plus_app_ten d h1 h2 in
-  let l2 := mult_ampli_hplus (-myC1) (ten_app_plus d h2 h1) in
+  let l2 := mult_ampli_hplus (-C1) (ten_app_plus d h2 h1) in
   plus_plus_plus l1 l2.
 
 Definition commutator_ts (d : nat) (h1 : lowprog_ten) (h2 : lowprog) : lowprog :=
   let l1 := ten_app_plus d h1 h2 in
-  let l2 := mult_ampli_hplus (-myC1) (plus_app_ten d h2 h1) in
+  let l2 := mult_ampli_hplus (-C1) (plus_app_ten d h2 h1) in
   plus_plus_plus l1 l2.
 
 
@@ -499,7 +499,7 @@ Definition cal_2nd_trotter_error (t : R) (n : nat) (lp : lowprog) : R :=
 (* Tight error bound for the second-order Suzuki formula. *)
 Definition commutator_ss (d : nat) (h1 : lowprog) (h2 : lowprog) : lowprog :=
   let l1 := plus_app_plus d h1 h2 in
-  let l2 := mult_ampli_hplus (-myC1) (plus_app_plus d h2 h1) in
+  let l2 := mult_ampli_hplus (-C1) (plus_app_plus d h2 h1) in
   plus_plus_plus l1 l2.
 
 Definition suzuki_comm_sum_helper (d : nat) (hlist : lowprog) : (lowprog * lowprog) :=

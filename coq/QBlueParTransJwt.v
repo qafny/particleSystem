@@ -16,11 +16,11 @@ Definition paulimat_eqb (a b : paulimat) : bool :=
 
 Definition app_pauli (s1 s2 : paulimat) : (C * paulimat) :=
   match s1, s2 with
-  | paulii, x => (myC1, x)
-  | x, paulii => (myC1, x)
-  | paulix, paulix => (myC1, paulii)
-  | pauliy, pauliy => (myC1, paulii)
-  | pauliz, pauliz => (myC1, paulii)
+  | paulii, x => (C1, x)
+  | x, paulii => (C1, x)
+  | paulix, paulix => (C1, paulii)
+  | pauliy, pauliy => (C1, paulii)
+  | pauliz, pauliz => (C1, paulii)
   | paulix, pauliy => (Ci, pauliz)
   | pauliy, paulix => (Copp Ci, pauliz)
   | pauliy, pauliz => (Ci, paulix)
@@ -108,7 +108,7 @@ Definition ladder_creator : lowprog :=
 Definition projector : lowprog :=
   let x := fun x => paulii in
   let y := fun x => pauliz in
-(RtoC (R1/R2), x) :: (Cmult (-myC1) (RtoC (R1/R2)), y) :: nil. 
+(RtoC (R1/R2), x) :: (Cmult (-C1) (RtoC (R1/R2)), y) :: nil. 
 
 (* ∣0><0∣= 1/2(I+Z) *)
 Definition projector0 : lowprog :=
@@ -204,8 +204,8 @@ Definition boson_creator_bin (Nb : nat) : lowprog :=
     let amp := RtoC (sqrt (INR (n) + R1)) in
     let nleft := n in
     let nright := Nat.sub Nb (Nat.add n 1) in
-    let left : lowprog := [(myC1, fun x => paulii)] in
-    let right : lowprog := [(myC1, fun x => paulii)] in 
+    let left : lowprog := [(C1, fun x => paulii)] in
+    let right : lowprog := [(C1, fun x => paulii)] in 
     let mid : lowprog := (plus_ten_plus 1%nat 1%nat ladder_anni ladder_creator) in
     let mid1 : lowprog := mult_ampli_hplus amp mid in
     plus_ten_plus (nleft + 1%nat) nright (plus_ten_plus nleft 1%nat left mid1) right 
@@ -223,8 +223,8 @@ Definition boson_annihilator_bin (Nb : nat) : lowprog :=
     let amp := RtoC (sqrt (INR n)) in
     let nleft := Nat.sub n 1 in
     let nright := Nat.sub Nb n in 
-    let left : lowprog := [(myC1, fun _ => paulii)] in
-    let right : lowprog := [(myC1, fun _ => paulii)] in
+    let left : lowprog := [(C1, fun _ => paulii)] in
+    let right : lowprog := [(C1, fun _ => paulii)] in
     let mid : lowprog := plus_ten_plus 1 1 ladder_creator ladder_anni in
     let mid1 : lowprog := mult_ampli_hplus amp mid in
     plus_ten_plus (nleft + 1) nright (plus_ten_plus nleft 1 left mid1) right
@@ -243,8 +243,8 @@ Definition boson_numerator_bin (Nb : nat) : lowprog :=
     let amp := RtoC (INR n) in
     let nleft := n in
     let nright := Nat.sub Nb n in
-    let left : lowprog := [(myC1, fun _ => paulii)] in
-    let right : lowprog := [(myC1, fun _ => paulii)] in
+    let left : lowprog := [(C1, fun _ => paulii)] in
+    let right : lowprog := [(C1, fun _ => paulii)] in
     let mid : lowprog := mult_ampli_hplus amp projector in
     plus_ten_plus (nleft + 1) nright (plus_ten_plus nleft 1 left mid) right
   in
@@ -271,16 +271,16 @@ Definition fermion_zop (p : option particle) : paulimat :=
 Definition fermion_creator (n idx : nat) (par : list particle) : lowprog :=
   let nleft := idx in
   let nright := (n - idx - 1)%nat in
-  let left : lowprog := [(myC1, fun k => fermion_zop (nth_error par k))] in
-  let right : lowprog := [(myC1, fun _ => paulii)] in
+  let left : lowprog := [(C1, fun k => fermion_zop (nth_error par k))] in
+  let right : lowprog := [(C1, fun _ => paulii)] in
   plus_ten_plus nleft (nright+1)%nat left (plus_ten_plus 1%nat nright ladder_creator right).
 
 
 Definition fermion_anni (n idx : nat) (par : list particle) : lowprog :=
   let nleft := idx in
   let nright := (n - idx - 1)%nat in
-  let left : lowprog := [(myC1, fun k => fermion_zop (nth_error par k))] in
-  let right : lowprog := [(myC1, fun _ => paulii)] in
+  let left : lowprog := [(C1, fun k => fermion_zop (nth_error par k))] in
+  let right : lowprog := [(C1, fun _ => paulii)] in
   plus_ten_plus nleft (nright+1)%nat left (plus_ten_plus 1%nat nright ladder_anni right).
 
 
@@ -324,7 +324,7 @@ Definition bexp_map_hunit
   : lowprog :=
   let nleft   := sum_pre_qubits  qbits sid in
   let nright  := sum_post_qubits qbits sid in
-  let IDten := [(myC1, fun _ => paulii)] in
+  let IDten := [(C1, fun _ => paulii)] in
   match nth_error par sid with
   | Some (Bos nb) =>
       let nq := Nat.log2_up (nb + 1) in (* nq: @ of bits for (Bos nb) type *)
@@ -501,7 +501,7 @@ Definition snd_map_h0 (input : hsnd) (sid : nat) (qbits : list nat)
   (par : list particle) : lowprog := 
   let nleft := sum_pre_qubits qbits sid in
   let nright := sum_post_qubits qbits sid in
-  let IDten := [(myC1, fun x => paulii)] in 
+  let IDten := [(C1, fun x => paulii)] in 
   match input with 
   | anni (Bos Nb) => plus_ten_plus (nleft+Nb)%nat nright 
     (plus_ten_plus nleft Nb IDten (boson_annihilator Nb)) IDten 
@@ -509,8 +509,8 @@ Definition snd_map_h0 (input : hsnd) (sid : nat) (qbits : list nat)
     (plus_ten_plus nleft Nb IDten (boson_creator Nb)) IDten 
   | anni Fem => fermion_anni (nleft + nright + 2)%nat sid par
   | creator Fem => fermion_creator (nleft + nright + 2)%nat sid par
-  | hunit Fem => [(myC1, fun x => paulii)]
-  | hunit (Bos Nb) => [(myC1, fun x => paulii)]
+  | hunit Fem => [(C1, fun x => paulii)]
+  | hunit (Bos Nb) => [(C1, fun x => paulii)]
   end.
 
 (* transform e1 o e2 *)

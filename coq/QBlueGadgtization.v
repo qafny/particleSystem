@@ -51,8 +51,8 @@ Fixpoint Hanc_aterm_helper (n1 n2 nori: nat) (pre post : lowprog_ten) (hori : lo
 (* H_s^{anc} = sum_{1<=i<j} sum_{i<j<=k} [1/2 (I - Z_{s,i} Z_{s,j})] *)
 Definition Hanc_aterm (nc nht htid k : nat) : lowprog := 
   let hori : lowprog := Hanc_fstq k in
-  let pre : lowprog_ten := (myC1, fun _ => paulii) in 
-  let post := (myC1, fun _ => paulii) in 
+  let pre : lowprog_ten := (C1, fun _ => paulii) in 
+  let post := (C1, fun _ => paulii) in 
   Hanc_aterm_helper (nc + htid * k) ((nht-htid-1) * k) k pre post hori.
 
 
@@ -67,7 +67,7 @@ Definition Hanc_aterm (nc nht htid k : nat) : lowprog :=
 Definition HV_qcomp (nht htid ncid k kid nq: nat) (ht : lowprog_ten) : lowprog_ten := 
   let (amp, f) := ht in  
   let id_anc := (nq + htid * k + kid) in
-  let cs : C := if kid =? 1 then amp else myC1 in
+  let cs : C := if kid =? 1 then amp else C1 in
   let g := fun idx => 
     (if (idx =? ncid) && (Nat.leb ncid nq) then f idx 
       else if idx =? id_anc then paulix 

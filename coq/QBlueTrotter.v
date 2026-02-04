@@ -3,21 +3,16 @@ Require Import QuantumLib.Complex.
 
 Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
-Require Import QBlue.QBlueParTransJwt.
 
 
-(* Currently we decide N using epsilon based on QDrift error boundary. *)
-(* err = 2 * lamda^2 * t^2 / N *)
+(* Use "Toward the first quantum simulation with quantum speedup" by Andrew M. Childs etc.
+Proposition F.3: err = (L Lamda t)^2 / r exp(L Lamda t / r) *)
+(* Lamda = largest norm of Hi, it is 1 for pauli tensors *)
+(* r = N/L; L: number of terms *)
 (* TODO: need prove z = fst z *)
-Fixpoint cal_lambda (input : lowprog) : R :=
-  match input with
-  | [] => R0
-  | (z, _) :: rem => Rplus (fst z) (cal_lambda rem)
-  end.
-
 Definition trotter_step (err t : R) (input : lowprog) : nat := 
-  let lambda := cal_lambda input in
-	ceilR_N (R2 * lambda * lambda * t * t / err).
+  let L := length input in
+  ceilR_N ((INR L) * (INR L) * t * t / err).
 
 
 (* split input into small steps by standard trotterization 
@@ -34,7 +29,7 @@ Fixpoint trotter_astep (N: nat) (ap : lowprog) : lowprog :=
 Fixpoint trotter_nstep (N: nat) (ap : lowprog) : lowprog :=
   match N with 
   | 0 => []
-  | S n => plus_plus_plus ap (trotter_nstep n ap)
+  | S n => ap ++ (trotter_nstep n ap)
   end.
 
 (* Low-level Hamiltonian after being trottered into more steps. *)

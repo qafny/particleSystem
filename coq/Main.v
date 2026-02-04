@@ -11,10 +11,6 @@ Definition it1 := Fem :: nil.
 Definition exp2 := HTensor HAnni HId.
 Definition it2 := Fem :: (Bos 4%nat) :: nil.
 
-Definition c1 := myC1.
-Definition m1 : nat := ceilR_N R4.
-
-
 Definition err : R := R1.
 Definition t : R := R1.
 

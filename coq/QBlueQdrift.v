@@ -1,51 +1,40 @@
-Require Import QuantumLib.Matrix.
+From Coq Require Import List.
 
-(* Qdrift trotterization *)
-(* Definition of L: a matrix. It relies on Hamiltonian H. It operates on the state |phi><phi| *)
-(* L(rho) = i(H rho - rho H). This matrix takes rho and do commutation i[H, rho] *)
-Variable nd : nat. 
-Definition TransL := Matrix nd nd.
-Parameter L_h : list R. (* hj *)
-Parameter L_Lori : list TransL. (* Lj *)           
-Parameter L_sampledID : list nat. (* Sampled IDs. if L1 = [1,3,3,2], chose L[3] twice *)
-(* Diamond norm, the sum of singular values in the space with ancilla qubits considered. *)
-Parameter norm_diamond : TransL -> R.
-(* Transform L to exp(tL). *)
-Parameter expH1 : R -> TransL -> TransL.
+Require Import QBlue.QBlueUtility.
+Require Import QBlue.QBlueSyntax.
 
-(* Require each Lj to have a strength hj *)
-Axiom length_match :
-  length L_sampledID = length L_h.
-
-Definition lambda : R := fold_right Rplus 0%R L_h.
-
-(* Theorem for qdrift. *)
-(* calculate L = sum_j (hj Lj) *)
-Fixpoint sum_L (prob : list R) (ll : list TransL) : TransL :=
-  match prob, ll with 
-  | [], _ => Zero
-  | _, [] => Zero
-  | p :: pl, m :: ml => Mplus (scale p m) (sum_L pl ll) 
+(* Decide N using epsilon based on QDrift error boundary. *)
+(* err = 2 * lamda^2 * t^2 / N *)
+(* TODO: need prove z = fst z *)
+(* sum up the first n weights in sum_i wi Hi *)
+Fixpoint sum_w (input : lowprog) (n : nat) : R :=
+  match n, input with
+  | 0, _ => R0
+  | _, [] => R0
+  | S n', (z, _) :: rem => (Rabs (fst z) + (sum_w rem n'))%R
   end.
 
-Definition tau (t : R) : R := lambda * t / (INR (length L_sampledID)).
+Definition qdrift_step (err t : R) (input : lowprog) : nat := 
+  let lambda := sum_w input (length input) in
+	ceilR_N (R2 * lambda * lambda * t * t / err).
 
-(* Generate the sampled list based on the sampled ID idl and the original list vl. *)
-Fixpoint sum_sampled_exp (t : R) (idl : list nat) : TransL :=
-  match idl with
-  | [] => Zero
-  | id :: ax =>
-    match (nth_error L_Lori id, nth_error L_h id) with
-    | (None, _) => Zero
-    | (_, None) => Zero
-    | (Some Lj, Some hj) => Mplus (scale (hj / lambda) (expH1 (tau t) Lj)) (sum_sampled_exp t ax)
-    end
+Fixpoint sample_once (lp : lowprog) (bound : R) : lowprog :=
+  match lp with 
+  | [] => []
+  | (w, h) :: app => if Rltb (random_float bound) (Rabs (fst w)) 
+    then if Rltb (fst w) R0 
+      then [(RtoC (Rminus R0 R1), h)] 
+      else [(C1, h)]
+    else sample_once app bound
+  end. 
+
+Fixpoint sample (lp : lowprog) (N : nat) (totw : R) : lowprog :=
+  match N with
+  | O => []
+  | S n' => (sample_once lp totw) ++ (sample lp n' totw)
   end.
 
-Definition qdrift_error (t : R) : R :=   
-  let N : R := INR (length L_sampledID) in
-  let gold := expH1 (t / N) (sum_L L_h L_Lori) in
-  let approx := sum_sampled_exp t L_sampledID in
-  0.5 * (norm_diamond (Mplus gold (-1 .* approx))).
-
-
+Definition trotter_qdrift (err t: R) (lp : lowprog) : lowprog :=
+  let N := qdrift_step err t lp in
+  let totw := sum_w lp (length lp) in
+  sample lp N totw.

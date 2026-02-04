@@ -12,7 +12,6 @@ QBlueParTransJwtProof.v
 QBlueTrotter.v
 QBlueTrotterProof.v
 QBlueQdrift.v
-QBlueQdriftProof.v
 QBlueSynth.v
 QBlueSynthDigital.v
 QBlueCompile.v

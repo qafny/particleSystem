@@ -59,6 +59,7 @@ Extract Inlined Constant Rinv => "((/.) 1.0)".
 Extract Inlined Constant Rminus => "( -. )".
 Extract Inlined Constant Rdiv => "( /. )".
 Extract Inlined Constant sqrt => "sqrt".
+Extract Inlined Constant Rabs => "abs_float".
 Extract Inlined Constant pow => "(fun a b -> a ** Z.to_float b)".
 Extract Inlined Constant cos => "cos".
 Extract Inlined Constant sin => "sin".
@@ -67,7 +68,7 @@ Extract Inlined Constant atan => "atan".
 Extract Inlined Constant acos => "acos".
 Extract Inlined Constant PI => "Float.pi".
 Extract Inlined Constant Reqb => "( = )".
-Extract Inlined Constant Rlt => "( < )".
+Extract Inlined Constant Rltb => "Stdlib.( < )".
 Extract Inlined Constant IZR => "Float.of_int".
 Extract Inlined Constant INR => "Float.of_int".
 (* Extracting the following to dummy values to supress warnings *)
@@ -88,13 +89,17 @@ Extract Inlined Constant Ci => "(0.0, 1.0)".
 Extract Inlined Constant Cmult => "(fun (a1, a2) (b1, b2) -> (a1 *. b1 -. a2 *. b2, a1 *. b2 +. a2 *. b1))".
 Extract Inlined Constant Complex.Copp => "(fun (a, b) -> (-. a, -. b))".
 
+(* Extract Random generators to Ocaml Random *)
+Extract Inlined Constant random_float => "Random.float".
 
 Set Extraction Optimize.
 Cd "./extracted".
 Separate Extraction
-  QBlueCompile.translate_highp2circ QBlueCompile.translate_lowp2circ
+  QBlueCompile.translate_highp2circ 
+  QBlueCompile.translate_lowp2circ_std 
+  QBlueCompile.translate_lowp2circ_qdrift
 
-  (* gate decomposition pass *)
+(* gate decomposition pass *)
   ExtractionGateSet.decompose_to_voqc_gates.
 
 
