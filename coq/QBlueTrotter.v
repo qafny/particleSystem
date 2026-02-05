@@ -12,7 +12,8 @@ Proposition F.3: err = (L Lamda t)^2 / r exp(L Lamda t / r) *)
 (* TODO: need prove z = fst z *)
 Definition trotter_step (err t : R) (input : lowprog) : nat := 
   let L := length input in
-  ceilR_N ((INR L) * (INR L) * t * t / err).
+  let n1 := ceilR_N ((INR L) * (INR L) * t * t / err) in
+  ceilR_N ((INR n1) * (exp (t * (INR L) / (INR n1)))). 
 
 
 (* split input into small steps by standard trotterization 

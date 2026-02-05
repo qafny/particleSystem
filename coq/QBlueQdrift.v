@@ -3,6 +3,7 @@ From Coq Require Import List.
 Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
 
+
 (* Decide N using epsilon based on QDrift error boundary. *)
 (* err = 2 * lamda^2 * t^2 / N *)
 (* TODO: need prove z = fst z *)
@@ -16,7 +17,8 @@ Fixpoint sum_w (input : lowprog) (n : nat) : R :=
 
 Definition qdrift_step (err t : R) (input : lowprog) : nat := 
   let lambda := sum_w input (length input) in
-	ceilR_N (R2 * lambda * lambda * t * t / err).
+  let n1 := ceilR_N (R2 * lambda * lambda * t * t / err) in 
+	ceilR_N ((INR n1) * (exp (R2 * t * lambda / (INR n1)))).
 
 Fixpoint sample_once (lp : lowprog) (bound : R) : lowprog :=
   match lp with 

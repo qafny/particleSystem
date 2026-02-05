@@ -66,6 +66,7 @@ Extract Inlined Constant sin => "sin".
 Extract Inlined Constant tan => "tan".
 Extract Inlined Constant atan => "atan".
 Extract Inlined Constant acos => "acos".
+Extract Constant exp => "Float.exp".
 Extract Inlined Constant PI => "Float.pi".
 Extract Inlined Constant Reqb => "( = )".
 Extract Inlined Constant Rltb => "Stdlib.( < )".
