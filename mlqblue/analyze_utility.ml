@@ -2,6 +2,7 @@ open Printf
 open Str
 open QBlueSyntax
 open QBlueCompile
+open Random
 
 open Lexing
 open Parserlib.Parser
@@ -11,11 +12,13 @@ open ExtractionGateSet
 open Voqc.Qasm
 open Voqc.Qasm
 open Voqc.Main
+open Translation
+open Util
 
 
 (* -2 read files of strings *)
 let read_string_file (filename : string) : string =
-  let _ = Printf.printf "---- Analyzing %s: ----\n" filename in
+  dbg "Analyzing %s:" filename;
   let ic = open_in filename in
   let n = in_channel_length ic in
   let s = really_input_string ic n in
@@ -39,23 +42,33 @@ let get_dim_pauli (input : string) : int =
 
 
 (* -1 parse string into lowprog *)
-let parse_pauli (input : string) : (lowprog, string) result =
+exception Pauli_parse_error of string
+
+let parse_pauli (input : string) : lowprog =
   let lexbuf = Lexing.from_string input in
   try
-    Ok (Parserlib.Parser.program Parserlib.Lexer.token lexbuf)
+    let lp = Parserlib.Parser.program Parserlib.Lexer.token lexbuf in
+	dbg "Length of Pauli String %d\n" (List.length lp);
+    lp
+
   with
   | Parserlib.Parser.Error ->
-      Error (Printf.sprintf "Parser error near offset %d (lexeme=%S)"
-               (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf))
+      let msg =
+        Printf.sprintf "Parser error near offset %d (lexeme=%S)"
+          (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf)
+      in raise (Pauli_parse_error msg)
   | Parserlib.Lexer.LexError msg ->
-      Error (Printf.sprintf "Lexer error near offset %d (lexeme=%S): %s"
-               (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf) msg)
-
+      let msg =
+        Printf.sprintf "Lexer error near offset %d (lexeme=%S): %s"
+          (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf) msg
+      in raise (Pauli_parse_error msg)
 
 
 (* 0.1 lowprog -> circ *)
-let lowgrog_to_circ err t nq lp =
-  translate_lowp2circ err t lp nq
+let lowprog_to_circ ?(verbose=false) (err : float) (t : float) (nq : int) (lp : lowprog) (flag_path : int) =
+  match flag_path with
+  | 0 -> trotterStd_IBMDigital ~verbose:verbose err t lp nq
+  | _ -> trotterQDrift_IBMDigital ~verbose:verbose err t lp nq
 
 
 let rec get_dim_aux (u : coq_U ucom) (acc : int) : int =
@@ -88,14 +101,19 @@ let rec sqir_to_qasm oc (u : coq_U ucom) k =
   | _ -> failwith "ERROR: Failed to write qasm file"
 
 let write_qasm_file fname (u : coq_U ucom) =
-  let dim = get_dim u in
-  let oc = open_out fname in
-  (fprintf oc "OPENQASM 2.0;\ninclude \"qelib1.inc\";\n\n";
-   fprintf oc "qreg q[%d];\n" dim;
-   fprintf oc "\n";
-   ignore(sqir_to_qasm oc (decompose_to_voqc_gates u) (fun _ -> ()));
-   ignore(fprintf oc "\n");
-   close_out oc)
+  try
+    let dim = get_dim u in
+    let oc = open_out fname in
+    (fprintf oc "OPENQASM 2.0;\ninclude \"qelib1.inc\";\n\n";
+     fprintf oc "qreg q[%d];\n" dim;
+     fprintf oc "\n";
+     ignore(sqir_to_qasm oc (decompose_to_voqc_gates u) (fun _ -> ()));
+     ignore(fprintf oc "\n");
+     close_out oc)
+  with exn -> 
+    dbg "write_qasm_file raised %s" (Printexc.to_string exn);
+    raise exn
+
 
 (* function to count gates 
   Output order: X, H, U1, CX, CH, CU1, CCX, CCU1, C3X *)
@@ -144,21 +162,15 @@ let log2up m = int_of_float (ceil (log10 (float_of_int (2 * m)) /. log10 2.0))
 
 (* 2. qasm file -> optimize -> gate count *)
 let print_optimization_detail n c0 c1 c2 c3 = 
-  let _ = printf "Input circuit has %d gates and uses %d qubits.\n" (count_total c0) n in
-  
-  let _ = printf "After decomposition to the RzQ gate set, the circuit uses %d gates : { H : %d, X : %d, Rzq : %d, CX : %d }.\n"
-            (count_total c1) (count_H c1) (count_X c1) (count_Rzq c1) (count_CX c1) in
-  
-  let _ = printf "After mapping to 5bit LNN ring arch, the circuit uses %d gates : { H : %d, X : %d, Rzq : %d, CX : %d }.\n"
-            (count_total c2) (count_H c2) (count_X c2) (count_Rzq c2) (count_CX c2) in
-  
-  printf "After optimization, the circuit uses %d gates : { U1 : %d, U2 : %d, U3 : %d, CX : %d }.\n"
+  dbg "Input circuit uses %d qubits, has %d gates:  { H : %d, X : %d, Rzq : %d, CX : %d }." 
+    n (count_total c1) (count_H c1) (count_X c1) (count_Rzq c1) (count_CX c1);
+
+  dbg "After optimization, the circuit uses %d gates : { U1 : %d, U2 : %d, U3 : %d, CX : %d }.\n"
     (count_total c3) (count_U1 c3) (count_U2 c3) (count_U3 c3) (count_CX c3);;
 
 		
 let read_qasm_and_optimize ?(verbose=false) fname =
   let (c0, n) = read_qasm fname in 
-
   (* Convert to the RzQ gate set and print more statistics *)
   let c1 = convert_to_rzq c0 in
 
@@ -191,24 +203,53 @@ let summarize_results dirname rst_file =
 
 
 (* flow from input string to qasm file *)
-let string_to_qasm ?(filename="") (str_input : string) (err : float) (t : float) (fout : string) =
-  match parse_pauli str_input with 
-  | Ok lp ->
+let string_to_qasm ?(filename="") (str_input : string) (err : float) (t : float) (fout : string) (flag_path : int) =
+  try
+    let lp = parse_pauli str_input in
     let nqbit = get_dim_pauli str_input in
-    let ham = lowgrog_to_circ err t nqbit lp in
+    let ham = lowprog_to_circ err t nqbit lp flag_path in
     write_qasm_file fout ham
 
-    (* skip this file *)
-  | Error msg ->
-    Printf.eprintf "Skipping file %s: %s\n" filename msg;
-    ()
+  with
+  | Pauli_parse_error msg ->
+      dbg "SKIP file=%S: %s" filename msg;
+      ()
+ 
+  | exn ->
+      dbg "SKIP file=%S due to EXN: %s" filename (Printexc.to_string exn);
+      ()
+
+
+let translation_lowprog_to_optimize_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string) (flag_path : int)  =
+  let ham = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
+  write_qasm_file fout ham;
+  let (c0, c1, n) = read_qasm_and_optimize ~verbose:verbose fout in
+  (c0, c1, n);;
+
+
+let translation_lowprog_to_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string)  =
+  let best_path = ref 0 in
+  let best_score = ref max_int in 
+  
+  for flag_path = 0 to 1 do
+    let (c0, c1, n) = translation_lowprog_to_optimize_ap ~verbose:true lp nqbit err t fout flag_path in
+	let score = count_U2 c1 in
+	if score < !best_score then 
+	begin
+      best_score := score;
+      best_path := flag_path;
+    end
+  done;
+  let (c0, c1, n) = translation_lowprog_to_optimize_ap lp nqbit err t fout !best_path in
+  (c0, c1, n)
+
 
 
 let string_files_to_qasm_files (err : float) (t : float) (input_files : string list) (out_dir : string) = 
   let helper af =
     let s = read_string_file af in
 	let fout = af ^ ".qasm" in
-	string_to_qasm ~filename:af s err t fout in
+	string_to_qasm ~filename:af s err t fout 0 in
   Stdlib.List.iter helper input_files;;
 
 

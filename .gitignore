@@ -18,7 +18,7 @@ mlqblue/qbluelib
 extract_coq/ml
 extract_coq/src/extracted
 .tmp*
-
+*.qasm
 *.DS_Store
 
 # Ignore coq_makefile-generated files

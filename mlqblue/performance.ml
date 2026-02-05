@@ -2,12 +2,15 @@ open Unix
 open Printf
 
 open Analyze_utility
+open Util
 
 
-let analyze_one_circuit (str_input : string) (err : float) (t :  float) =
+let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) =
   let fout = ".tmp.qasm" in
-  let _ = string_to_qasm str_input err t fout in
-  read_qasm_and_optimize  ~verbose:true fout;;
+    let lp = parse_pauli str_input in
+    let nqbit = get_dim_pauli str_input in
+	translation_lowprog_to_optimize lp nqbit err t fout
+
  
 
 let is_txt_file (path : string) : bool =
@@ -37,7 +40,8 @@ let rec collect_txt_files (dir : string) : string list =
   loop []
 
 
-let run (err : float) (t : float) (fout : string) (path : string) : unit =
+let run (err : float) (t : float) (fout : string) (path : string) (flag_path : int) : unit =
+  dbg "Expected error: %f;   t: %f" err t;
   match (Unix.lstat path).st_kind with
   | Unix.S_DIR ->
       let files = collect_txt_files path in
@@ -51,7 +55,7 @@ let run (err : float) (t : float) (fout : string) (path : string) : unit =
         exit 1
       );
       let s = read_string_file path in
-      ignore (analyze_one_circuit s err t)
+      ignore (analyze_one_circuit s err t flag_path)
 
   | _ ->
       prerr_endline "Error: path is neither a regular file nor a directory";
@@ -64,6 +68,7 @@ let () =
   let err  = ref 1.0 in
   let t    = ref 0.01 in
   let fout = ref "result.txt" in
+  let path_flag = ref 0 in
   let path : string option ref = ref None in
 
   let set_path s =
@@ -77,11 +82,12 @@ let () =
       ("-e", Arg.Set_float err, "Set err (float). Default: 1.0");
       ("-t", Arg.Set_float t,   "Set t (float). Default: 0.01");
       ("-o", Arg.Set_string fout,   "Set o (string). Default: result.txt");
+      ("-p", Arg.Set_int path_flag, "Set p (int). Default: 0");
     ]
   in
 
   let usage =
-    "Usage: dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-o <string>]"
+    "Usage: dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-o <string>] [-p <int>]"
   in
 
   Arg.parse speclist set_path usage;
@@ -94,6 +100,6 @@ let () =
         exit 2
   in
 
-  run !err !t !fout path
+  run !err !t !fout path !path_flag
 
 
