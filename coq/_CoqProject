@@ -15,5 +15,14 @@ QBlueQdrift.v
 QBlueSynth.v
 QBlueSynthDigital.v
 QBlueCompile.v
+
+MarQsim/NetworkX.v
+MarQsim/Marqsim.v
+MarQsim/Overall.v
+MarQsim/Varying.v
+MarQsim/Spectra.v
+MarQsim/CompileTime.v
+MarQsim/Exp.v
+
 Main.v
 
