@@ -125,6 +125,45 @@ Definition get_single_q_matrix (input_pauli : lowprog) (n:nat) : CostMatrix :=
 
 (*implement algorithm 2, and then call marqsim_algo with tr being the output of algorithm 2. *)
 
+(*the subrountine min_cost_flow_problem, please use the Successive Shortest Path algorithm below, 
+   with the find_shortest_path algorithm to be Dijkstra’s. *)
+
+
+(*
+
+(* Define the basic types for the network *)
+Definition Node := nat.
+Definition Capacity := Z.
+Definition Cost := Z.
+Definition Flow := Z.
+
+Record Edge := { u: Node; v: Node; cap: Capacity; cost: Cost }.
+Definition Network := list Edge.
+
+(* Successive Shortest Path main loop logic *)
+Fixpoint ssp_iteration (fuel: nat) (net: Network) (imbalance: list Z) : Network :=
+  match fuel with
+
+  | 0 => net (* Out of fuel, return current flow *)
+  | S f' =>
+      let s := find_source imbalance in (* Node with e(v) > 0 *)
+      let t := find_sink imbalance in   (* Node with e(v) < 0 *)
+      match find_shortest_path net s t with
+
+      | Some path => 
+          let delta := calculate_augmentation path imbalance in
+          let new_net := augment_flow net path delta in
+          let new_imbalance := update_imbalance imbalance path delta in
+          ssp_iteration f' new_net new_imbalance
+      | None => net (* No path found, algorithm terminates *)
+      end
+  end.
+
+*)
+
+
+
+
 
 (* below is the history code. 
 Definition Hamiltonian := nat -> norm_ten.
