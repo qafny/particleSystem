@@ -105,5 +105,8 @@ Inductive paulimat: Type :=
 Definition lowprog_ten := (C * (nat -> paulimat)) %type.
 Definition lowprog := list lowprog_ten.
 
+Definition norm_ten := (R * (nat -> paulimat)) %type.
+Definition norm_prog := list norm_ten.
+
 (* unitary gate exp(-i r ZZZ) *)
 Definition ugate := (R * lowprog_ten) %type.

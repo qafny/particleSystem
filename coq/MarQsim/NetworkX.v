@@ -102,6 +102,38 @@ Definition flow_feasible (g : DiGraph) (f : FlowDict) : Prop :=
       let '(n, _) := nd in
       node_balance g f n = demand_of g n).
 
+(*
+
+(* Define the basic types for the network *)
+Definition Node := nat.
+Definition Capacity := Z.
+Definition Cost := Z.
+Definition Flow := Z.
+
+Record Edge := { u: Node; v: Node; cap: Capacity; cost: Cost }.
+Definition Network := list Edge.
+
+(* Successive Shortest Path main loop logic *)
+Fixpoint ssp_iteration (fuel: nat) (net: Network) (imbalance: list Z) : Network :=
+  match fuel with
+
+  | 0 => net (* Out of fuel, return current flow *)
+  | S f' =>
+      let s := find_source imbalance in (* Node with e(v) > 0 *)
+      let t := find_sink imbalance in   (* Node with e(v) < 0 *)
+      match find_shortest_path net s t with
+
+      | Some path => 
+          let delta := calculate_augmentation path imbalance in
+          let new_net := augment_flow net path delta in
+          let new_imbalance := update_imbalance imbalance path delta in
+          ssp_iteration f' new_net new_imbalance
+      | None => net (* No path found, algorithm terminates *)
+      end
+  end.
+
+*)
+
 (* Spec-level translation of networkx.network_simplex. *)
 Parameter network_simplex : DiGraph -> Z * FlowDict.
 
