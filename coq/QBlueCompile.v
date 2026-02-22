@@ -13,6 +13,9 @@ Require Import QBlue.QBlueType.
 Require Import QBlue.QBlueTrotter.
 Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueSynthDigital.
+Require Import QBlue.QBlueTTS.
+Require Import QBlue.MarQsim.Marqsim.
+
 
 
 (* Translate from high-level hamiltonian to IBM digital gates
@@ -41,6 +44,9 @@ Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat)
   let lowp : lowprog := trotter_qdrift err t lp in 
   synth_digital_ibm t nbit lowp.
 
+Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) 
+: ucom ExtractionGateSet.U := 
+  TTS_LCU err t nbit lp.
 
 
 Record Pipeline := {

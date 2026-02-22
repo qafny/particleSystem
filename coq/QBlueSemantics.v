@@ -5,6 +5,7 @@ Require Import Coq.Strings.String.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
 Require Import QuantumLib.VectorStates.
+Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlueType.
 (* Local Open Scope nat_scope. 
@@ -46,12 +47,6 @@ Fixpoint combine (n:nat) (phi1 phi2: psi) : psi:=
   match phi1 with 
     | [] => []
     | x::xs => subcombine n x (combine n xs (phi2))
-  end.
-
-Fixpoint Cpow (c : C) (n : nat) : C :=
-  match n with
-  | O   => C1
-  | S k => c * Cpow c k
   end.
 
 

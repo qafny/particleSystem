@@ -61,12 +61,13 @@ Extract Inlined Constant Rdiv => "( /. )".
 Extract Inlined Constant sqrt => "sqrt".
 Extract Inlined Constant Rabs => "abs_float".
 Extract Inlined Constant pow => "(fun a b -> a ** Z.to_float b)".
+Extract Inlined Constant ln => "log".
 Extract Inlined Constant cos => "cos".
 Extract Inlined Constant sin => "sin".
 Extract Inlined Constant tan => "tan".
 Extract Inlined Constant atan => "atan".
 Extract Inlined Constant acos => "acos".
-Extract Constant exp => "Float.exp".
+Extract Inlined Constant exp => "Float.exp".
 Extract Inlined Constant PI => "Float.pi".
 Extract Inlined Constant Reqb => "( = )".
 Extract Inlined Constant Rltb => "Stdlib.( < )".
@@ -99,6 +100,7 @@ Separate Extraction
   QBlueCompile.translate_highp2circ 
   QBlueCompile.translate_lowp2circ_std 
   QBlueCompile.translate_lowp2circ_qdrift
+  QBlueCompile.translate_lowp2circ_TTS_LCU
 
 (* gate decomposition pass *)
   ExtractionGateSet.decompose_to_voqc_gates.
