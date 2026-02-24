@@ -60,7 +60,7 @@ Extract Inlined Constant Rminus => "( -. )".
 Extract Inlined Constant Rdiv => "( /. )".
 Extract Inlined Constant sqrt => "sqrt".
 Extract Inlined Constant Rabs => "abs_float".
-Extract Inlined Constant pow => "(fun a b -> a ** Z.to_float b)".
+Extract Inlined Constant pow => "(fun a b -> a ** (float_of_int b))".
 Extract Inlined Constant ln => "log".
 Extract Inlined Constant cos => "cos".
 Extract Inlined Constant sin => "sin".
@@ -69,8 +69,8 @@ Extract Inlined Constant atan => "atan".
 Extract Inlined Constant acos => "acos".
 Extract Inlined Constant exp => "Float.exp".
 Extract Inlined Constant PI => "Float.pi".
-Extract Inlined Constant Reqb => "( = )".
-Extract Inlined Constant Rltb => "Stdlib.( < )".
+Extract Inlined Constant QBlueUtility.Reqb => "Stdlib.( = )".
+Extract Inlined Constant QBlueUtility.Rltb => "Stdlib.( < )".
 Extract Inlined Constant IZR => "Float.of_int".
 Extract Inlined Constant INR => "Float.of_int".
 (* Extracting the following to dummy values to supress warnings *)

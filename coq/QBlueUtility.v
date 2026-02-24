@@ -10,6 +10,7 @@ Parameter ceilR_N: R -> nat.
 
 (* get the smaller Real value *)
 Parameter Rltb : R -> R -> bool.
+Parameter Reqb : R -> R -> bool.
 
 (* Random generator, given a max bound r, return uniformly from [0, r)*)
 Parameter random_float : R -> R.

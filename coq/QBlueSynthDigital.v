@@ -57,12 +57,36 @@ Definition synth_digital_ibm_apauli (amp : R) (nbit : nat) (pauli_str : nat -> p
   end.
 
 
+Definition is_SKIP (c : ucom ExtractionGateSet.U) : bool :=
+  match c with
+  | uapp g qs =>
+      match g, qs with
+      | ExtractionGateSet.U_U1 r, q :: nil =>
+          if Reqb r R0 then Nat.eqb q 0 else false
+      | _, _ => false
+      end
+  | _ => false
+  end.
+
+
+(* Filter out the SKIP gates, avoid too big qasm files *)
+Fixpoint prune_SKIP (c : ucom ExtractionGateSet.U) : ucom ExtractionGateSet.U :=
+  match c with
+  | useq c1 c2 =>
+      let c1' := prune_SKIP c1 in
+      let c2' := prune_SKIP c2 in
+      if is_SKIP c1' then c2'
+      else if is_SKIP c2' then c1'
+      else useq c1' c2'
+  | _ => c
+  end.
+
 (* Synthesization of IBM digital
 return: sequence of unitary gate of the converted circuit *)
 Fixpoint synth_digital_ibm (t : R) (nbit : nat) (input : lowprog) 
   : ucom ExtractionGateSet.U :=
   match input with
   | [] => SKIP
-  | (amp, f) :: app => useq (synth_digital_ibm_apauli (t * (fst amp)) nbit f) 
+  | (amp, f) :: app => useq (prune_SKIP (synth_digital_ibm_apauli (t * (fst amp)) nbit f)) 
   (synth_digital_ibm t nbit app)
   end.
