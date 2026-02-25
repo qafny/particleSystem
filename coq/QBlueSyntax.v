@@ -110,3 +110,8 @@ Definition norm_prog := list norm_ten.
 
 (* unitary gate exp(-i r ZZZ) *)
 Definition ugate := (R * lowprog_ten) %type.
+
+
+(* syntax lib functions. *)
+Definition is_i (s:paulimat) :=
+   match s with paulii => true | _ => false end.
