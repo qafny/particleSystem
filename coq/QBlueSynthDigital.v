@@ -84,6 +84,9 @@ Definition synth_digital_ibm_apauli (amp : R) (nbit : nat) (pauli_str : nat -> p
 
 (* Synthesization of IBM digital
 return: sequence of unitary gate of the converted circuit *)
+Definition synth_digital_ibm_single (t : R) (nbit : nat) (amp:C) f := (synth_digital_ibm_apauli (t * (fst amp)) nbit f).
+   
+
 Fixpoint synth_digital_ibm_raw (t : R) (nbit : nat) (input : lowprog) (acc: ucom ExtractionGateSet.U)
   : ucom ExtractionGateSet.U :=
   match input with
