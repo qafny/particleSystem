@@ -19,24 +19,24 @@ Definition trotter_step (err t : R) (input : lowprog) : nat :=
 (* split input into small steps by standard trotterization 
 exp(-it (H1 + H2 + H3)) => exp(-it/N (H1 + H2 + H3)) 
 *)
-Fixpoint trotter_astep (N: nat) (ap : lowprog) : lowprog :=
-  match ap with
-  | [] => []
-  | (z, f) :: aap => 
-    let z' : C := (Rdiv (fst z) (INR N), Rdiv (snd z) (INR N)) in 
-    (z', f) :: (trotter_astep N aap)
+Definition trotter_astep (N : nat) (ap : lowprog) : lowprog :=
+  map (fun p =>
+    let '(z, f) := p in
+    let z' : C := (Rdiv (fst z) (INR N), Rdiv (snd z) (INR N)) in
+    (z', f)) ap.
+
+
+Fixpoint trotter_nstep_acc (N : nat) (ap : lowprog) (acc : lowprog) : lowprog :=
+  match N with
+  | 0 => rev acc
+  | S n => trotter_nstep_acc n ap (rev_append ap acc)
   end.
 
-Fixpoint trotter_nstep (N: nat) (ap : lowprog) : lowprog :=
-  match N with 
-  | 0 => []
-  | S n => ap ++ (trotter_nstep n ap)
-  end.
+Definition trotter_nstep (N : nat) (ap : lowprog) : lowprog :=
+  trotter_nstep_acc N ap [].
 
 (* Low-level Hamiltonian after being trottered into more steps. *)
 Definition trotter (err t: R) (input : lowprog) : lowprog :=
   let N := trotter_step err t input in
   let astep := trotter_astep N input in
   trotter_nstep N astep.
-
-
