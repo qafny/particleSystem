@@ -20,7 +20,7 @@ Fixpoint cvt_all (nbit:nat) (pauli_str : nat -> paulimat) :=
   match nbit with 
    | 0 => SKIP
    | S m => useq (cvt2base m (pauli_str m)) (cvt_all m  pauli_str)
-  end.
+  end. 
 
 (* generate gate for each paulimat: Z => CNOT I CNOT *)
 (* useq a b means in the matrix of applying a first and then b, like b . a*)
@@ -87,7 +87,7 @@ return: sequence of unitary gate of the converted circuit *)
 Fixpoint synth_digital_ibm_raw (t : R) (nbit : nat) (input : lowprog) (acc: ucom ExtractionGateSet.U)
   : ucom ExtractionGateSet.U :=
   match input with
-  | [] => SKIP
+  | [] => acc
   | (amp, f) :: app => synth_digital_ibm_raw t nbit app (useq acc (synth_digital_ibm_apauli (t * (fst amp)) nbit f))
   end.
 
