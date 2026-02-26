@@ -6,6 +6,7 @@ from qiskit_nature.second_q.transformers import ActiveSpaceTransformer
 
 import numpy as np
 import json
+from decimal import Decimal
 
 
 # Geometry: https://cccbdb.nist.gov/geom3x.asp?method=8&basis=20
@@ -31,6 +32,19 @@ n2_atom = 'N 0.0 0.0 0.0; N 0.0 0.0 1.1807'
 
 # Geometry: https://cccbdb.nist.gov/geom3x.asp?method=8&basis=20
 c2_atom = 'C 0.0 0.0 0.0; C 0.0 0.0 1.2632'
+
+
+def format_pauli_term(op):
+    pauli, coeff = op
+    coeff = np.real_if_close(coeff)
+    if isinstance(coeff, complex):
+        coeff = coeff.real
+    sign = '+' if coeff >= 0 else '-'
+    magnitude = abs(float(coeff))
+    magnitude_str = format(Decimal(str(magnitude)), "f").rstrip("0").rstrip(".")
+    if magnitude_str == "":
+        magnitude_str = "0"
+    return f"{sign} {magnitude_str} * {pauli}"
 
 def get_hamiltonians(molecule, basis, active_space_transformer = None):
 
@@ -100,20 +114,14 @@ def get_hamiltonians(molecule, basis, active_space_transformer = None):
     print(f'num pauli terms: {len(jw_list_op), len(bk_list_op)}')
 
     with open(f'./{molecule}/JW_{molecule}_{basis}_{num_electrons}_electrons_{num_orbitals}_spin_orbitals_Hamiltonian_{len(jw_list_op)}_paulis.txt', 'w') as jwfile:
-
-        print(f'Jordan-Wigner mapping of {molecule} Hamiltonian in {basis} basis.', file=jwfile)
-        
         for op in jw_list_op:
 
-            print(op[0], op[1], file=jwfile)
+            print(format_pauli_term(op), file=jwfile)
 
     with open(f'./{molecule}/BK_{molecule}_{basis}_{num_electrons}_electrons_{num_orbitals}_spin_orbitals_Hamiltonian_{len(bk_list_op)}_paulis.txt', 'w') as bkfile:
-
-        print(f'Bravyi-Kitaev mapping of {molecule} Hamiltonian in {basis} basis.', file=bkfile)
-        
         for op in bk_list_op:
 
-            print(op[0], op[1], file=bkfile)
+            print(format_pauli_term(op), file=bkfile)
 
     print(bk_hamiltonian.equiv(jw_hamiltonian))
 
@@ -180,9 +188,6 @@ for active_space_transformer in [None,
                                  ActiveSpaceTransformer(num_electrons=10, num_spatial_orbitals=20)]:
 
     get_hamiltonians(molecule="benzene", basis='sto3g', active_space_transformer=active_space_transformer)
-
-
-
 
 
 
