@@ -6,12 +6,17 @@ open Util
 
 
 let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) =
-  let fout = ".tmp.qasm" in
+    let fout = ".tmp.qasm" in
+    Printf.printf  "Start analyze_one_circuit\n";
+	flush Stdlib.stdout;
     let lp = parse_pauli str_input in
-    let nqbit = get_dim_pauli str_input in
+    Printf.printf  "After parser";
+	flush Stdlib.stdout;
+	let nqbit = get_dim_pauli str_input in
+    Printf.printf "After getting qubit %d\n%!" nqbit;
+	flush Stdlib.stdout;
 	translation_lowprog_to_optimize lp nqbit err t fout
 
- 
 
 let is_txt_file (path : string) : bool =
   Filename.check_suffix path ".txt"
@@ -44,10 +49,13 @@ let run (err : float) (t : float) (fout : string) (path : string) (flag_path : i
   dbg "Expected error: %f;   t: %f" err t;
   match (Unix.lstat path).st_kind with
   | Unix.S_DIR ->
-      let files = collect_txt_files path in
+      prerr_endline "Error: path is neither a regular file nor a directory";
+      exit 1
+     (* let files = collect_txt_files path in
       let out_dir = path ^ "_qasm" in
       string_files_to_qasm_files err t files out_dir;
       summarize_results path fout
+*)
 
   | Unix.S_REG ->
       if not (is_txt_file path) then (

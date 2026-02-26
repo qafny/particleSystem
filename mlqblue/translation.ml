@@ -18,7 +18,7 @@ let trotterStd_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowpr
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
-  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f." npau rfactor;
+  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
   try
     translate_lowp2circ_std err t lp nq 
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);

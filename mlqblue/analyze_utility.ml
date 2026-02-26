@@ -2,7 +2,7 @@ open Printf
 open Str
 open QBlueSyntax
 open QBlueCompile
-open Random
+open QBlueSynthDigital
 
 open Lexing
 open Parserlib.Parser
@@ -10,10 +10,16 @@ open Parserlib.Lexer
 
 open ExtractionGateSet
 open Voqc.Qasm
-open Voqc.Qasm
-open Voqc.Main
 open Translation
 open Util
+
+let rec count_U1_ocaml (c : coq_U ucom) : int =
+  match c with
+  | Coq_useq (c1, c2) -> count_U1_ocaml c1 + count_U1_ocaml c2
+  | Coq_uapp (_, U_U1 _, _) -> 1
+  | Coq_uapp (_, _, _) -> 0
+
+
 
 
 (* -2 read files of strings *)
@@ -45,9 +51,17 @@ let get_dim_pauli (input : string) : int =
 exception Pauli_parse_error of string
 
 let parse_pauli (input : string) : lowprog =
+  print_endline "Before lexing";
+  flush stdout;
   let lexbuf = Lexing.from_string input in
+  print_endline "after lexing";
+  flush stdout;
   try
+  print_endline "before parser";
+  flush stdout;
     let lp = Parserlib.Parser.program Parserlib.Lexer.token lexbuf in
+  print_endline "after parser";
+  flush stdout;
 	dbg "Length of Pauli String %d\n" (List.length lp);
     lp
 
@@ -163,29 +177,56 @@ let log2up m = int_of_float (ceil (log10 (float_of_int (2 * m)) /. log10 2.0))
 (* 2. qasm file -> optimize -> gate count *)
 let print_optimization_detail n c0 c1 c2 c3 = 
   dbg "Input circuit uses %d qubits, has %d gates:  { H : %d, X : %d, Rzq : %d, CX : %d }." 
-    n (count_total c1) (count_H c1) (count_X c1) (count_Rzq c1) (count_CX c1);
+    n (voqc_count_total n c1) (voqc_count_H n c1) (voqc_count_X n c1) (voqc_count_Rzq n c1) (voqc_count_CX n c1);
 
   dbg "After optimization, the circuit uses %d gates : { U1 : %d, U2 : %d, U3 : %d, CX : %d }.\n"
-    (count_total c3) (count_U1 c3) (count_U2 c3) (count_U3 c3) (count_CX c3);;
+    (voqc_count_total n c3) (voqc_count_U1 n c3) (voqc_count_U2 n c3) (voqc_count_U3 n c3) (voqc_count_CX n c3);;
 
-		
+
+(*		
 let read_qasm_and_optimize ?(verbose=false) fname =
   let (c0, n) = read_qasm fname in 
   (* Convert to the RzQ gate set and print more statistics *)
-  let c1 = convert_to_rzq c0 in
+  let c1 = voqc_convert_to_rzq n c0 in
 
   (* Map to the 5 qubit LNN ring architecture *)
-  let cg = make_lnn_ring 5 in
-  let la = trivial_layout 5 in
-  let c2 = decompose_swaps (swap_route c1 la cg (lnn_ring_path_finding_fun 5)) cg in
+  let cg = voqc_make_lnn_ring n 5 in
+  let la = voqc_trivial_layout n 5 in
+  let c2 = voqc_decompose_swaps (swap_route c1 la cg (voqc_lnn_ring_path_finding_fun 5)) cg in
 
   (* Optimize again *)
   let c3 = optimize c2 in
   if verbose then print_optimization_detail n c0 c1 c2 c3;
   (c0, c3, n);;
+*)
+
+let read_qasm_and_optimize1 ?(verbose=false) nqubit circ =
+  let n = nqubit in
+  print_endline "decompose to full gate set";
+  flush stdout;
+  (* Convert to the RzQ gate set and print more statistics *)
+  let cc = decompose_to_voqc_gates circ in
+  print_endline "decompose to voqc";
+  flush stdout;
+	  
+  let c0 = cvt_egate_fullgate n cc in
+  print_endline "convert to rzq";
+  flush stdout;
+
+  let c1 = voqc_convert_to_rzq n c0 in
+
+  (* Map to the 5 qubit LNN ring architecture *)
+  let cg = voqc_make_lnn_ring 5 in
+  let la = voqc_trivial_layout 5 in
+  let c2 = voqc_decompose_swaps n (voqc_swap_route n c1 la cg (voqc_lnn_ring_path_finding_fun 5)) cg in
+
+  (* Optimize again *)
+  let c3 = voqc_optimize n c2 in
+  if verbose then print_optimization_detail n c0 c1 c2 c3;
+  (c0, c3, n);;
 
 
-
+(*
 (* 3. write result.txt for a bunch of qasm files under a dir *)
 let summarize_results dirname rst_file =
   let rst = open_out rst_file in
@@ -200,7 +241,7 @@ let summarize_results dirname rst_file =
     (Stdlib.List.filter (fun x -> Filename.extension x = ".qasm") (Array.to_list (Sys.readdir dirname))) in
 	
   Stdlib.List.iter helper qasm_files;;
-
+*)
 
 (* flow from input string to qasm file *)
 let string_to_qasm ?(filename="") (str_input : string) (err : float) (t : float) (fout : string) (flag_path : int) =
@@ -220,27 +261,41 @@ let string_to_qasm ?(filename="") (str_input : string) (err : float) (t : float)
       ()
 
 
+let translation_lowprog_to_optimize_ap1 ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string) (flag_path : int)  =
+  print_endline "Enter translation_lowprog_to_optimize_ap1";
+  flush stdout;
+  let ham = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
+  print_endline "In translation_lowprog_to_optimize_ap1";
+  flush stdout;
+
+  let (c0, c1, n) = read_qasm_and_optimize1 ~verbose:verbose nqbit ham in
+  (c0, c1, n);;
+
+(*
 let translation_lowprog_to_optimize_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string) (flag_path : int)  =
   let ham = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
   write_qasm_file fout ham;
+  print_endline "Finish write";
+  flush stdout;
+
   let (c0, c1, n) = read_qasm_and_optimize ~verbose:verbose fout in
   (c0, c1, n);;
-
+*)
 
 let translation_lowprog_to_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string)  =
-  let best_path = ref 0 in
+  let best_path = ref 1 in
+  (*
   let best_score = ref max_int in 
-  
-  for flag_path = 0 to 1 do
-    let (c0, c1, n) = translation_lowprog_to_optimize_ap ~verbose:true lp nqbit err t fout flag_path in
-	let score = count_U2 c1 in
+  for flag_path = 1 to 1 do
+    let (c0, c1, n) = translation_lowprog_to_optimize_ap1 ~verbose:true lp nqbit err t fout flag_path in
+	let score = voqc_count_U2 n c1 in
 	if score < !best_score then 
 	begin
       best_score := score;
       best_path := flag_path;
     end
-  done;
-  let (c0, c1, n) = translation_lowprog_to_optimize_ap lp nqbit err t fout !best_path in
+  done; *)
+  let (c0, c1, n) = translation_lowprog_to_optimize_ap1  ~verbose:true lp nqbit err t fout !best_path in
   (c0, c1, n)
 
 

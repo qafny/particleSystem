@@ -8,8 +8,7 @@ and synthesis pipelines.
 These Hamiltonians can be generated using **Qiskit Nature**, starting from second-quantized
 electronic structure problems and mapping them to qubit operators.
 
-Some large benchmark files are stored using **Git LFS**. After cloning the repository, run:
 
-    git lfs install
-    git lfs pull
+NOTE: for the Genesis_dataset, you can use the following command to generate the format recognizable by our project,  
+`python3 convert_pauli_txt_format.py benzene benzene_converted`
 
