@@ -70,30 +70,38 @@ Definition synth_analog_ibm (t : R) (nbit : nat) (pauli_str : nat -> paulimat)
     left ++ [mid] ++ right
   else [].
 
+Fixpoint syn_analog_indiana_x' (nbit:nat) (f : nat -> paulimat) : nat -> paulimat :=
+  match nbit with
+    0 => fun _ => paulii
+  | S m => if is_i (f m) 
+           then syn_analog_indiana_x' m f 
+           else fun i => if i =? m then paulix else syn_analog_indiana_x' m f i
+  end.
+Definition syn_analog_indiana_x (t:R) (nbit:nat) (f : nat -> paulimat) :=
+    (t, syn_analog_indiana_x' nbit f).
 
-(* 3. Input is any-local, to gates of Indiana analog, Convert to Z, X...X basis *)
-Fixpoint synth_analog_indiana_helper (ml : list nat) (nbit : nat) (pauli_str : nat -> paulimat) : 
-  (list ugate) * (list ugate) :=
-  match ml with 
-  | [] => ([], [])
-  | m :: ax => let (left, right) := synth_analog_indiana_helper ax nbit pauli_str in
-    let hu := H_u m in
-    let su := S_u m in 
-    let sdagu := SDag_u m in
-    let (app1, app2) := 
-      match (pauli_str m) with 
-      | pauliy => (su, sdagu)
-      | pauliz => (hu, hu)
-      | _ => ([], []) 
-      end in
-    (left ++ app1, app2 ++ right) end.
+Fixpoint syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list (R * (nat -> paulimat))):=
+  match nbit with 
+    0 => acc
+  | S m => 
+     match f m with 
+       pauliy => 
+          syn_analog_indiana_a m f 
+            ((Rdiv PI 4, (fun i => if i =? m then pauliz else paulii))
+                ::acc++[((Rdiv (Rmult 7 PI) 4), (fun i => if i =? m then pauliz else paulii))])
+       | pauliz => 
+          let v := (Rdiv PI 4, fun i => if i =? m then paulix else paulii)
+                      ::(Rdiv PI 4, fun i => if i =? m then pauliz else paulii)
+                      ::(Rdiv PI 4, fun i => if i =? m then paulix else paulii)::[] in
+          syn_analog_indiana_a m f (v++acc++v)
+       | _ => syn_analog_indiana_a m f acc
+      end
+   end.
 
-Definition synth_analog_indiana (t : R) (nbit : nat) (pauli_str : nat -> paulimat) 
-  : list ugate :=
-  let ml := find_nonI nbit pauli_str in 
-  let mid := exp_ugate t (fill_pl ml paulix) in
-  let (left, right) := synth_analog_indiana_helper ml nbit pauli_str in
-  left ++ [mid] ++ right.
+Definition synth_analog_indiana_single (t:R) (nbit : nat) (f : nat -> paulimat) :=
+  syn_analog_indiana_a nbit f [syn_analog_indiana_x t nbit f].
 
+Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) :=
+  fold_left (fun a b => synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)::a) input [].
 
 
