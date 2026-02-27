@@ -4,14 +4,16 @@ Require Import QBlueUtility.
 Require Import QBlueSyntax.
 Require Import QBlueQdrift.
 
-(*
-Inductive Pauli : Type := PI | PX | PY | PZ.
 
-Record PauliTerm : Type := {
-  ops : nat -> Pauli;
-  coeff : Q
-}.
-*)
+(* Currently use list for debugging the flow *)
+(*  *)
+Definition Mat1 := list (list nat).
+Definition Mat2 := list (list R).
+(* CNOT matrix, single qubit matrix, probablity matrix *)
+Parameter GenPgc: Mat1 -> option Mat1 -> Mat2.
+
+
+
 
 
 (* use sum_w for lambda, use the same qdrift_step *)

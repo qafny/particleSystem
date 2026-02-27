@@ -28,6 +28,6 @@ coqc -R $dir_coq QBlue Extraction.v
 # Move the remaining extracted files to the 'ml' subdirectory.
 echo "Moving generated files to ml..."
 python3 prune.py $dir_ml_ori $dir_ml $modules
-
+cp ./networks/* $dir_ml
  
 

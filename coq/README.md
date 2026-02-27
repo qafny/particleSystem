@@ -14,7 +14,13 @@ opam switch import opam-switch.export
 # check if the switch and packages are right
 opam switch
 opam list
+
+# install python3 for running networks
+install python3.9
+pip install networkx[default]
+
 ```
+
 
 
 ## Compile & Running QBlue

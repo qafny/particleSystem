@@ -174,14 +174,6 @@ let log2up m = int_of_float (ceil (log10 (float_of_int (2 * m)) /. log10 2.0))
 
 
 
-(* 2. qasm file -> optimize -> gate count *)
-let print_optimization_detail n c0 c1 c2 c3 = 
-  dbg "Input circuit uses %d qubits, has %d gates:  { H : %d, X : %d, Rzq : %d, CX : %d }." 
-    n (voqc_count_total n c1) (voqc_count_H n c1) (voqc_count_X n c1) (voqc_count_Rzq n c1) (voqc_count_CX n c1);
-
-  dbg "After optimization, the circuit uses %d gates : { U1 : %d, U2 : %d, U3 : %d, CX : %d }.\n"
-    (voqc_count_total n c3) (voqc_count_U1 n c3) (voqc_count_U2 n c3) (voqc_count_U3 n c3) (voqc_count_CX n c3);;
-
 
 (*		
 let read_qasm_and_optimize ?(verbose=false) fname =
@@ -199,31 +191,6 @@ let read_qasm_and_optimize ?(verbose=false) fname =
   if verbose then print_optimization_detail n c0 c1 c2 c3;
   (c0, c3, n);;
 *)
-
-let read_qasm_and_optimize1 ?(verbose=false) nqubit circ =
-  let n = nqubit in
-  print_endline "decompose to full gate set";
-  flush stdout;
-  (* Convert to the RzQ gate set and print more statistics *)
-  let cc = decompose_to_voqc_gates circ in
-  print_endline "decompose to voqc";
-  flush stdout;
-	  
-  let c0 = cvt_egate_fullgate n cc in
-  print_endline "convert to rzq";
-  flush stdout;
-
-  let c1 = voqc_convert_to_rzq n c0 in
-
-  (* Map to the 5 qubit LNN ring architecture *)
-  let cg = voqc_make_lnn_ring 5 in
-  let la = voqc_trivial_layout 5 in
-  let c2 = voqc_decompose_swaps n (voqc_swap_route n c1 la cg (voqc_lnn_ring_path_finding_fun 5)) cg in
-
-  (* Optimize again *)
-  let c3 = voqc_optimize n c2 in
-  if verbose then print_optimization_detail n c0 c1 c2 c3;
-  (c0, c3, n);;
 
 
 (*
@@ -268,19 +235,9 @@ let translation_lowprog_to_optimize_ap1 ?(verbose=false) (lp : lowprog) (nqbit :
   print_endline "In translation_lowprog_to_optimize_ap1";
   flush stdout;
 
-  let (c0, c1, n) = read_qasm_and_optimize1 ~verbose:verbose nqbit ham in
+  let (c0, c1, n) = ibmdigi_voqc_optimize ~verbose:verbose nqbit ham in
   (c0, c1, n);;
 
-(*
-let translation_lowprog_to_optimize_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string) (flag_path : int)  =
-  let ham = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
-  write_qasm_file fout ham;
-  print_endline "Finish write";
-  flush stdout;
-
-  let (c0, c1, n) = read_qasm_and_optimize ~verbose:verbose fout in
-  (c0, c1, n);;
-*)
 
 let translation_lowprog_to_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string)  =
   let best_path = ref 1 in
