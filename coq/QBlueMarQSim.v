@@ -126,6 +126,31 @@ Definition get_single_q_matrix (input_pauli : lowprog) (n:nat) : CostMatrix :=
   fun i => row_costs single_q_cost_ops (nth_default (C0, fun _ => paulii) input_pauli i) input_pauli n.
 
 (*implement algorithm 2, and then call marqsim_algo with tr being the output of algorithm 2. *)
+(* edges 0 representing s, n+1 representing t, and i in [1,n) rereperensting i-1 vertex. *)
+Definition cmat (a b:nat) : R := 1%R.
+Definition wmat (a b:nat) := 0%R.
+
+Definition nth_pauli := nth_default (C0, fun _ : nat => paulii).
+
+Definition gen_cmat_1 (n:nat) (t:lowprog) := 
+      fun i j => if (i =? Nat.zero) && (Nat.zero <? j) && (j <=? n) then (Rdiv (term_weight (nth_pauli t (j-1))) (lambda_sum t))
+                 else if (Nat.zero <? i) && (i <=? n) && (j =? S n) then (Rdiv (term_weight (nth_pauli t (j-1))) (lambda_sum t))
+                 else 1%R.
+
+Definition gen_wmat_1 := (fun (i j:nat) => 0%nat).
+
+Parameter solve_flow : nat -> (nat -> nat -> R) -> (nat -> nat -> nat) -> nat -> nat -> R.
+
+Definition solve_flow_now (n:nat) (t:lowprog) := solve_flow n (gen_cmat_1 n t) gen_wmat_1.
+
+Definition gen_pgc' (n:nat) (t:lowprog) := fun i j => Rdiv (solve_flow_now n t (S i) (S j)) (Rdiv (term_weight (nth_pauli t i)) (lambda_sum t)).
+
+Definition gen_pgc (t:lowprog) := gen_pgc' (List.length t) t.
+
+Definition merged_trans (t:lowprog) (n:nat) := fun i j => Rplus (Rmult 0.4 (gen_pgc t i j)) (Rmult 0.6 (trans_matrix_init t n i j)).
+
+(*h is lowprog, t is the time, n is the qubit size and ni is the number of samples. *)
+Definition marqsim_algo_all h t n ni := marqsim_algo h t n (merged_trans h n) ni.
 
 (*the subrountine min_cost_flow_problem, please use the Successive Shortest Path algorithm below, 
    with the find_shortest_path algorithm to be Dijkstra’s. *)
