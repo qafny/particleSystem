@@ -146,7 +146,7 @@ Parameter solve_flow : nat -> (nat -> nat -> R) -> (nat -> nat -> nat) -> nat ->
 
 Definition solve_flow_now (n:nat) (t:lowprog) := solve_flow n (gen_cmat_1 n t) (gen_wmat_1 t (length t) n).
 
-Definition gen_pgc' (n:nat) (t:lowprog) := fun i j => Rdiv (solve_flow_now n t (S i) (S j)) (Rdiv (term_weight (nth_pauli t i)) (lambda_sum t)).
+Definition gen_pgc' (n:nat) (t:lowprog) := fun i j => Rdiv (solve_flow_now n t (S i) (S (n+ j))) (Rdiv (term_weight (nth_pauli t i)) (lambda_sum t)).
 
 Definition gen_pgc (t:lowprog) := gen_pgc' (List.length t) t.
 
