@@ -134,14 +134,17 @@ Definition nth_pauli := nth_default (C0, fun _ : nat => paulii).
 
 Definition gen_cmat_1 (n:nat) (t:lowprog) := 
       fun i j => if (i =? Nat.zero) && (Nat.zero <? j) && (j <=? n) then (Rdiv (term_weight (nth_pauli t (j-1))) (lambda_sum t))
-                 else if (Nat.zero <? i) && (i <=? n) && (j =? S n) then (Rdiv (term_weight (nth_pauli t (j-1))) (lambda_sum t))
-                 else 1%R.
+                 else if (n <? i) && (i <=? 2 * n) && (j =? S  (2 * n)) then (Rdiv (term_weight (nth_pauli t (j-1))) (lambda_sum t))
+                 else if (Nat.zero <? i) && (i <=? n) && (n <? j) && (i <=? 2 *n) then 1%R
+                 else 2%R.
 
-Definition gen_wmat_1 := (fun (i j:nat) => 0%nat).
+Definition gen_wmat_1 (t:lowprog) (size:nat) (n:nat) := fun (i j :nat) => 
+             if (Nat.zero <? i) && (i <=? n) && (n <? j) && (i <=? 2 *n) then get_single_q_matrix t n (Nat.sub i 1) (Nat.sub (Nat.sub j size) 1)
+             else Nat.zero.
 
 Parameter solve_flow : nat -> (nat -> nat -> R) -> (nat -> nat -> nat) -> nat -> nat -> R.
 
-Definition solve_flow_now (n:nat) (t:lowprog) := solve_flow n (gen_cmat_1 n t) gen_wmat_1.
+Definition solve_flow_now (n:nat) (t:lowprog) := solve_flow n (gen_cmat_1 n t) (gen_wmat_1 t (length t) n).
 
 Definition gen_pgc' (n:nat) (t:lowprog) := fun i j => Rdiv (solve_flow_now n t (S i) (S j)) (Rdiv (term_weight (nth_pauli t i)) (lambda_sum t)).
 
