@@ -18,15 +18,6 @@ let print_optimization_detail n c0 c1 c2 c3 =
     (voqc_count_total n c3) (voqc_count_U1 n c3) (voqc_count_U2 n c3) (voqc_count_U3 n c3) (voqc_count_CX n c3);;
 
 
-(* Still developing *)
-let testing_marqsim =
-  let list_coef_json = "[0.2,0.5,0.3]" in
-  let cnot_matrix_json = "[[0,1,3],[1,0,2],[2,3,0]]" in
-  let singleq_matrix_json = None in
-  let matrix_json = test list_coef_json cnot_matrix_json singleq_matrix_json
-  in
-  Printf.printf "matrix_json:\n%s\n" matrix_json
-
 
 (* Use VOQC to optimize IBM Digital gate count *)
 let ibmdigi_voqc_optimize ?(verbose=false) nqubit circ =
@@ -52,7 +43,7 @@ let ibmdigi_voqc_optimize ?(verbose=false) nqubit circ =
   (* Optimize again *)
   let c3 = voqc_optimize n c2 in
   if verbose then print_optimization_detail n c0 c1 c2 c3;
-  (c0, c3, n);;
+  c3;;
 
 
 
@@ -67,7 +58,10 @@ let trotterStd_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowpr
   let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
   if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
   try
-    translate_lowp2circ_std err t lp nq 
+    let n = trotter_step err t lp in
+    let astep = trotter_astep n lp in
+    let cc = synth_digital_ibm t nq astep in	
+    (ibmdigi_voqc_optimize ~verbose:verbose nq cc, n)	
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -83,10 +77,26 @@ let trotterQDrift_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lo
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
   if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
   try
-    translate_lowp2circ_qdrift err t lp nq 
+    let cc = translate_lowp2circ_qdrift err t lp nq in
+    (ibmdigi_voqc_optimize ~verbose:verbose nq cc, 1) 
   with exn -> dbg "trotterQDrift_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
+let trotterMarQSim_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
+  (* Set seed to reproduce results *)
+  Random.init 10;
 
+  if verbose then dbg "---- Trotterization (MarQSim) -> IBMDigital circuits: ----";
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+  try
+    let cc = translate_lowp2circ_marqsim err t lp nq in
+    (ibmdigi_voqc_optimize ~verbose:verbose nq cc, 1)
+  with exn -> dbg "trotterMarQSim_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
 
 

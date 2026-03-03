@@ -55,7 +55,106 @@ let find_api_path () =
   in
   loop candidates
 
-let get_matrix_pgc list_coef_json cnot_matrix_json singleq_matrix_json =
+let string_of_json_float f =
+  let s = Printf.sprintf "%.17g" f in
+  if String.equal s "-nan" || String.equal s "nan" then failwith "nan is not valid JSON"
+  else if String.equal s "inf" || String.equal s "-inf" then
+    failwith "infinity is not valid JSON"
+  else s
+
+let string_of_json_list string_of_value xs =
+  "[" ^ String.concat "," (List.map string_of_value xs) ^ "]"
+
+let string_of_json_float_list = string_of_json_list string_of_json_float
+
+let string_of_json_int_list = string_of_json_list string_of_int
+
+let string_of_json_int_matrix = string_of_json_list string_of_json_int_list
+
+let skip_ws s idx =
+  while
+    !idx < String.length s
+    &&
+    match s.[!idx] with
+    | ' ' | '\n' | '\r' | '\t' -> true
+    | _ -> false
+  do
+    incr idx
+  done
+
+let expect_char s idx c =
+  skip_ws s idx;
+  if !idx >= String.length s || s.[!idx] <> c then
+    failwith (Printf.sprintf "invalid JSON: expected '%c'" c);
+  incr idx
+
+let parse_json_float s idx =
+  skip_ws s idx;
+  let start = !idx in
+  while
+    !idx < String.length s
+    &&
+    match s.[!idx] with
+    | '0' .. '9' | '-' | '+' | '.' | 'e' | 'E' -> true
+    | _ -> false
+  do
+    incr idx
+  done;
+  if !idx = start then failwith "invalid JSON: expected number";
+  float_of_string (String.sub s start (!idx - start))
+
+let parse_json_float_list s idx =
+  expect_char s idx '[';
+  skip_ws s idx;
+  if !idx < String.length s && s.[!idx] = ']' then (
+    incr idx;
+    [])
+  else
+    let rec loop acc =
+      let value = parse_json_float s idx in
+      skip_ws s idx;
+      if !idx < String.length s && s.[!idx] = ',' then (
+        incr idx;
+        loop (value :: acc))
+      else (
+        expect_char s idx ']';
+        List.rev (value :: acc))
+    in
+    loop []
+
+let parse_json_float_matrix s =
+  let idx = ref 0 in
+  expect_char s idx '[';
+  skip_ws s idx;
+  let rows =
+    if !idx < String.length s && s.[!idx] = ']' then (
+      incr idx;
+      [])
+    else
+      let rec loop acc =
+        let row = parse_json_float_list s idx in
+        skip_ws s idx;
+        if !idx < String.length s && s.[!idx] = ',' then (
+          incr idx;
+          loop (row :: acc))
+        else (
+          expect_char s idx ']';
+          List.rev (row :: acc))
+      in
+      loop []
+  in
+  skip_ws s idx;
+  if !idx <> String.length s then failwith "invalid JSON: trailing data";
+  rows
+
+let get_matrix_pgc list_coef cnot_matrix singleq_matrix =
+  let list_coef_json = string_of_json_float_list list_coef in
+  let cnot_matrix_json = string_of_json_int_matrix cnot_matrix in
+  let singleq_matrix_json =
+    match singleq_matrix with
+    | Some m -> Some (string_of_json_int_matrix m)
+    | None -> None
+  in
   let python_bin =
     match find_python_path "python3" with
     | Some p -> p
@@ -73,7 +172,7 @@ let get_matrix_pgc list_coef_json cnot_matrix_json singleq_matrix_json =
   let ic = Unix.open_process_args_in python_bin py_args in
   let output = read_all ic in
   match Unix.close_process_in ic with
-  | Unix.WEXITED 0 -> String.trim output
+  | Unix.WEXITED 0 -> parse_json_float_matrix (String.trim output)
   | Unix.WEXITED code ->
       failwith (Printf.sprintf "python api failed with exit code %d" code)
   | Unix.WSIGNALED signal ->
