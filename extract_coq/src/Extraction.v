@@ -118,7 +118,7 @@ Separate Extraction
   QBlueCompile.translate_highp2circ 
   QBlueCompile.translate_lowp2circ_std 
   QBlueCompile.translate_lowp2circ_qdrift
-  QBlueCompile.test
+  QBlueCompile.translate_lowp2circ_marqsim
   QBlueCompile.translate_lowp2circ_TTS_LCU
 
 (* gate decomposition pass *)

@@ -5,15 +5,6 @@ Require Export QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
 
 
-Definition paulimat_eqb (a b : paulimat) : bool :=
-  match a, b with
-  | paulix, paulix => true
-  | pauliy, pauliy => true
-  | pauliz, pauliz => true
-  | paulii, paulii => true
-  | _, _ => false
-  end.
-
 Definition app_pauli (s1 s2 : paulimat) : (C * paulimat) :=
   match s1, s2 with
   | paulii, x => (C1, x)

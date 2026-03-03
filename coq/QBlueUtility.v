@@ -1,6 +1,24 @@
 (* Define the unitilies, including numbers etc *)
 Require Import Reals.
 Require Export QuantumLib.Complex.
+From QBlue Require Import QBlueSyntax.
+
+(* Define the utility functions, including ceil, random generator, etc. *)
+
+Definition paulimat_eqb (a b : paulimat) : bool :=
+  match a, b with
+  | paulix, paulix => true
+  | pauliy, pauliy => true
+  | pauliz, pauliz => true
+  | paulii, paulii => true
+  | _, _ => false
+  end.
+
+Fixpoint mult_r_hplus (r : R) (p : lowprog) : lowprog :=
+  match p with [] => []
+  | x :: ax => (r * (fst x), snd x) :: (mult_r_hplus r ax)
+  end.  
+
 
 Definition R2 : R := R1 + R1.
 Definition R4 : R := R1 + R1 + R1 + R1.

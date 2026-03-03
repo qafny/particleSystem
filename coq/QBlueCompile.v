@@ -43,8 +43,13 @@ Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat)
   let lowp : lowprog := trotter_qdrift err t lp in 
   synth_digital_ibm t nbit lowp.
 
-Definition test (m_cnot : Mat1) (m_singleq : option Mat1) : Mat2 := 
-  GenPgc m_cnot m_singleq.
+Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
+: ucom ExtractionGateSet.U := 
+  let lowp : lowprog := trotter_marqsim err t lp nbit in 
+  synth_digital_ibm t nbit lowp.
+
+Definition test (prob : list R) (m_cnot : Mat1) (m_singleq : option Mat1) : Mat2 := 
+  GenPgc prob m_cnot m_singleq.
 
 Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) 
 : ucom ExtractionGateSet.U := 

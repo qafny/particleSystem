@@ -2,24 +2,94 @@ From Coq Require Import List.
 From Coq Require Import List String ZArith QArith Reals.
 Require Import QBlueUtility.
 Require Import QBlueSyntax.
-Require Import QBlueQdrift.
+From QBlue Require Import QBlueParTransJwt.
+From QBlue Require Import QBlueQdrift.
 
 
-(* Currently use list for debugging the flow *)
-(*  *)
 Definition Mat1 := list (list nat).
 Definition Mat2 := list (list R).
+Definition PauStrType := nat -> paulimat.
+
 (* CNOT matrix, single qubit matrix, probablity matrix *)
-Parameter GenPgc: Mat1 -> option Mat1 -> Mat2.
+Parameter GenPgc: (list R) -> Mat1 -> option Mat1 -> Mat2.
 
+Definition get_trans_func (mat : Mat2) : (nat -> list R) := 
+  fun i => nth_default [] mat i.
 
+(* generate the list of the coefficients *)
+Definition get_coef (h : lowprog) : list R :=
+  map (fun x => fst (fst x)) h.
 
+Definition is_I (p : paulimat) : bool := paulimat_eqb p paulii.
+Definition is_XY (p : paulimat) : bool := orb (paulimat_eqb p paulix) (paulimat_eqb p pauliy).
 
+(* calculate the CNOT costs of to Pauli String
+n: # of qubits of a pauli string *)
+Fixpoint cnot_cost_ops (a b : PauStrType) (n : nat) : nat :=
+  match n with 0 => 0
+            | S m => 
+      let x := (a m) in let y := (b m) in
+      let base := if paulimat_eqb x y then 1%nat else 0%nat in
+      let extra := if andb (negb (is_I x)) (negb (is_I y))
+                   then if paulimat_eqb x y then 1%nat else 0%nat
+                   else 0%nat in
+      base + extra + cnot_cost_ops a b m
+  end.
 
-(* use sum_w for lambda, use the same qdrift_step *)
+(* calculate the cost of a paulistring with each term of lp:
+f: calculate the cost of transition from one pauli string to another, given the total number of qubits. *)
+Definition row_costs (f : PauStrType -> PauStrType -> nat -> nat) (row : lowprog_ten) 
+  (lp : lowprog) (n : nat) : list nat :=
+  map (fun t => f (snd row) (snd t) n) lp.
 
-(* only need to modify sample function. *)
+Definition get_CNOT_matrix (lp : lowprog) (nq : nat) : Mat1 :=
+  map (fun row => row_costs cnot_cost_ops row lp nq) lp.
 
+Definition get_trans (lp : lowprog) (nq : nat) : (nat -> list R) := 
+  let coef := get_coef lp in
+  let cnot := get_CNOT_matrix lp nq in
+  let mat := GenPgc coef cnot None in  
+  get_trans_func mat.
+
+(* Helper function to sample a term from a list of weights. It returns the index of the sampled term. *)
+Fixpoint sample_aterm_markov (lp : list R) (num : R) (aux : nat) : nat :=
+  match lp with 
+  | [] => aux
+  | w :: app => if Rltb num (Rabs w) then aux 
+    else sample_aterm_markov app (Rminus num (Rabs w)) (S aux)
+  end.
+
+(* Based on the given term ID and transition matrix, sample the next term *)
+Fixpoint markov (prob_init : list R) (nq termID Nsample : nat) (mat : nat -> list R) : list nat :=
+  let rn := random_float 1 in
+  match Nsample with 
+  | 0 => []
+  | S n' => let lprob := if Nat.ltb termID 0 then prob_init else mat termID in
+    let nid := sample_aterm_markov lprob rn 0 in
+    nid :: (markov prob_init nq nid n' mat)
+  end.
+
+Definition get_markov_chain (lp : lowprog) (nq Nsample : nat) := 
+  let prob_init := get_coef lp in
+  let trans_matrix := get_trans lp nq in
+  markov prob_init nq (0 - 1)%nat Nsample trans_matrix.
+
+Fixpoint gen_lowprog_markov (lp : lowprog) (ltid : list nat) : lowprog :=
+  match ltid with 
+  | [] => []
+  | tid :: app => let (coef, h) := nth_default (C0, fun _ => paulii) lp tid in
+    let theT := if Rltb (fst coef) R0 then (RtoC (Rminus R0 R1), h) else (C1, h) in
+    theT :: gen_lowprog_markov lp app
+  end.
+
+Definition trotter_marqsim (err t : R) (lp : lowprog) (nq : nat) : lowprog :=
+  let N := qdrift_step err t lp in
+  let markov_chain := get_markov_chain lp nq N in
+  let totw := sum_w lp (length lp) in
+  mult_r_hplus (totw * t / (INR N)) (gen_lowprog_markov lp markov_chain).
+  
+
+(*
 Fixpoint trans_matrix_row' (h:lowprog) (n:nat) (size:nat) :=
   match h with [] => fun _ => 0
              | x::xs => fun i => if i =? (size - 1 - length xs) then (Rabs (fst (fst x)) / sum_w h n)%R else trans_matrix_row' xs n size i
@@ -154,6 +224,7 @@ Definition merged_trans (t:lowprog) (n:nat) := fun i j => Rplus (Rmult 0.4 (gen_
 
 (*h is lowprog, t is the time, n is the qubit size and ni is the number of samples. *)
 Definition marqsim_algo_all h t n ni := marqsim_algo h t n (merged_trans h n) ni.
+*)
 
 (*the subrountine min_cost_flow_problem, please use the Successive Shortest Path algorithm below, 
    with the find_shortest_path algorithm to be Dijkstra’s. *)
