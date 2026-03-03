@@ -245,7 +245,7 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
   let best_score = ref max_int in 
   for flag_path = 1 to 4 do
     let (cc, r) = translation_lowprog_ap ~verbose:false lp nqbit err t flag_path in
-	let score = r * (voqc_count_U2 nqbit cc) in
+	let score = r * (voqc_count_CX nqbit cc) in
 	dbg "Path flag: %d; splitting r: %d; # CNOT gates: %d." flag_path r score;
 	if score < !best_score then 
 	begin
