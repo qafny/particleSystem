@@ -59,11 +59,33 @@ let trotterStd_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowpr
   if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
   try
     let n = trotter_step err t lp in
-    let astep = trotter_astep n lp in
+    let astep = trotter_astep (Float.of_int n) lp in
     let cc = synth_digital_ibm t nq astep in	
     (ibmdigi_voqc_optimize ~verbose:verbose nq cc, n)	
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
+
+
+(* 2nd-order trotterization; decompose to IBM digital *)
+let trotter2nd_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
+  if verbose then dbg "---- Trotterization (2nd-order) -> IBMDigital circuits: ----";
+  let r = trotter_step_2nd_order err t lp in
+  let nterm = Stdlib.List.length lp in
+  let npau = r * nterm in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
+  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+  try
+    let n = trotter_step_2nd_order err t lp in
+    let astep1 = trotter_astep (( /. ) (Float.of_int n) 2.0) (Stdlib.List.rev lp) in
+    let astep2 = trotter_astep (( /. ) (Float.of_int n) 2.0) lp in
+    let astep = Stdlib.List.append astep1 astep2 in
+    let cc = synth_digital_ibm t nq astep in	
+    (ibmdigi_voqc_optimize ~verbose:verbose nq cc, n)	
+  with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
 
 let trotterQDrift_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
   (* Set seed to reproduce results *)
@@ -98,5 +120,4 @@ let trotterMarQSim_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : l
     (ibmdigi_voqc_optimize ~verbose:verbose nq cc, 1)
   with exn -> dbg "trotterMarQSim_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
-
 

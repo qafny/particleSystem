@@ -39,4 +39,4 @@ Fixpoint sample (lp : lowprog) (N : nat) (totw : R) : lowprog :=
 Definition trotter_qdrift (err t : R) (lp : lowprog) : lowprog :=
   let N := qdrift_step err t lp in
   let totw := sum_w lp (length lp) in
-  mult_r_hplus (totw * t / (INR N)) (sample lp N totw).
+  mult_r_hplus (totw / (INR N)) (sample lp N totw).

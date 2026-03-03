@@ -86,7 +86,7 @@ Definition trotter_marqsim (err t : R) (lp : lowprog) (nq : nat) : lowprog :=
   let N := qdrift_step err t lp in
   let markov_chain := get_markov_chain lp nq N in
   let totw := sum_w lp (length lp) in
-  mult_r_hplus (totw * t / (INR N)) (gen_lowprog_markov lp markov_chain).
+  mult_r_hplus (totw / (INR N)) (gen_lowprog_markov lp markov_chain).
   
 
 (*

@@ -81,8 +81,9 @@ let parse_pauli (input : string) : lowprog =
 (* 0.1 lowprog -> circ *)
 let lowprog_to_circ ?(verbose=false) (err : float) (t : float) (nq : int) (lp : lowprog) (flag_path : int) =
   match flag_path with
-  | 0 -> trotterStd_IBMDigital ~verbose:verbose err t lp nq
-  | 1 -> trotterQDrift_IBMDigital ~verbose:verbose err t lp nq
+  | 1 -> trotterStd_IBMDigital ~verbose:verbose err t lp nq
+  | 2 -> trotter2nd_IBMDigital ~verbose:verbose err t lp nq
+  | 3 -> trotterQDrift_IBMDigital ~verbose:verbose err t lp nq
   | _ -> trotterMarQSim_IBMDigital ~verbose:verbose err t lp nq
 
 
@@ -229,11 +230,11 @@ let summarize_results dirname rst_file =
       ()
 *)
 
-let translation_lowprog_to_optimize_ap1 ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string) (flag_path : int)  =
-  print_endline "Enter translation_lowprog_to_optimize_ap1";
+let translation_lowprog_to_optimize_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string) (flag_path : int)  =
+  print_endline "Enter translation_lowprog_to_optimize_ap";
   flush stdout;
   let (c, r) = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
-  print_endline "Finish translation_lowprog_to_optimize_ap1";
+  print_endline "Finish translation_lowprog_to_optimize_ap";
   flush stdout;
   (c, r)
 
@@ -242,8 +243,8 @@ let translation_lowprog_to_optimize (lp : lowprog) (nqbit : int) (err : float) (
   let best_path = ref 0 in
   
   let best_score = ref max_int in 
-  for flag_path = 0 to 2 do
-    let (cc, r) = translation_lowprog_to_optimize_ap1 ~verbose:true lp nqbit err t fout flag_path in
+  for flag_path = 1 to 4 do
+    let (cc, r) = translation_lowprog_to_optimize_ap ~verbose:true lp nqbit err t fout flag_path in
 	let score = r * (voqc_count_U2 nqbit cc) in
 	dbg "Path flag: %d; splitting r: %d; # CNOT gates: %d." flag_path r score;
 	if score < !best_score then 
@@ -252,7 +253,7 @@ let translation_lowprog_to_optimize (lp : lowprog) (nqbit : int) (err : float) (
       best_path := flag_path;
     end
   done; 
-  let (cc, r) = translation_lowprog_to_optimize_ap1  ~verbose:false lp nqbit err t fout !best_path in
+  let (cc, r) = translation_lowprog_to_optimize_ap  ~verbose:false lp nqbit err t fout !best_path in
   cc
 
 

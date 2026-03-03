@@ -117,6 +117,7 @@ Cd "./extracted".
 Separate Extraction
   QBlueCompile.translate_highp2circ 
   QBlueCompile.translate_lowp2circ_std 
+  QBlueCompile.translate_lowp2circ_std_2nd_order 
   QBlueCompile.translate_lowp2circ_qdrift
   QBlueCompile.translate_lowp2circ_marqsim
   QBlueCompile.translate_lowp2circ_TTS_LCU
