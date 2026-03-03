@@ -230,21 +230,21 @@ let summarize_results dirname rst_file =
       ()
 *)
 
-let translation_lowprog_to_optimize_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string) (flag_path : int)  =
-  print_endline "Enter translation_lowprog_to_optimize_ap";
+let translation_lowprog_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (flag_path : int)  =
+  print_endline "Enter translation_lowprog_ap";
   flush stdout;
   let (c, r) = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
-  print_endline "Finish translation_lowprog_to_optimize_ap";
+  print_endline "Finish translation_lowprog_ap";
   flush stdout;
   (c, r)
 
 
-let translation_lowprog_to_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string)  =
-  let best_path = ref 0 in
+let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) =
+  let best_path = ref 100 in
   
   let best_score = ref max_int in 
   for flag_path = 1 to 4 do
-    let (cc, r) = translation_lowprog_to_optimize_ap ~verbose:true lp nqbit err t fout flag_path in
+    let (cc, r) = translation_lowprog_ap ~verbose:false lp nqbit err t flag_path in
 	let score = r * (voqc_count_U2 nqbit cc) in
 	dbg "Path flag: %d; splitting r: %d; # CNOT gates: %d." flag_path r score;
 	if score < !best_score then 
@@ -253,8 +253,8 @@ let translation_lowprog_to_optimize (lp : lowprog) (nqbit : int) (err : float) (
       best_path := flag_path;
     end
   done; 
-  let (cc, r) = translation_lowprog_to_optimize_ap  ~verbose:false lp nqbit err t fout !best_path in
-  cc
+  let (cc, r) = translation_lowprog_ap  ~verbose:false lp nqbit err t !best_path in
+  (cc, r)
 
 
 (*

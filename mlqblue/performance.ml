@@ -6,7 +6,6 @@ open Util
 
 
 let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) =
-    let fout = ".tmp.qasm" in
     Printf.printf  "Start analyze_one_circuit\n";
 	flush Stdlib.stdout;
     let lp = parse_pauli str_input in
@@ -15,7 +14,8 @@ let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_pa
 	let nqbit = get_dim_pauli str_input in
     Printf.printf "After getting qubit %d\n%!" nqbit;
 	flush Stdlib.stdout;
-	translation_lowprog_to_optimize lp nqbit err t fout
+	if flag_path = 0 then translation_lowprog_optimize lp nqbit err t
+	else translation_lowprog_ap lp nqbit err t flag_path 
 
 
 let is_txt_file (path : string) : bool =
@@ -95,7 +95,7 @@ let () =
   in
 
   let usage =
-    "Usage: dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-o <string>] [-p <int>]"
+    "Usage: dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-p <int>]"
   in
 
   Arg.parse speclist set_path usage;
@@ -109,5 +109,4 @@ let () =
   in
 
   run !err !t !fout path !path_flag
-
 
