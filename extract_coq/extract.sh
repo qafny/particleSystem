@@ -16,6 +16,9 @@ modules="QBlueCompile"
 
 cd $dir_src
 
+# Ensure output directories exist (Coq extraction fails if missing).
+mkdir -p "$dir_ml_ori" "$dir_ml"
+
 # make coq project first
 cd $dir_coq
 make
@@ -30,4 +33,3 @@ echo "Moving generated files to ml..."
 python3 prune.py $dir_ml_ori $dir_ml $modules
 
  
-

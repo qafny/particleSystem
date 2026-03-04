@@ -1,0 +1,5 @@
+(library
+ (name ablib)
+ (wrapped false)
+ (modules ab_group ab_trotter)
+ (libraries zarith qbluelib))

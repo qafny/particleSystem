@@ -79,9 +79,19 @@ let parse_pauli (input : string) : lowprog =
 
 
 (* 0.1 lowprog -> circ *)
-let lowprog_to_circ ?(verbose=false) (err : float) (t : float) (nq : int) (lp : lowprog) (flag_path : int) =
+let lowprog_to_circ
+    ?(verbose = false)
+    (err : float)
+    (t : float)
+    (nq : int)
+    (lp : lowprog)
+    (flag_path : int)
+    (grouping : string) =
   match flag_path with
   | 0 -> trotterStd_IBMDigital ~verbose:verbose err t lp nq
+  | 1 -> trotterQDrift_IBMDigital ~verbose:verbose err t lp nq
+  | 2 -> abFirst_IBMDigital ~verbose:verbose err t lp nq grouping
+  | 3 -> abSecond_IBMDigital ~verbose:verbose err t lp nq grouping
   | _ -> trotterQDrift_IBMDigital ~verbose:verbose err t lp nq
 
 
@@ -248,7 +258,7 @@ let string_to_qasm ?(filename="") (str_input : string) (err : float) (t : float)
   try
     let lp = parse_pauli str_input in
     let nqbit = get_dim_pauli str_input in
-    let ham = lowprog_to_circ err t nqbit lp flag_path in
+    let ham = lowprog_to_circ err t nqbit lp flag_path "none" in
     write_qasm_file fout ham
 
   with
@@ -264,7 +274,7 @@ let string_to_qasm ?(filename="") (str_input : string) (err : float) (t : float)
 let translation_lowprog_to_optimize_ap1 ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string) (flag_path : int)  =
   print_endline "Enter translation_lowprog_to_optimize_ap1";
   flush stdout;
-  let ham = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
+  let ham = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path "none" in
   print_endline "In translation_lowprog_to_optimize_ap1";
   flush stdout;
 
@@ -282,21 +292,23 @@ let translation_lowprog_to_optimize_ap ?(verbose=false) (lp : lowprog) (nqbit : 
   (c0, c1, n);;
 *)
 
-let translation_lowprog_to_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) (fout : string)  =
-  let best_path = ref 1 in
-  (*
-  let best_score = ref max_int in 
-  for flag_path = 1 to 1 do
-    let (c0, c1, n) = translation_lowprog_to_optimize_ap1 ~verbose:true lp nqbit err t fout flag_path in
-	let score = voqc_count_U2 n c1 in
-	if score < !best_score then 
-	begin
-      best_score := score;
-      best_path := flag_path;
-    end
-  done; *)
-  let (c0, c1, n) = translation_lowprog_to_optimize_ap1  ~verbose:true lp nqbit err t fout !best_path in
-  (c0, c1, n)
+let translation_lowprog_to_optimize
+    (lp : lowprog)
+    (nqbit : int)
+    (err : float)
+    (t : float)
+    (fout : string)
+    (flag_path : int)
+    (grouping : string) =
+  (* Keep an "auto" mode for experimentation: pass -1 to select an internal default. *)
+  if flag_path = -1 then
+    let best_path = ref 1 in
+    let ham = lowprog_to_circ ~verbose:true err t nqbit lp !best_path grouping in
+    let (c0, c1, n) = read_qasm_and_optimize1 ~verbose:true nqbit ham in
+    (c0, c1, n)
+  else
+    let ham = lowprog_to_circ ~verbose:true err t nqbit lp flag_path grouping in
+    read_qasm_and_optimize1 ~verbose:true nqbit ham
 
 
 
@@ -306,5 +318,3 @@ let string_files_to_qasm_files (err : float) (t : float) (input_files : string l
 	let fout = af ^ ".qasm" in
 	string_to_qasm ~filename:af s err t fout 0 in
   Stdlib.List.iter helper input_files;;
-
-

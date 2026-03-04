@@ -5,7 +5,7 @@ open Analyze_utility
 open Util
 
 
-let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) =
+let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) (grouping : string) =
     let fout = ".tmp.qasm" in
     Printf.printf  "Start analyze_one_circuit\n";
 	flush Stdlib.stdout;
@@ -15,7 +15,7 @@ let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_pa
 	let nqbit = get_dim_pauli str_input in
     Printf.printf "After getting qubit %d\n%!" nqbit;
 	flush Stdlib.stdout;
-	translation_lowprog_to_optimize lp nqbit err t fout
+	translation_lowprog_to_optimize lp nqbit err t fout flag_path grouping
 
 
 let is_txt_file (path : string) : bool =
@@ -45,7 +45,7 @@ let rec collect_txt_files (dir : string) : string list =
   loop []
 
 
-let run (err : float) (t : float) (fout : string) (path : string) (flag_path : int) : unit =
+let run (err : float) (t : float) (fout : string) (path : string) (flag_path : int) (grouping : string) : unit =
   dbg "Expected error: %f;   t: %f" err t;
   match (Unix.lstat path).st_kind with
   | Unix.S_DIR ->
@@ -63,7 +63,7 @@ let run (err : float) (t : float) (fout : string) (path : string) (flag_path : i
         exit 1
       );
       let s = read_string_file path in
-      ignore (analyze_one_circuit s err t flag_path)
+      ignore (analyze_one_circuit s err t flag_path grouping)
 
   | _ ->
       prerr_endline "Error: path is neither a regular file nor a directory";
@@ -77,6 +77,7 @@ let () =
   let t    = ref 0.01 in
   let fout = ref "result.txt" in
   let path_flag = ref 0 in
+  let grouping = ref "none" in
   let path : string option ref = ref None in
 
   let set_path s =
@@ -85,17 +86,25 @@ let () =
     | Some _ -> raise (Arg.Bad "Only one <file/path> positional argument is allowed")
   in
 
+  let set_grouping s =
+    match String.lowercase_ascii s with
+    | "none" | "qwc" | "fc" -> grouping := String.lowercase_ascii s
+    | _ ->
+        raise (Arg.Bad "Invalid -g value. Expected one of: none|qwc|fc")
+  in
+
   let speclist =
     [
       ("-e", Arg.Set_float err, "Set err (float). Default: 1.0");
       ("-t", Arg.Set_float t,   "Set t (float). Default: 0.01");
       ("-o", Arg.Set_string fout,   "Set o (string). Default: result.txt");
       ("-p", Arg.Set_int path_flag, "Set p (int). Default: 0");
+      ("-g", Arg.String set_grouping, "Set grouping: none|qwc|fc. Default: none");
     ]
   in
 
   let usage =
-    "Usage: dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-o <string>] [-p <int>]"
+    "Usage: dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-o <string>] [-p <int>] [-g none|qwc|fc]"
   in
 
   Arg.parse speclist set_path usage;
@@ -108,6 +117,4 @@ let () =
         exit 2
   in
 
-  run !err !t !fout path !path_flag
-
-
+  run !err !t !fout path !path_flag !grouping

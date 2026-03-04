@@ -9,5 +9,3 @@ let is_finite x =
 let dbg fmt =
   Printf.kfprintf (fun oc -> output_char oc '\n'; flush oc) stderr ("[DBG] " ^^ fmt)
 
-
-
