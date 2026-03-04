@@ -20,23 +20,23 @@ Definition qdrift_step (err t : R) (input : lowprog) : nat :=
   let n1 := ceilR_N (R2 * lambda * lambda * t * t / err) in 
 	ceilR_N ((INR n1) * (exp (R2 * t * lambda / (INR n1)))).
 
-Fixpoint sample_once (lp : lowprog) (bound : R) : lowprog :=
+Fixpoint sample_once (lp : lowprog) (num : R) : lowprog :=
   match lp with 
   | [] => []
-  | (w, h) :: app => if Rltb (random_float bound) (Rabs (fst w)) 
+  | (w, h) :: app => if Rltb num (Rabs (fst w)) 
     then if Rltb (fst w) R0 
       then [(RtoC (Rminus R0 R1), h)] 
       else [(C1, h)]
-    else sample_once app bound
-  end. 
+    else sample_once app (Rminus num (Rabs (fst w)))
+  end.
 
 Fixpoint sample (lp : lowprog) (N : nat) (totw : R) : lowprog :=
   match N with
   | O => []
-  | S n' => (sample_once lp totw) ++ (sample lp n' totw)
+  | S n' => (sample_once lp (random_float totw)) ++ (sample lp n' totw)
   end.
 
-Definition trotter_qdrift (err t: R) (lp : lowprog) : lowprog :=
+Definition trotter_qdrift (err t : R) (lp : lowprog) : lowprog :=
   let N := qdrift_step err t lp in
   let totw := sum_w lp (length lp) in
-  sample lp N totw.
+  mult_r_hplus (totw / (INR N)) (sample lp N totw).

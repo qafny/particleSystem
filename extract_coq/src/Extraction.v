@@ -108,13 +108,18 @@ Extract Inlined Constant Complex.Copp => "(fun (a, b) -> (-. a, -. b))".
 
 (* Extract Random generators to Ocaml Random *)
 Extract Inlined Constant random_float => "Random.float".
+From QBlue Require Import QBlueMarQSim.
+Extract Inlined Constant GenPgc => "Bridge.get_matrix_pgc".
+
 
 Set Extraction Optimize.
 Cd "./extracted".
 Separate Extraction
   QBlueCompile.translate_highp2circ 
   QBlueCompile.translate_lowp2circ_std 
+  QBlueCompile.translate_lowp2circ_std_2nd_order 
   QBlueCompile.translate_lowp2circ_qdrift
+  QBlueCompile.translate_lowp2circ_marqsim
   QBlueCompile.translate_lowp2circ_TTS_LCU
 
 (* gate decomposition pass *)

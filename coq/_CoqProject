@@ -16,6 +16,7 @@ QBlueSynth.v
 QBlueSynthDigital.v
 QBlueCompile.v
 QBlueTTS.v
+QBlueMarQSim.v
 
 MarQsim/NetworkX.v
 MarQsim/Marqsim.v
