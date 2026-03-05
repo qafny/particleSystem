@@ -77,16 +77,19 @@ let parse_pauli (input : string) : lowprog =
 
 
 (* 0.1 lowprog -> circ *)
-let lowprog_to_circ ?(verbose=false) (err : float) (t : float) (nq : int) (lp : lowprog) (flag_path : int) =
+let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
   match flag_path with
-  | 1 -> trotterStd_IBMDigital ~verbose:verbose err t lp nq
-  | 2 -> trotter2nd_IBMDigital ~verbose:verbose err t lp nq
-  | 3 -> trotterQDrift_IBMDigital ~verbose:verbose err t lp nq
-  | _ -> trotterMarQSim_IBMDigital ~verbose:verbose err t lp nq
+  | 1 -> trotterStd_IBMDigital ~verbose:verbose lp nq err t
+  | 2 -> trotter2nd_IBMDigital ~verbose:verbose lp nq err t
+  | 3 -> trotterQDrift_IBMDigital ~verbose:verbose lp nq err t
+  | _ -> trotterMarQSim_IBMDigital ~verbose:verbose lp nq err t
 
-let lowprog_to_analog_circ ?(verbose=false) (err : float) (t : float) (nq : int) (lp : lowprog) (flag_path : int) =
+let lowprog_to_analog_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
   match flag_path with
-  | _ -> trotterStd_IndiAnalog ~verbose:verbose err t lp nq
+  | 11 -> trotterStd_IndiAnalog ~verbose:verbose lp nq err t
+  | 12 -> trotter2nd_IndiAnalog ~verbose:verbose lp nq err t
+  | 13 -> trotterQDrift_IndiAnalog ~verbose:verbose lp nq err t
+  | _ -> trotterMarQSim_IndiAnalog ~verbose:verbose lp nq err t
 
 
 let rec get_dim_aux (u : coq_U ucom) (acc : int) : int =
@@ -181,19 +184,36 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
   let best_path = ref 100 in
   let best_score = ref max_int in 
   for flag_path = 1 to 4 do
-    let (cc, r) = lowprog_to_circ ~verbose:true err t nqbit lp flag_path in 
+    let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
 	let score = r * (voqc_count_CX nqbit cc) in
-	dbg "Path flag: %d; splitting r: %d; # CNOT gates: %d." flag_path r score;
+	let ntot = voqc_count_total nqbit cc in
+	dbg "Path flag: %d; # total gates: %d; # CNOT gates: %d.\n" flag_path ntot score;
 	if score < !best_score then 
 	begin
       best_score := score;
       best_path := flag_path;
     end
   done; 
-  let (cc, r) = lowprog_to_circ ~verbose:false err t nqbit lp !best_path in
+  let (cc, r) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
   (cc, r)
 
-
+let translation_lowprog_analog (lp : lowprog) (nqbit : int) (err : float) (t : float) =
+  let best_path = ref 100 in
+  let best_score = ref max_int in
+  for flag_path = 11 to 14 do
+    let (cc, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
+	(* currently use number of pauli strings  *)
+	let score = npau in
+	let ntot = r * (List.length cc) in
+    dbg "Path flag: %d; # total gates: %d; # multi-bit gates: %d." flag_path ntot score;
+    if score < !best_score then
+    begin
+      best_score := score;
+      best_path := flag_path;
+    end
+  done;
+  let (cc, r, npau) = lowprog_to_analog_circ ~verbose:false lp nqbit err t !best_path in
+  (cc, r, npau)
 
 
 

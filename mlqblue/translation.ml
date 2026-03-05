@@ -15,7 +15,7 @@ let print_optimization_detail n c0 c1 c2 c3 =
   dbg "Input circuit uses %d qubits, has %d gates:  { H : %d, X : %d, Rzq : %d, CX : %d }." 
     n (voqc_count_total n c1) (voqc_count_H n c1) (voqc_count_X n c1) (voqc_count_Rzq n c1) (voqc_count_CX n c1);
 
-  dbg "After optimization, the circuit uses %d gates : { U1 : %d, U2 : %d, U3 : %d, CX : %d }.\n"
+  dbg "After optimization, the circuit uses %d gates : { U1 : %d, U2 : %d, U3 : %d, CX : %d }."
     (voqc_count_total n c3) (voqc_count_U1 n c3) (voqc_count_U2 n c3) (voqc_count_U3 n c3) (voqc_count_CX n c3);;
 
 
@@ -50,7 +50,7 @@ let ibmdigi_voqc_optimize ?(verbose=false) nqubit circ =
 
 
 (* std trotterization; decompose to IBM digital *)
-let trotterStd_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
+let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Trotterization (1st-order) -> IBMDigital circuits: ----";
   let r = trotter_step err t lp in
   let nterm = Stdlib.List.length lp in
@@ -69,7 +69,7 @@ let trotterStd_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowpr
 
 
 (* 2nd-order trotterization; decompose to IBM digital *)
-let trotter2nd_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
+let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
   if verbose then dbg "---- Trotterization (2nd-order) -> IBMDigital circuits: ----";
   let r = trotter_step_2nd_order err t lp in
   let nterm = Stdlib.List.length lp in
@@ -89,7 +89,7 @@ let trotter2nd_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowpr
     raise exn
 
 
-let trotterQDrift_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
+let trotterQDrift_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   (* Set seed to reproduce results *)
   Random.init 10;
 
@@ -106,7 +106,7 @@ let trotterQDrift_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lo
   with exn -> dbg "trotterQDrift_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
-let trotterMarQSim_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
+let trotterMarQSim_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   (* Set seed to reproduce results *)
   Random.init 10;
 
@@ -125,7 +125,7 @@ let trotterMarQSim_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : l
 
 
 (* std trotterization; decompose to Indiana Analog *)
-let trotterStd_IndiAnalog ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
+let trotterStd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Trotterization (1st-order) -> Indiana analog circuits: ----";
   let r = trotter_step err t lp in
   let nterm = Stdlib.List.length lp in
@@ -137,10 +137,61 @@ let trotterStd_IndiAnalog ?(verbose=false) (err : float) (t : float) (lp : lowpr
   try
     let n = trotter_step err t lp in
     let astep = trotter_astep (Float.of_int n) lp in
-    let cc = synth_analog_indiana t nq astep in (cc, n)	
-  with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    let cc = synth_analog_indiana t nq astep in (cc, r, npau)	
+  with exn -> dbg "trotterStd_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
 
+(* 2nd-order trotterization; decompose to Indiana Analog *)
+let trotter2nd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
+  if verbose then dbg "---- Trotterization (2nd-order) -> IndiAnalog circuits: ----";
+  let r = trotter_step_2nd_order err t lp in
+  let nterm = Stdlib.List.length lp in
+  let npau = r * nterm in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
+  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+  try
+    let n = trotter_step_2nd_order err t lp in
+    let astep1 = trotter_astep (( /. ) (Float.of_int n) 2.0) (Stdlib.List.rev lp) in
+    let astep2 = trotter_astep (( /. ) (Float.of_int n) 2.0) lp in
+    let astep = Stdlib.List.append astep1 astep2 in
+    let cc = synth_analog_indiana t nq astep in (cc, r, npau)	
+  with exn -> dbg "trotterStd_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+
+let trotterQDrift_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  (* Set seed to reproduce results *)
+  Random.init 10;
+
+  if verbose then dbg "---- Trotterization (QDrift) -> IndiAnalog circuits: ----";
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+  try
+    let cc = translate_lowp2Indiana_qdrift err t lp nq in (cc, 1, npau)
+  with exn -> dbg "trotterQDrift_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+let trotterMarQSim_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  (* Set seed to reproduce results *)
+  Random.init 10;
+
+  if verbose then dbg "---- Trotterization (MarQSim) -> IndiAnalog circuits: ----";
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+  try
+    let cc = translate_lowp2Indiana_marqsim err t lp nq in (cc, 1, npau)
+  with exn -> dbg "trotterMarQSim_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
 
 
