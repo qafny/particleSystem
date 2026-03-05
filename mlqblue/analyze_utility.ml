@@ -20,8 +20,6 @@ let rec count_U1_ocaml (c : coq_U ucom) : int =
   | Coq_uapp (_, _, _) -> 0
 
 
-
-
 (* -2 read files of strings *)
 let read_string_file (filename : string) : string =
   dbg "Analyzing %s:" filename;
@@ -85,6 +83,10 @@ let lowprog_to_circ ?(verbose=false) (err : float) (t : float) (nq : int) (lp : 
   | 2 -> trotter2nd_IBMDigital ~verbose:verbose err t lp nq
   | 3 -> trotterQDrift_IBMDigital ~verbose:verbose err t lp nq
   | _ -> trotterMarQSim_IBMDigital ~verbose:verbose err t lp nq
+
+let lowprog_to_analog_circ ?(verbose=false) (err : float) (t : float) (nq : int) (lp : lowprog) (flag_path : int) =
+  match flag_path with
+  | _ -> trotterStd_IndiAnalog ~verbose:verbose err t lp nq
 
 
 let rec get_dim_aux (u : coq_U ucom) (acc : int) : int =
@@ -175,6 +177,24 @@ let log2 m = int_of_float (ceil (log10 (float_of_int m) /. log10 2.0))
 let log2up m = int_of_float (ceil (log10 (float_of_int (2 * m)) /. log10 2.0))
 
 
+let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) =
+  let best_path = ref 100 in
+  let best_score = ref max_int in 
+  for flag_path = 1 to 4 do
+    let (cc, r) = lowprog_to_circ ~verbose:true err t nqbit lp flag_path in 
+	let score = r * (voqc_count_CX nqbit cc) in
+	dbg "Path flag: %d; splitting r: %d; # CNOT gates: %d." flag_path r score;
+	if score < !best_score then 
+	begin
+      best_score := score;
+      best_path := flag_path;
+    end
+  done; 
+  let (cc, r) = lowprog_to_circ ~verbose:false err t nqbit lp !best_path in
+  (cc, r)
+
+
+
 
 
 (*		
@@ -229,32 +249,6 @@ let summarize_results dirname rst_file =
       dbg "SKIP file=%S due to EXN: %s" filename (Printexc.to_string exn);
       ()
 *)
-
-let translation_lowprog_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (flag_path : int)  =
-  print_endline "Enter translation_lowprog_ap";
-  flush stdout;
-  let (c, r) = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
-  print_endline "Finish translation_lowprog_ap";
-  flush stdout;
-  (c, r)
-
-
-let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) =
-  let best_path = ref 100 in
-  
-  let best_score = ref max_int in 
-  for flag_path = 1 to 4 do
-    let (cc, r) = translation_lowprog_ap ~verbose:false lp nqbit err t flag_path in
-	let score = r * (voqc_count_CX nqbit cc) in
-	dbg "Path flag: %d; splitting r: %d; # CNOT gates: %d." flag_path r score;
-	if score < !best_score then 
-	begin
-      best_score := score;
-      best_path := flag_path;
-    end
-  done; 
-  let (cc, r) = translation_lowprog_ap  ~verbose:false lp nqbit err t !best_path in
-  (cc, r)
 
 
 (*

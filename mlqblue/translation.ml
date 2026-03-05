@@ -3,6 +3,7 @@ open Random
 
 open QBlueSyntax
 open QBlueSynthDigital
+open QBlueSynth
 open QBlueTrotter
 open QBlueQdrift
 open QBlueCompile
@@ -22,14 +23,15 @@ let print_optimization_detail n c0 c1 c2 c3 =
 (* Use VOQC to optimize IBM Digital gate count *)
 let ibmdigi_voqc_optimize ?(verbose=false) nqubit circ =
   let n = nqubit in
-  print_endline "decompose to full gate set";
-  flush stdout;
   (* Convert to the RzQ gate set and print more statistics *)
-  let cc = decompose_to_voqc_gates circ in
   print_endline "decompose to voqc";
   flush stdout;
+  let cc = decompose_to_voqc_gates circ in
 	  
+  print_endline "convert to full gate set";
+  flush stdout;
   let c0 = cvt_egate_fullgate n cc in
+
   print_endline "convert to rzq";
   flush stdout;
 
@@ -120,4 +122,25 @@ let trotterMarQSim_IBMDigital ?(verbose=false) (err : float) (t : float) (lp : l
     (ibmdigi_voqc_optimize ~verbose:verbose nq cc, 1)
   with exn -> dbg "trotterMarQSim_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
+
+
+(* std trotterization; decompose to Indiana Analog *)
+let trotterStd_IndiAnalog ?(verbose=false) (err : float) (t : float) (lp : lowprog) (nq : int) =
+  if verbose then dbg "---- Trotterization (1st-order) -> Indiana analog circuits: ----";
+  let r = trotter_step err t lp in
+  let nterm = Stdlib.List.length lp in
+  let npau = r * nterm in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
+  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+  try
+    let n = trotter_step err t lp in
+    let astep = trotter_astep (Float.of_int n) lp in
+    let cc = synth_analog_indiana t nq astep in (cc, n)	
+  with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+
+
 

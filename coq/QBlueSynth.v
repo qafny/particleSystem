@@ -1,11 +1,13 @@
 (* Do synthesization upon different hardware *)
 
+Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
 
 
-(* This is the input for sythesization *)
-Parameter exp_ugate : R -> lowprog_ten -> ugate. (* exp(-i r H) *)
+(* exp(-i r H) *)
+Definition exp_ugate (t : R) (lp_ten : nat -> paulimat) : ugate :=
+  (t, lp_ten).
 
 
 (* 2. to gates of IBM analog, X, Z, ZZ gates *)
@@ -16,8 +18,8 @@ Fixpoint inb {A : Type} (eqb : A -> A -> bool) (a : A) (l : list A) : bool :=
   | x :: xs => if eqb x a then true else inb eqb a xs
   end.
 
-Definition fill_pl (reg : list nat) (p : paulimat) : lowprog_ten :=
-  let f := (fun id => if (inb Nat.eqb id reg) then p else paulii) in (C1, f).
+Definition fill_pl (reg : list nat) (p : paulimat) : (nat -> paulimat) :=
+  let f := (fun id => if (inb Nat.eqb id reg) then p else paulii) in f.
 
 
 (* H = exp(-i pi/4 X) exp(-i pi/4 Z) exp(-i pi/4 X). For IBM *)
@@ -77,31 +79,34 @@ Fixpoint syn_analog_indiana_x' (nbit:nat) (f : nat -> paulimat) : nat -> paulima
            then syn_analog_indiana_x' m f 
            else fun i => if i =? m then paulix else syn_analog_indiana_x' m f i
   end.
-Definition syn_analog_indiana_x (t:R) (nbit:nat) (f : nat -> paulimat) :=
+Definition syn_analog_indiana_x (t:R) (nbit:nat) (f : nat -> paulimat) : ugate :=
     (t, syn_analog_indiana_x' nbit f).
 
-Fixpoint syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list (R * (nat -> paulimat))):=
+Fixpoint syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list ugate) : list ugate :=
   match nbit with 
     0 => acc
   | S m => 
      match f m with 
        pauliy => 
           syn_analog_indiana_a m f 
-            ((Rdiv PI 4, (fun i => if i =? m then pauliz else paulii))
-                ::acc++[((Rdiv (Rmult 7 PI) 4), (fun i => if i =? m then pauliz else paulii))])
+            ((Rdiv PI R4, (fun i => if i =? m then pauliz else paulii))
+                ::acc++[((Rdiv (Rmult R7 PI) R4), (fun i => if i =? m then pauliz else paulii))])
        | pauliz => 
-          let v := (Rdiv PI 4, fun i => if i =? m then paulix else paulii)
-                      ::(Rdiv PI 4, fun i => if i =? m then pauliz else paulii)
-                      ::(Rdiv PI 4, fun i => if i =? m then paulix else paulii)::[] in
+          let v := (Rdiv PI R4, fun i => if i =? m then paulix else paulii)
+                      ::(Rdiv PI R4, fun i => if i =? m then pauliz else paulii)
+                      ::(Rdiv PI R4, fun i => if i =? m then paulix else paulii)::[] in
           syn_analog_indiana_a m f (v++acc++v)
        | _ => syn_analog_indiana_a m f acc
       end
    end.
 
-Definition synth_analog_indiana_single (t:R) (nbit : nat) (f : nat -> paulimat) :=
+Definition synth_analog_indiana_single (t:R) (nbit : nat) (f : nat -> paulimat) : list ugate :=
   syn_analog_indiana_a nbit f [syn_analog_indiana_x t nbit f].
 
-Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) :=
+(*
+Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate :=
   fold_left (fun a b => synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)::a) input [].
+*)
 
-
+Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate :=
+   fold_left (fun acc b => acc ++ synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)) input [].

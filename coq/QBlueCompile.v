@@ -13,6 +13,7 @@ Require Import QBlue.QBlueType.
 Require Import QBlue.QBlueTrotter.
 Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueSynthDigital.
+Require Import QBlue.QBlueSynth.
 Require Import QBlue.QBlueTTS.
 Require Import QBlue.QBlueMarQSim.
 
@@ -56,6 +57,10 @@ Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat)
 Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) 
 : ucom ExtractionGateSet.U := 
   TTS_LCU err t nbit lp.
+
+Definition translate_lowp2idiAna_std (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+  let lowp : lowprog := trotter err t lp in 
+  synth_analog_indiana t nbit lowp.
 
 
 Record Pipeline := {
