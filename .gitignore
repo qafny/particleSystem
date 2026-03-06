@@ -21,6 +21,7 @@ extract_coq/src/extracted
 *.qasm
 *.DS_Store
 thirdparty/
+results/
 
 # Ignore coq_makefile-generated files
 .coqdeps.d
