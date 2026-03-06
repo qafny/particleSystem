@@ -238,21 +238,21 @@ let summarize_results dirname rst_file =
       ()
 *)
 
-let translation_lowprog_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (flag_path : int)  =
+let translation_lowprog_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (flag_path : int) (grouping : string) =
   print_endline "Enter translation_lowprog_ap";
   flush stdout;
-  let (c, r) = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path in
+  let (c, r) = lowprog_to_circ ~verbose:verbose err t nqbit lp flag_path grouping in
   print_endline "Finish translation_lowprog_ap";
   flush stdout;
   (c, r)
 
 
-let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) =
+let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) (grouping : string) =
   let best_path = ref 100 in
   
   let best_score = ref max_int in 
   for flag_path = 1 to 4 do
-    let (cc, r) = translation_lowprog_ap ~verbose:false lp nqbit err t flag_path in
+    let (cc, r) = translation_lowprog_ap ~verbose:false lp nqbit err t flag_path grouping in
 	let score = r * (voqc_count_CX nqbit cc) in
 	dbg "Path flag: %d; splitting r: %d; # CNOT gates: %d." flag_path r score;
 	if score < !best_score then 
@@ -261,7 +261,7 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
       best_path := flag_path;
     end
   done; 
-  let (cc, r) = translation_lowprog_ap  ~verbose:false lp nqbit err t !best_path in
+  let (cc, r) = translation_lowprog_ap  ~verbose:false lp nqbit err t !best_path grouping in
   (cc, r)
 
 
@@ -273,4 +273,3 @@ let string_files_to_qasm_files (err : float) (t : float) (input_files : string l
 	string_to_qasm ~filename:af s err t fout 0 in
   Stdlib.List.iter helper input_files;;
 *)
-

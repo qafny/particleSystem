@@ -20,6 +20,7 @@ extract_coq/src/extracted
 .tmp*
 *.qasm
 *.DS_Store
+thirdparty/
 
 # Ignore coq_makefile-generated files
 .coqdeps.d

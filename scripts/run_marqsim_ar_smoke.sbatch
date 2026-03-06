@@ -28,7 +28,7 @@ cd "$HOME/particleSystem"
 # qbluelib sources aren't in sync yet, but a previously-built binary exists.)
 if [[ ! -x mlqblue/_build/default/performance.exe ]]; then
   cd mlqblue
-  opam exec -- dune build --root .
+  opam exec -- dune build
   cd ..
 fi
 

@@ -34,7 +34,7 @@ cd "$HOME/particleSystem"
 
 # Build performance.exe if needed
 cd mlqblue
-opam exec -- dune build --root .
+opam exec -- dune build
 cd ..
 
 # Run all MarQSim inputs and write a single CSV.

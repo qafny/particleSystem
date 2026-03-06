@@ -357,8 +357,8 @@ def main() -> int:
     ap.add_argument(
         "--pipelines",
         nargs="+",
-        choices=["auto", "std", "qdrift", "ab1", "ab2"],
-        default=["auto", "std", "qdrift"],
+        choices=["auto", "std", "std2", "qdrift", "marqsim"],
+        default=["std"],
         help="Pipeline selector; maps to performance.exe -p flag.",
     )
     ap.add_argument(
@@ -415,12 +415,12 @@ def main() -> int:
     print(f"Detected formats: {counts}", file=sys.stderr)
 
     # performance.exe uses `-p <int>` as a path/algorithm selector:
-    #   0 => std trotterization (Coq)
-    #   1 => qdrift (Coq)
-    #   2 => ablib first-order trotter
-    #   3 => ablib second-order (Strang)
-    # Keep "auto" for backward compatibility (it maps to qdrift).
-    pipeline_to_p = {"auto": 1, "std": 0, "qdrift": 1, "ab1": 2, "ab2": 3}
+    #   0 => auto optimizer
+    #   1 => std trotterization (1st-order)
+    #   2 => std trotterization (2nd-order / Strang)
+    #   3 => qdrift
+    #   4 => MarQSim
+    pipeline_to_p = {"auto": 0, "std": 1, "std2": 2, "qdrift": 3, "marqsim": 4}
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", newline="", encoding="utf-8") as csvf:

@@ -1,0 +1,297 @@
+I ran the MarQSim dataset for about 8 hours, it's timed out eventually...and some items seemed to have failed. Here are the results I did collect, no idea if I'm doing this correctly or not. Thx!
+https://docs.google.com/spreadsheets/d/1SNFULXDNG3qjWF5Pif15PRMzxbIj_0NYTQ4GJEuiUkw/edit?usp=sharing
+Only visible to youslackbot  [3:53 PM]
+OK, I won’t import this Google Drive file, but I will remember to ask you again next time.
+Liyi Li  [3:55 PM]
+understood
+[3:55 PM]Some of the setting has a very big input
+James Bryan Graves  [3:56 PM]
+If this is sort of the right direction...I can do gensis similarly, or run the ones that didn't finish with a longer timeout...like 24 hours - 48 hours
+Liyi Li  [3:56 PM]
+MarQSim_dataset	marqsim	/geode2/home/u030/gravjabr/BigRed200/particleSystem/QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_SYK1.txt	_Pauli_string_SYK1.txt	0.001	1	std	0	Trotterization (QDrift)	IBMDigital	210	21690957
+[3:56 PM]this one has std trotterization and qdrift output the same?
+James Bryan Graves  [3:57 PM]
+which columns?
+Liyi Li  [4:00 PM]
+47 and 48
+[4:00 PM]I do not see any difference between std trottrization and qdrift
+[4:00 PM]unblieveable
+[4:01 PM]@Fenfen An I guess in some omcal code, you make the call to the same function
+James Bryan Graves  [4:01 PM]
+Yes, could be :bug: :ladybug: s ... let me look a bit.
+Liyi Li  [4:03 PM]
+one thing we can do is to that we can first remove all the 0.001 error
+[4:03 PM]that is the bottleneck, and see if we can run all the 0.1 error
+[4:03 PM]we  will have a way to deal with them, no problem.
+[4:03 PM]another thing we can do for now is to compare with others. Do you want to run the same set on Paulihereal and 2QAN?
+James Bryan Graves  [4:03 PM]
+what is the no difference u mean in rows 47, 48?
+Liyi Li  [4:04 PM]
+it seems that Paulihereal can be found in phonix system
+[4:04 PM]https://github.com/iqubit-org/phoenix
+[4:05 PM]openfermion have some, but it is not specific to the task. I know that their performance will be bad
+[4:05 PM]sorry, 48, and 49
+James Bryan Graves  [4:05 PM]
+i just need to know which columns? Those rows seemed to have errored out...
+Fenfen An  [4:07 PM]
+Now I just offerred qdrift option
+James Bryan Graves  [4:08 PM]
+ah, so std pipeline is also qdrift pipeline?
+Fenfen An  [4:08 PM]
+The std trotter, and 2nd order trotter need a bit work in ocaml, it will be much faster than qdrift
+[4:09 PM]Now the path_flag is not working
+[4:10 PM]It is here in analyze_utility.ml
+image.png [4:14 PM]The two trotterization method, we have decided how to work around and it will be just worse in the gate resources
+[4:15 PM]I can add a few codes in ocaml later. I thought the qdrift result can be compared with the result in the MarQSIm paper
+[4:16 PM]But what do you mean that it will run 24 hours? Did you see any print out in the terminal? Based on the print out, you may get clues where it was stuck
+[4:17 PM]I run the MarQSim result with several minutes. Genesis is too large for my pc to parse the input pauli string, and professor said let James try the Super Conducting machine first
+James Bryan Graves  [4:18 PM]
+I can also just play around with the trotter algorithms a bit... I have them in Haskell somewhere, maybe they just need to be ported over or something...I did have a sort of specific way I do grouping of commuting terms...so I not sure how that would impact the data. But maybe it doesn't matter...I can just play around with it for fun and not commit anything.
+Liyi Li  [4:18 PM]
+@Fenfen An at this point, let's do a step at a time
+[4:19 PM]we do not need to worry about the effeciency. We first examine them, and then we can come up with solution easily.
+James Bryan Graves  [4:19 PM]
+Seems some runs failed because: Stack overflow\nFatal error: exception Stack overflow\n
+Fenfen An  [4:19 PM]
+Sure! I dont believe MarQSim takes hours
+[4:20 PM]Genesis has too big Ham, and it can not be parsed. That was what I saw
+James Bryan Graves  [4:20 PM]
+I have to set a running time for the computer...I just arbitrarily picked 8 hours.
+[4:20 PM]because i thought it would be enough :sweat_smile:
+Liyi Li  [4:20 PM]
+I think this is about compilation and resource estimate, so for std / 2nd-order std, we can just do on piple line. or try to run on small group and then the other.
+[4:20 PM]I mean small group of ppauli strings
+Fenfen An  [4:20 PM]
+It would have been finished in 30 min
+James Bryan Graves  [4:21 PM]
+it's probably just a bug...
+[4:21 PM]because if its getting Stack overflow\nFatal error: exception Stack overflow
+[4:21 PM]it's just recursing very deep
+Liyi Li  [4:21 PM]
+I think the 0.001 error bound is setup too small at this point. we can try for 0.1 now
+James Bryan Graves  [4:21 PM]
+and not "halting"
+Liyi Li  [4:21 PM]
+stack-over flow is understandable if the ocaml code has forward recursion
+[4:21 PM]that is always the case. a solution is rewrite the recursive function to tail recursion
+Fenfen An  [4:22 PM]
+Oh right, I set the error bound following the set in MarQSim
+[4:23 PM]the smallest one is 0.025
+image.png Liyi Li  [4:23 PM]
+I think you can tell James where to set the error
+Fenfen An  [4:23 PM]
+MarQSim: Reconciling Determinism and Randomness in
+Compiler Optimization for :snowman_without_snow:antum Simulation
+Liyi Li  [4:23 PM]
+Error bound and then we can experiment
+Fenfen An  [4:24 PM]
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_Ar.txt -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_BeH2_f.txt -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_BeH2_unf.txt -e 0.025 -t 0.15
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_Cl-.txt -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_H2O.txt -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_HF.txtz -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_LiH_f.txt -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_LiH_unf.txt -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_Na+.txt -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_OH-.txt -e 0.025 -t 0.8
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_SYK1.txt -e 0.025 -t 0.15
+dune exec -- ./performance.exe ../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_SYK2.txt -e 0.025 -t 0.15[4:24 PM]THis is the cmd I ran
+[4:24 PM]I finished in 5 min
+[4:26 PM]../QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_SYK*.txt  These two files has some format error, it would be runnable if fixing the input file
+Liyi Li  [4:41 PM]
+run on what?
+[4:41 PM]@Fenfen An
+[4:41 PM]std? second-order? qdrift? marqsim?
+[4:41 PM]if you output ml code, please also upload. James does not know what kind of code you are executing
+[4:42 PM]I think we can postpone the running-tests for the error bound setting for 0.001. it seems that is costly
+[4:42 PM]https://docs.google.com/spreadsheets/d/1SNFULXDNG3qjWF5Pif15PRMzxbIj_0NYTQ4GJEuiUkw/edit?usp=sharing
+Fenfen An  [4:42 PM]
+The above is the cmd. No path_falg now. Only qdrift by default
+Liyi Li  [4:42 PM]
+here
+Fenfen An  [6:05 PM]
+Even the error 0.001 is still finished within 1 hour for the MarQSim, with qdrift (edited) 
+Liyi Li  [6:06 PM]
+Which one
+[6:06 PM]Marqsim
+[6:06 PM]Qdrift?
+Fenfen An  [6:06 PM]
+yes
+Liyi Li  [6:07 PM]
+I mean @James Bryan Graves said that the std Trotter or second order needs 8 hour
+[6:07 PM]What is the point of saying adrift and marqsim Is quixk
+James Bryan Graves  [6:07 PM]
+I arbitrarily set a limit of 8 hours
+Fenfen An  [6:07 PM]
+I dont know how James did that. Our project, I did not support that path now
+James Bryan Graves  [6:09 PM]
+it just never finished. I'll try running the ones that were outstanding and see if i can workout which ones are failing for me. maybe i have old code, or broke something...who knows.
+[6:11 PM]side note: it sort of feels like maybe there is already some sort of order in the datasets? if i play around with some grouping commuting strategies, which would shuffle terms, the optimization gets worse...which sort of implies the order in the dataset is already helpful to the optimizer? Maybe?
+[6:12 PM](i realize this is not what we are doing, i'm just playing around a bit)
+Liyi Li  [6:19 PM]
+@Fenfen An Did you finish the new algorithm pipeline set up for the work? I think we want the implementer and the tester to be separated into two people. If you have not yet done, please write out five different outlet for james to perform test. 1) std-trotter, 2) std-trotter-snd-order, 3) qdrift 4) marqsim, and 5) the auto-optimizer (automatically select one of the best performace (lesast gates).
+Liyi Li  [6:20 PM]
+This is talking about doing for IBM-circuit-gates. Once you don that, you can rewrite work the above five outlets to allow the selection of backends, like selecting between IBM machine and indianan analog machine.
+James Bryan Graves  [6:20 PM]
+@Fenfen An what did you use for error and time parameters for your <1 hour run? (edited) 
+James Bryan Graves  [6:21 PM]
+these: -e 0.025 -t 0.15 and -e 0.025 -t 0.15?
+Liyi Li  [6:21 PM]
+@James Bryan Graves for now, I think we can start doing the test for asumming a small error bound like 0.5. We can start with 0.5 and see. We want to test to see to check if all the benchmark programs can be done; if not, we can remove some big programs. I am talking about both the genesis and marqsim set, as well as the two or three programs I got from Yongxin yao
+[6:22 PM]-e 0.5 , -t 0.1, or -e 0.5, -t 0.5, or -e 0.5, -t 1
+[6:23 PM]once we have a fixed set, we can then lowered the error bound with some modificaion on the code.
+[6:23 PM]I think you might need the second quantization level formula to do the grouping commuting. The current iput is in pauli string level
+[6:23 PM]there are actually second quantization level formulas for each of our benchmark programs. I am not sure if the students pushed those code.
+[6:24 PM]Anyway, the current pauli string ones are generated via JW transformation.
+James Bryan Graves  [9:56 AM]
+qdrift will indeed finish with a relaxed error bound
+it seems the std trotter pipeline...just gets too crazy even with relaxed parameters:
+  - _Pauli_string_BeH2_f.txt, err=0.5, t=0.1, pipeline=std
+  - Length of Pauli String 661 (i.e., 661 Hamiltonian terms)
+  - splitting r: 8806
+  - so r * n_terms = 8806 * 661 = 5,820,766 Pauli exponentials
+
+So I guess we would need a larger e or smaller t.
+
+For a smaller t = 0.01 things become a bit more tractable (but still with some failures in std pipeline)
+time scripts/marqsim.sh
+Detected formats: {'marqsim': 12, 'genesis': 0, 'unknown': 0}
+OK: _Pauli_string_Ar.txt err=0.5 t=0.01 pipeline=std wall_s=0.04
+OK: _Pauli_string_Ar.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.02
+OK: _Pauli_string_Cl-.txt err=0.5 t=0.01 pipeline=std wall_s=0.03
+OK: _Pauli_string_Cl-.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.02
+OK: _Pauli_string_Na+.txt err=0.5 t=0.01 pipeline=std wall_s=0.03
+OK: _Pauli_string_Na+.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.02
+OK: _Pauli_string_SYK1.txt err=0.5 t=0.01 pipeline=std wall_s=3.88
+OK: _Pauli_string_SYK1.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+OK: _Pauli_string_SYK2.txt err=0.5 t=0.01 pipeline=std wall_s=7.36
+OK: _Pauli_string_SYK2.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+OK: _Pauli_string_HF.txt err=0.5 t=0.01 pipeline=std wall_s=13.87
+OK: _Pauli_string_HF.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+OK: _Pauli_string_OH-.txt err=0.5 t=0.01 pipeline=std wall_s=12.68
+OK: _Pauli_string_OH-.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+OK: _Pauli_string_LiH_f.txt err=0.5 t=0.01 pipeline=std wall_s=14.27
+OK: _Pauli_string_LiH_f.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+WARN: failed _Pauli_string_H2O.txt err=0.5 t=0.01 pipeline=std (see CSV tails)
+OK: _Pauli_string_H2O.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+WARN: failed _Pauli_string_LiH_unf.txt err=0.5 t=0.01 pipeline=std (see CSV tails)
+OK: _Pauli_string_LiH_unf.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+WARN: failed _Pauli_string_BeH2_f.txt err=0.5 t=0.01 pipeline=std (see CSV tails)
+OK: _Pauli_string_BeH2_f.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+WARN: failed _Pauli_string_BeH2_unf.txt err=0.5 t=0.01 pipeline=std (see CSV tails)
+OK: _Pauli_string_BeH2_unf.txt err=0.5 t=0.01 pipeline=qdrift wall_s=0.03
+scripts/marqsim.sh  1343.51s user 3.69s system 99% cpu 22:28.84 total
+
+I'm running this on my laptop atm.
+[10:00 AM]What I'm personally curious about, is if qdrift is a sort of "sampling" algorithm...it will indeed be faster, but how bad are the quantum simulations on the circuits generated by that algorithm. maybe it's enough to just point at the paper and promise we did a "faithful" implementation of qdrift. But I find those columns missing a bit here...
+These gate counts are crazy tho...not even commercial hardware is going to do these anywhere near coherently.Liyi Li  [10:01 AM]
+I think for some small case, like if the pauli term number is 1-5, std or snd-order will have an edge (well but usually chemistry appliications have very large paulis)
+[10:02 AM]marqsim should be better than qdrift
+Liyi Li  [10:03 AM]
+One thing we can do is that, we can rewrite the estimate function a little bit. Since in std / snd-std , we are esentially using r to generate a repeated pattern to repeat 8806 times, we can simply do it once, and then multiple it
+Liyi Li  [10:04 AM]
+like we only need to run one 661 pauli-string circuit generation and then optimize it, and then we multiply the estimated number by 8806
+[10:04 AM]since all the circuit optimization does location optimization. the optization chance in the joint places of the 8806 repeatition is very minor.
+Fenfen An  [11:38 AM]
+replied to a thread:That is what I am doing now. I plan to provide the outlets of the 4 algorithms and the optimized one based on IBM digital hardware. Still working on MarQSim
+Liyi Li  [11:38 AM]
+thanks
+[11:39 AM]Do you think the marqsim is close to finish? If not, I can help. I have sometime today, but I am working on the paper writing.
+Fenfen An  [11:41 AM]
+I will be working hard on MarQSim and hopefully it can be done on Tuesday. But I can send updates tonight. Do you want to see the outlets of the other 2 alg first or MarQSim first?
+Liyi Li  [11:42 AM]
+I only know coq
+[11:42 AM]I think you know the pipeline better than me.
+[11:42 AM]I estimate the time to work out marqsim, and I think I can finish it in 2 hours.
+[11:43 AM]If you need two days to finish it, I think that is not worth
+[11:43 AM]I can do it for you today (I mean marqsim).
+Fenfen An  [11:43 AM]
+You are free to do something now
+[11:43 AM]I have checked in the part I did
+Liyi Li  [11:44 AM]
+please push your code
+Fenfen An  [11:50 AM]
+It is pushed on Friday. I have interfaced the python into ocaml. You can get the matrix Pgc in ocaml
+[11:50 AM]You can do the coq part assuming the Parameter is implemented
+Liyi Li  [11:51 AM]
+I will implmement the coq version following my code in QBlueMarqsim.v
+Fenfen An  [11:52 AM]
+I just added one word in that code. You can assume that parameter return an array instead of List (edited) 
+Liyi Li  [2:43 PM]
+I just finished a meeting with a student. I am going to implement marqsim
+[2:43 PM]image.png [2:44 PM]in the marqsim algorithm, I found that the infty should be just 1
+[2:44 PM]because c(..) cost function will not be greater than 1
+Liyi Li  [3:31 PM]
+@Fenfen An
+[3:31 PM]https://github.com/qafny/particleSystem/blob/master/coq/QBlueMarQSim.v#L153
+[3:31 PM]I have implemented the marqsim algorithm here
+[3:32 PM]the only thing lacking is the min_cost_flow_problem algorithm.
+[3:32 PM]I define a function Parameter solve_flow : nat -> (nat -> nat -> R) -> (nat -> nat -> nat) -> nat -> nat -> R. to allow you to define such
+[3:32 PM]the other items in algorithm 2 is just simple. You don't even need any for-loop recursion function to define it.
+Liyi Li  [3:47 PM]
+@Fenfen An
+[3:47 PM]https://en.wikipedia.org/wiki/Max-flow_min-cut_theorem
+WikipediaMax-flow min-cut theoremIn computer science and optimization theory, the max-flow min-cut theorem states that in a flow network, the maximum amount of flow passing from the source to the sink is equal to the total weight of the edges in a minimum cut, i.e., the smallest total weight of the edges which if removed would disconnect the source from the sink.
+For example, imagine a network of pipes carrying water from a reservoir (the source) to a city (the sink). Each pipe has a capacity representing the maximum amount of water that can flow through it per unit of time. The max-flow min-cut theorem tells us that the maximum amount of water that can reach the city is limited by the smallest total capacity of any set of p… https://en.wikipedia.org/wiki/Max-flow_min-cut_theorem[3:47 PM]according to the theorem, it means that a max-flow is the same as a min-cut. So, either we solve for max-flow or we do min-cut.
+[3:48 PM]https://jon.recoil.org/reference/ocamlgraph/src/ocamlgraph/flow.ml.html#module-Ford_Fulkerson
+[3:48 PM]https://github.com/thtran97/max-flow-min-cost-algo
+[3:49 PM]So, the simplest solution is just to use the above ocaml code.
+[3:50 PM]you just instantiate the solve_flow parameter as one of the max-flow program above.
+[3:51 PM]Maybe the edges/nodes type are not same, but it is easy. I see one of the guy use string as the node name, whereas we use nat numbers. You just swap his string with our nat numbers.
+[3:52 PM]In our case, we input a node number nat, and I assume when users input a node number n, the total number of nodes are n+2. 0 node is the S node, n+1 node is the T node, and the nodes in [1,n] are the nodes for each pauli-string. I also have edges as nat -> nat -> ? , where nat -> nat -> R is the cabacity function , and nat -> nat -> nat is the weight function.
+[3:53 PM]So, all you need to do is just to output the coq code to ocaml, and then take one of the above algorithm and modify the nodes and edges.
+Liyi Li  [7:42 PM]
+I modified the code a little bit. After I read the min-cut problem, I found that I misunderstood the concept previously. We need to double the size of the graph. It is talking about a finite directed graph, so the H_prev and H_target cannot mix together
+[7:44 PM]So, I modified the code, and now it is good, you will just need to support a graph with 2n + 2 nodes. (n is the number of pauli strings), and 0 is S, H_prev is from 1 to n, H_target is from n+1 to 2n, and T is 2n+1.
+Amr Sabry  [10:02 AM]
+Question that is unrelated to this paper. It seems you have a collection of Hamiltonians that can be used for testing. Can I get access to them for another paper I am working on?
+Liyi Li  [10:03 AM]
+Yes. Please do so.
+Amr Sabry  [10:06 AM]
+can you point me to where they are?
+Liyi Li  [11:49 AM]
+Sorry, I was in a class. https://github.com/qafny/particleSystem/tree/master/QBlue_Benchmark_Datasets
+Liyi Li  [11:57 AM]
+I have another few examples waiting for the student to upload
+[11:57 AM]https://gitlab.com/gqce/adaptvqite_work
+GitLabgqce / adaptvqite_work · GitLabGitLab.comAmr Sabry  [12:52 PM]
+Thanks
+Liyi Li  [1:48 PM]
+@Fenfen An
+[1:50 PM]please maintain the pipline to the state we talk about today: 1) having four algorithms with necessary methods to overcome some of the running-time-to-long problem (like only running one trotter step), and 2) having the optimizer in the pipeline. For (1), please include, std-trotter, snd-order-std, qdrift, and marqsim.
+[1:51 PM]We need @James Bryan Graves's help to run the pipeline, and compare against the other parties.
+[1:52 PM]@James Bryan Graves We would like to compare with 2QAN, and paulihereal. However, I am not sure about the status of paulihereal, it seems that there is no code for it. So, we might need to run phoenix containing paulihreral.
+Fenfen An  [1:53 PM]
+Prof Li, I am very confused. On the one hand, you keep saying you do the MarQSim
+Liyi Li  [1:53 PM]
+A backup choice is openFermion, but it is not specific to do Hamiltonian simulation, and it only has std-trotter. Like, I am worried that the reviewers will say that that is bad comparison.
+Fenfen An  [1:53 PM]
+OK. I will use my way to implement them so that James can run
+Liyi Li  [1:57 PM]
+@Fenfen An once you done, please notify @James Bryan Graves,and I guess @James Bryan Graves can work on the other platforms first. I also guess we can include additional programs from here:
+[1:57 PM]https://gitlab.com/gqce/adaptvqite_work
+GitLabgqce / adaptvqite_work · GitLabGitLab.com[1:58 PM]at least some of them. We should sumup the two benchmarks to one file. I would say, I also want to put some readme on each one program to suggest what they are.
+Fenfen An  [12:12 AM]
+James, I have added MarQSim and 1st order trotter paths. I just print out the results for path_flag 0-2. You can try and see.  I guess you will be clear
+Fenfen An  [3:32 PM]
+@James Bryan Graves Now I have added four algorithms with flags 1-4 and the optimizer with flag 0
+James Bryan Graves  [6:58 PM]
+Thank you! I will probably have a look tomorrow.
+Liyi Li  [9:47 AM]
+@Fenfen An what is your next plan? After you finish the script implementation?
+[9:48 AM]are you testing marqsim?
+[9:48 AM]good/bad?
+Fenfen An  [9:48 AM]
+I saw the results of MarQSim should be reasonable 
+[9:49 AM]I will try put the Indiana hardware in the ocaml
+Liyi Li  [9:55 AM]
+ok
+[9:56 AM]is marqsim better than qdrift or actally not
+[9:56 AM]not difference?
+Fenfen An  [10:10 AM]
+I didn't run all data. Those I see, cnot gates smaller, run time slower 
+[10:11 AM]I believe all the MarQSim datasets should be runnable for all the 4 algorithms 
+Liyi Li  [10:19 AM]
+@James Bryan Graves @Fenfen An good. We need to get the data by doing experiment to start writing the paper
+Message qmonad
