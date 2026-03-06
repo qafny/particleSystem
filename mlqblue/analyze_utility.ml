@@ -20,8 +20,6 @@ let rec count_U1_ocaml (c : coq_U ucom) : int =
   | Coq_uapp (_, _, _) -> 0
 
 
-
-
 (* -2 read files of strings *)
 let read_string_file (filename : string) : string =
   dbg "Analyzing %s:" filename;
@@ -79,6 +77,7 @@ let parse_pauli (input : string) : lowprog =
 
 
 (* 0.1 lowprog -> circ *)
+<<<<<<< HEAD
 let lowprog_to_circ
     ?(verbose = false)
     (err : float)
@@ -87,11 +86,21 @@ let lowprog_to_circ
     (lp : lowprog)
     (flag_path : int)
     (grouping : string) =
+=======
+let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
+>>>>>>> master
   match flag_path with
-  | 1 -> trotterStd_IBMDigital ~verbose:verbose err t lp nq
-  | 2 -> trotter2nd_IBMDigital ~verbose:verbose err t lp nq
-  | 3 -> trotterQDrift_IBMDigital ~verbose:verbose err t lp nq
-  | _ -> trotterMarQSim_IBMDigital ~verbose:verbose err t lp nq
+  | 1 -> trotterStd_IBMDigital ~verbose:verbose lp nq err t
+  | 2 -> trotter2nd_IBMDigital ~verbose:verbose lp nq err t
+  | 3 -> trotterQDrift_IBMDigital ~verbose:verbose lp nq err t
+  | _ -> trotterMarQSim_IBMDigital ~verbose:verbose lp nq err t
+
+let lowprog_to_analog_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
+  match flag_path with
+  | 11 -> trotterStd_IndiAnalog ~verbose:verbose lp nq err t
+  | 12 -> trotter2nd_IndiAnalog ~verbose:verbose lp nq err t
+  | 13 -> trotterQDrift_IndiAnalog ~verbose:verbose lp nq err t
+  | _ -> trotterMarQSim_IndiAnalog ~verbose:verbose lp nq err t
 
 
 
@@ -183,6 +192,41 @@ let log2 m = int_of_float (ceil (log10 (float_of_int m) /. log10 2.0))
 let log2up m = int_of_float (ceil (log10 (float_of_int (2 * m)) /. log10 2.0))
 
 
+let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) =
+  let best_path = ref 100 in
+  let best_score = ref max_int in 
+  for flag_path = 1 to 4 do
+    let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
+	let score = r * (voqc_count_CX nqbit cc) in
+	let ntot = voqc_count_total nqbit cc in
+	dbg "Path flag: %d; # total gates: %d; # CNOT gates: %d.\n" flag_path ntot score;
+	if score < !best_score then 
+	begin
+      best_score := score;
+      best_path := flag_path;
+    end
+  done; 
+  let (cc, r) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
+  (cc, r)
+
+let translation_lowprog_analog (lp : lowprog) (nqbit : int) (err : float) (t : float) =
+  let best_path = ref 100 in
+  let best_score = ref max_int in
+  for flag_path = 11 to 14 do
+    let (cc, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
+	(* currently use number of pauli strings  *)
+	let score = npau in
+	let ntot = r * (List.length cc) in
+    dbg "Path flag: %d; # total gates: %d; # multi-bit gates: %d." flag_path ntot score;
+    if score < !best_score then
+    begin
+      best_score := score;
+      best_path := flag_path;
+    end
+  done;
+  let (cc, r, npau) = lowprog_to_analog_circ ~verbose:false lp nqbit err t !best_path in
+  (cc, r, npau)
+
 
 
 (*		
@@ -238,6 +282,7 @@ let summarize_results dirname rst_file =
       ()
 *)
 
+<<<<<<< HEAD
 let translation_lowprog_ap ?(verbose=false) (lp : lowprog) (nqbit : int) (err : float) (t : float) (flag_path : int) (grouping : string) =
   print_endline "Enter translation_lowprog_ap";
   flush stdout;
@@ -264,6 +309,8 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
   let (cc, r) = translation_lowprog_ap  ~verbose:false lp nqbit err t !best_path grouping in
   (cc, r)
 
+=======
+>>>>>>> master
 
 (*
 let string_files_to_qasm_files (err : float) (t : float) (input_files : string list) (out_dir : string) = 

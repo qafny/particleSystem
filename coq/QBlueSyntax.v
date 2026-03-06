@@ -109,7 +109,7 @@ Definition norm_ten := (R * (nat -> paulimat)) %type.
 Definition norm_prog := list norm_ten.
 
 (* unitary gate exp(-i r ZZZ) *)
-Definition ugate := (R * lowprog_ten) %type.
+Definition ugate := (R * (nat -> paulimat)) %type.
 
 
 (* syntax lib functions. *)

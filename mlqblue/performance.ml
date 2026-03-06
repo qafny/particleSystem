@@ -12,10 +12,18 @@ let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_pa
     Printf.printf  "After parser";
 	flush Stdlib.stdout;
 	let nqbit = get_dim_pauli str_input in
-    Printf.printf "After getting qubit %d\n%!" nqbit;
 	flush Stdlib.stdout;
+<<<<<<< HEAD
 	if flag_path = 0 then translation_lowprog_optimize lp nqbit err t grouping
 	else translation_lowprog_ap ~verbose:true lp nqbit err t flag_path grouping
+=======
+	if flag_path = 0 then ignore (translation_lowprog_optimize lp nqbit err t)
+	else if flag_path = 10 then ignore (translation_lowprog_analog lp nqbit err t)
+	else if flag_path > 0 && flag_path < 10 
+      then ignore (lowprog_to_circ ~verbose:true lp nqbit err t flag_path) 
+    else 
+	  ignore (translation_lowprog_analog lp nqbit err t)
+>>>>>>> master
 
 
 let is_txt_file (path : string) : bool =

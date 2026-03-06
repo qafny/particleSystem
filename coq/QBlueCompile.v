@@ -13,6 +13,7 @@ Require Import QBlue.QBlueType.
 Require Import QBlue.QBlueTrotter.
 Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueSynthDigital.
+Require Import QBlue.QBlueSynth.
 Require Import QBlue.QBlueTTS.
 Require Import QBlue.QBlueMarQSim.
 
@@ -57,6 +58,21 @@ Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat)
 : ucom ExtractionGateSet.U := 
   TTS_LCU err t nbit lp.
 
+Definition translate_lowp2Indiana_std (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+  let lowp : lowprog := trotter err t lp in 
+  synth_analog_indiana t nbit lowp.
+
+Definition translate_lowp2Indiana_std_2nd_order (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+  let lowp : lowprog := trotter_2nd_order err t lp in 
+  synth_analog_indiana t nbit lowp.
+
+Definition translate_lowp2Indiana_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+  let lowp : lowprog := trotter_qdrift err t lp in 
+  synth_analog_indiana t nbit lowp.
+
+Definition translate_lowp2Indiana_marqsim (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+  let lowp : lowprog := trotter_marqsim err t lp nbit in 
+  synth_analog_indiana t nbit lowp.
 
 Record Pipeline := {
   p_ham_sim : R -> R -> lowprog -> lowprog;
