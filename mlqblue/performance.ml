@@ -10,23 +10,21 @@ open Qblue_util
 let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) : (int * int * int * int) =
     let parse_timeout_seconds = 30 in
     let lp = with_timeout parse_timeout_seconds (fun () -> parse_pauli str_input) in
-		let nqbit = get_dim_pauli str_input in
-
+	let nqbit = get_dim_pauli str_input in
     let (nq1, nqm) = 
     if flag_path = 0 then translation_lowprog_optimize lp nqbit err t
 
-	else (* if flag_path > 0 
-	 && flag_path < 10  
-      then
-	 *)let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in
+	else if flag_path > 0 && flag_path < 10  
+      then let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in
 	  summarize_counts cc nqbit r
-(*
 
-else if flag_path = 10 then ignore (translation_lowprog_analog lp nqbit err t)
+    else if flag_path = 10 then translation_lowprog_analog lp nqbit err t
+
     else 
-	  ignore (translation_lowprog_analog lp nqbit err t)
-*) in
-  (nqbit, List.length lp, nq1, nqm)
+	  let (cc, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
+	  summarize_analog_counts cc r npau
+
+    in (nqbit, List.length lp, nq1, nqm)
 
 
 let is_txt_file (path : string) : bool =

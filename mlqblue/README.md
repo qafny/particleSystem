@@ -60,4 +60,5 @@ Those from adaptvqite_work:
       - Similar pipeline to molecules, with cases like ZSM\_C2H4/36.
       - Includes its own environment lockfile (requirements.txt) for heavier chemistry stack.
 
-
+## run experiments
+`python3 gen\_result.py -i job.csv -o result.cvs`

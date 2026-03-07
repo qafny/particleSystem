@@ -1,6 +1,8 @@
 import subprocess
 import json
 import csv
+import argparse
+from pathlib import Path
 
 def call_ocaml(file_name, error, time_value, path_flag):
     proc = subprocess.run(
@@ -28,71 +30,83 @@ def call_ocaml(file_name, error, time_value, path_flag):
     return json.loads(proc.stdout)
 
 
+def parse_input_file(input_path, default_error, default_time, default_path_flag):
+    rows = []
+    with open(input_path, "r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        required = {"file_name"}
+        if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
+            raise ValueError(
+                "Input CSV must include at least the 'file_name' column. "
+                "Optional columns: error,time,path_flag"
+            )
+
+        for item in reader:
+            file_name = (item.get("file_name") or "").strip()
+            if not file_name:
+                continue
+            error = float(item["error"]) if item.get("error") not in (None, "") else default_error
+            time_value = float(item["time"]) if item.get("time") not in (None, "") else default_time
+            path_flag = int(item["path_flag"]) if item.get("path_flag") not in (None, "") else default_path_flag
+            rows.append((file_name, error, time_value, path_flag))
+
+    return rows
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run performance.exe over a list of inputs and save CSV results."
+    )
+    parser.add_argument(
+        "-i", "--input",
+        default=None,
+        help="Input CSV file with columns: file_name,error,time,path_flag (error/time/path_flag optional)."
+    )
+    parser.add_argument(
+        "-o", "--output",
+        default="result_qblue.csv",
+        help="Output CSV file path. Default: result_qblue.csv"
+    )
+    parser.add_argument(
+        "-e", "--error",
+        type=float,
+        default=0.1,
+        help="Default error value when not provided in input CSV. Default: 0.1"
+    )
+    parser.add_argument(
+        "-t", "--time",
+        dest="time_value",
+        type=float,
+        default=0.7854,
+        help="Default time value when not provided in input CSV. Default: 0.7854"
+    )
+    parser.add_argument(
+        "-p", "--path-flag",
+        type=int,
+        default=0,
+        help="Default path_flag when not provided in input CSV. Default: 0"
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+
     # One example argument set for performance.exe
-    arg_list = [
-        ("DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_Ar.txt", 0.1, 0.7854, 0),
+    default_arg_list = [
 		("DataSet1/small/MarqSim_Ar.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_Ar.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_Ar.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_Ar.txt", 0.1, 0.7854, 4),
-		# ("DataSet1/small/MarqSim_BeH2_f.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_BeH2_f.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_BeH2_f.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_BeH2_f.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_BeH2_f.txt", 0.1, 0.7854, 4),
-		# ("DataSet1/small/MarqSim_BeH2_unf.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_BeH2_unf.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_BeH2_unf.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_BeH2_unf.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_BeH2_unf.txt", 0.1, 0.7854, 4),
-		# # ("DataSet1/small/MarqSim_Cl-.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_Cl-.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_Cl-.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_Cl-.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_Cl-.txt", 0.1, 0.7854, 4),
-		# # ("DataSet1/small/MarqSim_H2O.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_H2O.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_H2O.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_H2O.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_H2O.txt", 0.1, 0.7854, 4),
-		# # ("DataSet1/small/MarqSim_HF.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_HF.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_HF.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_HF.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_HF.txt", 0.1, 0.7854, 4),
-		# ("DataSet1/small/MarqSim_LiH_f.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_LiH_f.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_LiH_f.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_LiH_f.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_LiH_f.txt", 0.1, 0.7854, 4),
-		# ("DataSet1/small/MarqSim_LiH_unf.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_LiH_unf.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_LiH_unf.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_LiH_unf.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_LiH_unf.txt", 0.1, 0.7854, 4),
-		# ("DataSet1/small/MarqSim_Na+.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_Na+.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_Na+.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_Na+.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_Na+.txt", 0.1, 0.7854, 4),
-		# ("DataSet1/small/MarqSim_OH-.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_OH-.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_OH-.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_OH-.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_OH-.txt", 0.1, 0.7854, 4),
-		# ("DataSet1/small/MarqSim_SYK1.txt", 0.1, 0.7854, 0),
-		# ("DataSet1/small/MarqSim_SYK1.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_SYK1.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_SYK1.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_SYK1.txt", 0.1, 0.7854, 4),
-		# ("DataSet1/small/MarqSim_SYK2.txt", 0.1, 0.7854, 0),
-		("DataSet1/small/MarqSim_SYK2.txt", 0.1, 0.7854, 1),
-		# ("DataSet1/small/MarqSim_SYK2.txt", 0.1, 0.7854, 2),
-		# ("DataSet1/small/MarqSim_SYK2.txt", 0.1, 0.7854, 3),
-		# ("DataSet1/small/MarqSim_SYK2.txt", 0.1, 0.7854, 4),
-	]
+		]
+
+    if args.input:
+        input_path = Path(args.input)
+        arg_list = parse_input_file(
+            input_path,
+            default_error=args.error,
+            default_time=args.time_value,
+            default_path_flag=args.path_flag
+        )
+    else:
+        arg_list = default_arg_list
 
     rows = []
 
@@ -131,7 +145,7 @@ def main():
 
         rows.append(row)
 
-    with open("result_qblue.csv", "w", newline="", encoding="utf-8") as f:
+    with open(args.output, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
             fieldnames=[
@@ -144,7 +158,7 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
-    print("Saved to result_qblue.csv")
+    print(f"Saved to {args.output}")
 
 
 if __name__ == "__main__":
