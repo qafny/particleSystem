@@ -17,18 +17,15 @@
 
 3. compile, run ```dune build```
 
-4. run performance: ```dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-o <string>]```
+4. run performance: `dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-p <int>]`
 
-- the first argument can be a txt-format file containing hamiltonian, it will translate this hamiltonian and print out the results; 
-	or a directory containing these files, it will generate the txt-format file named by the -o flag in the current directory.
+- the first argument should be a txt-format file containing a Hamiltonian. The program prints JSON results to `stdout`.
 
 - flag `-e`, followed by the input error for the hamiltonian translation. If not set, the default error is 1.0.
 
 - flag `-t`, followed by the input phase `t` in `exp(-itH)`. If not set, the default error is 0.01.
 
-- flag `-p`, followed by the path flag to control which algorithm to use for compilation. If not set, default is 0 (optimal CNOT gate counts path). Options include 0-4 (digital) and 10-14 (Indiana Analog)
-
-- flag `-o`, deprecated. followed by the input string to save the results. USE THIS ONLY WHEN input is a directory. If not set, the default error is `result.txt`.
+- flag `-p`, followed by the path flag to control which algorithm to use for compilation. If not set, default is 0 (optimal CNOT gate counts path). Options include 0-4 (digital) and 10-14 (Indiana Analog).
 
 
 ## DataSet
@@ -62,6 +59,5 @@ Those from adaptvqite_work:
   - Fragments: larger molecular/fragment workflows.
       - Similar pipeline to molecules, with cases like ZSM\_C2H4/36.
       - Includes its own environment lockfile (requirements.txt) for heavier chemistry stack.
-
 
 

@@ -1,7 +1,7 @@
 (executable
   (name performance)
   (flags (:standard -w -3-32-33-34-39))
-  (libraries unix str voqc menhirLib qbluelib parserlib)
+  (libraries unix str yojson voqc menhirLib qbluelib parserlib)
 )
 
 

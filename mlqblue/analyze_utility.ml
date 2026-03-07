@@ -11,7 +11,7 @@ open Parserlib.Lexer
 open ExtractionGateSet
 open Voqc.Qasm
 open Translation
-open Util
+open Qblue_util
 
 let rec count_U1_ocaml (c : coq_U ucom) : int =
   match c with
@@ -49,17 +49,9 @@ let get_dim_pauli (input : string) : int =
 exception Pauli_parse_error of string
 
 let parse_pauli (input : string) : lowprog =
-  print_endline "Before lexing";
-  flush stdout;
   let lexbuf = Lexing.from_string input in
-  print_endline "after lexing";
-  flush stdout;
   try
-  print_endline "before parser";
-  flush stdout;
     let lp = Parserlib.Parser.program Parserlib.Lexer.token lexbuf in
-  print_endline "after parser";
-  flush stdout;
 	dbg "Length of Pauli String %d\n" (List.length lp);
     lp
 
@@ -179,15 +171,20 @@ let log2 m = int_of_float (ceil (log10 (float_of_int m) /. log10 2.0))
 
 let log2up m = int_of_float (ceil (log10 (float_of_int (2 * m)) /. log10 2.0))
 
+let summarize_counts (cc : Main.circ) (nqbit : int) (r : int) : int * int =
+  let nqm = voqc_count_CX nqbit cc in
+  let nq1 = voqc_count_total nqbit cc - nqm in
+  (* # single-qubits, multiple-qubits  *)
+  (r * nq1, r * nqm)
+
 
 let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) =
   let best_path = ref 100 in
   let best_score = ref max_int in 
   for flag_path = 1 to 4 do
     let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
-	let score = r * (voqc_count_CX nqbit cc) in
-	let ntot = voqc_count_total nqbit cc in
-	dbg "Path flag: %d; # total gates: %d; # CNOT gates: %d.\n" flag_path ntot score;
+    let (nq1, score) = summarize_counts cc nqbit r in
+	dbg "Path flag: %d; # Single-bit gates: %d; # CNOT gates: %d.\n" flag_path nq1 score;
 	if score < !best_score then 
 	begin
       best_score := score;
@@ -195,7 +192,9 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
     end
   done; 
   let (cc, r) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
-  (cc, r)
+  summarize_counts cc nqbit r
+
+
 
 let translation_lowprog_analog (lp : lowprog) (nqbit : int) (err : float) (t : float) =
   let best_path = ref 100 in
@@ -279,4 +278,3 @@ let string_files_to_qasm_files (err : float) (t : float) (input_files : string l
 	string_to_qasm ~filename:af s err t fout 0 in
   Stdlib.List.iter helper input_files;;
 *)
-
