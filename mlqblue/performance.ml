@@ -1,24 +1,29 @@
+open Yojson.Basic
 open Unix
 open Printf
-
+  
 open Analyze_utility
-open Util
+open Qblue_util
 
 
-let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) (grouping : string) =
-    Printf.printf  "Start analyze_one_circuit\n";
-	flush Stdlib.stdout;
-    let lp = parse_pauli str_input in
-    Printf.printf  "After parser";
-	flush Stdlib.stdout;
+let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) : (int * int * int * int) =
+    let parse_timeout_seconds = 30 in
+    let lp = with_timeout parse_timeout_seconds (fun () -> parse_pauli str_input) in
 	let nqbit = get_dim_pauli str_input in
-	flush Stdlib.stdout;
-	if flag_path = 0 then ignore (translation_lowprog_optimize lp nqbit err t)
-	else if flag_path = 10 then ignore (translation_lowprog_analog lp nqbit err t)
-	else if flag_path > 0 && flag_path < 10 
-      then ignore (lowprog_to_circ ~verbose:true lp nqbit err t flag_path) 
+    let (nq1, nqm) = 
+    if flag_path = 0 then translation_lowprog_optimize lp nqbit err t
+
+	else if flag_path > 0 && flag_path < 10  
+      then let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in
+	  summarize_counts cc nqbit r
+
+    else if flag_path = 10 then translation_lowprog_analog lp nqbit err t
+
     else 
-	  ignore (translation_lowprog_analog lp nqbit err t)
+	  let (cc, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
+	  summarize_analog_counts cc r npau
+
+    in (nqbit, List.length lp, nq1, nqm)
 
 
 let is_txt_file (path : string) : bool =
@@ -48,7 +53,8 @@ let rec collect_txt_files (dir : string) : string list =
   loop []
 
 
-let run (err : float) (t : float) (fout : string) (path : string) (flag_path : int) (grouping : string) : unit =
+(* return: nqbit, nterms, # single-qubit gates, # multi-qubit gates *)
+let run (err : float) (t : float) (path : string) (flag_path : int) : (int * int * int * int) =
   dbg "Expected error: %f;   t: %f" err t;
   match (Unix.lstat path).st_kind with
   | Unix.S_DIR ->
@@ -66,7 +72,7 @@ let run (err : float) (t : float) (fout : string) (path : string) (flag_path : i
         exit 1
       );
       let s = read_string_file path in
-      ignore (analyze_one_circuit s err t flag_path grouping)
+      analyze_one_circuit s err t flag_path
 
   | _ ->
       prerr_endline "Error: path is neither a regular file nor a directory";
@@ -78,7 +84,6 @@ let () =
   (* default values when -e / -t are not provided *)
   let err  = ref 1.0 in
   let t    = ref 0.01 in
-  let fout = ref "result.txt" in
   let path_flag = ref 0 in
   let grouping = ref "none" in
   let path : string option ref = ref None in
@@ -100,7 +105,6 @@ let () =
     [
       ("-e", Arg.Set_float err, "Set err (float). Default: 1.0");
       ("-t", Arg.Set_float t,   "Set t (float). Default: 0.01");
-      ("-o", Arg.Set_string fout,   "Set o (string). Default: result.txt");
       ("-p", Arg.Set_int path_flag, "Set p (int). Default: 0");
       ("-g", Arg.String set_grouping, "Set grouping: none|qwc|fc. Default: none");
     ]
@@ -120,4 +124,19 @@ let () =
         exit 2
   in
 
-  run !err !t !fout path !path_flag !grouping
+  let (nqubit, nterm, single_qubit_gates, multi_qubit_gates) = run !err !t path !path_flag in
+  let json_data =
+    `Assoc
+      [ ("file_name", `String path);
+        ("error", `Float !err);
+        ("time", `Float !t);
+        ("path_flag", `Int !path_flag);
+		("nqubit", `Int nqubit);
+		("npau", `Int nterm);
+        ("single_qubit_gates", `Int single_qubit_gates);
+        ("multi_qubit_gates", `Int multi_qubit_gates) ]
+  in
+  Yojson.Basic.pretty_to_channel Stdlib.stdout json_data;
+  output_char Stdlib.stdout '\n';
+  flush Stdlib.stdout
+

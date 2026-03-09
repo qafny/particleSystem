@@ -7,9 +7,9 @@ open QBlueTrotter
 open QBlueQdrift
 open QBlueCompile
 open ExtractionGateSet
-open Util
 open Ab_group
 open Ab_trotter
+open Qblue_util
 
 
 let print_optimization_detail n c0 c1 c2 c3 = 
@@ -25,16 +25,16 @@ let print_optimization_detail n c0 c1 c2 c3 =
 let ibmdigi_voqc_optimize ?(verbose=false) nqubit circ =
   let n = nqubit in
   (* Convert to the RzQ gate set and print more statistics *)
-  print_endline "decompose to voqc";
-  flush stdout;
+  prerr_endline "decompose to voqc";
+  flush stderr;
   let cc = decompose_to_voqc_gates circ in
 	  
-  print_endline "convert to full gate set";
-  flush stdout;
+  prerr_endline "convert to full gate set";
+  flush stderr;
   let c0 = cvt_egate_fullgate n cc in
 
-  print_endline "convert to rzq";
-  flush stdout;
+  prerr_endline "convert to rzq";
+  flush stderr;
 
   let c1 = voqc_convert_to_rzq n c0 in
 
@@ -156,6 +156,14 @@ let trotterMarQSim_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : 
   Random.init 10;
 
   if verbose then dbg "---- Trotterization (MarQSim) -> IndiAnalog circuits: ----";
-  let _ = (lp, nq, err, t) in
-  analog_backend_unavailable ()
 
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+  try
+    let cc = translate_lowp2Indiana_marqsim err t lp nq in (cc, 1, npau)
+  with exn -> dbg "trotterMarQSim_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
