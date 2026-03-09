@@ -2,7 +2,7 @@
 
 This repo now has benchmarking harnesses under `scripts/`:
 - QBlue sweep runner: `scripts/qblue_bench.py`
-- Baselines (from `thirdparty/phoenix`): `scripts/phoenix_bench.py`, `scripts/paulihedral_bench.py`, `scripts/tetris_bench.py`
+- Baselines: `scripts/phoenix_bench.py`, `scripts/paulihedral_bench.py`, `scripts/tetris_bench.py`, `scripts/openfermion_bench.py`
 - CSV joiner: `scripts/compare_bench_csv.py`
 - One-shot runner: `scripts/run.sh` (writes `results/*.csv`)
 
@@ -10,8 +10,8 @@ This repo now has benchmarking harnesses under `scripts/`:
 
 - [x] Smoke test a single MarQSim instance (`scripts/marqsim.sh`)
 - [x] Run QBlue over benchmark datasets to a CSV (`scripts/qblue_bench.py`)
-- [x] Run baselines (Phoenix/Paulihedral/Tetris) over the same datasets to CSVs
-- [x] Produce comparable “wide” CSVs: `results/qblue_vs_{phoenix,paulihedral,tetris}.csv`
+- [x] Run baselines (Phoenix/Paulihedral/Tetris/OpenFermion) over the same datasets to CSVs
+- [x] Produce comparable “wide” CSVs: `results/qblue_vs_{phoenix,paulihedral,tetris,openfermion}.csv`
 
 ## Evaluation (paper-facing)
 
@@ -26,6 +26,7 @@ This repo now has benchmarking harnesses under `scripts/`:
   - Phoenix (Paulihedral-derived)
   - Paulihedral
   - Tetris
+  - OpenFermion
   - 2QAN: deferred for now (expects circuit inputs; not directly comparable to Pauli-string Hamiltonian inputs)
 - [ ] Decide how to handle very large Genesis instances (use `*_MAX_TERMS` filters or exclude from main plots)
 

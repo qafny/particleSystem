@@ -93,6 +93,37 @@ Notes:
 - Both default to `--max-terms 5000` to skip extremely large Genesis instances (set `--max-terms 0` to disable).
 - Both emit IBM-basis `gates_opt_*` columns by default for QBlue-style comparisons.
 
+## Benchmark OpenFermion (3rd-party baseline)
+
+OpenFermion lives under `thirdparty/OpenFermion`. The benchmark script imports
+it from `thirdparty/OpenFermion/src` and needs the runtime dependencies from
+OpenFermion's `dev_tools/requirements/deps/runtime.txt` installed into the same
+Python environment. In this repo's `.venv`, the working install command was:
+
+```bash
+python3 -m pip install cirq-core deprecation h5py networkx pubchempy qiskit requests sympy
+```
+
+Smoke test:
+
+```bash
+python3 scripts/openfermion_bench.py \
+  --inputs QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_Ar.txt \
+  --out results/openfermion_ar.csv \
+  --ts 0.1
+```
+
+To run over all MarQSim inputs:
+
+```bash
+python3 scripts/openfermion_bench.py --dataset marqsim --out results/openfermion.csv --ts 0.1
+```
+
+Notes:
+- The script uses OpenFermion's `trotterize_exp_qubop_to_qasm(...)` API and translates its gate stream into qiskit for counting/transpile.
+- Use `--trotter-number` and `--trotter-order` to change the OpenFermion Trotterization settings.
+- Like Paulihedral and Tetris, it defaults to `--max-terms 5000` to avoid pathological large instances.
+
 ## Compare QBlue vs a baseline
 
 Join two CSVs into a single wide CSV keyed by `(dataset, format, input_name, t)`:
@@ -124,9 +155,19 @@ python3 scripts/compare_bench_csv.py \
   --out results/qblue_vs_tetris.csv
 ```
 
+OpenFermion:
+
+```bash
+python3 scripts/compare_bench_csv.py \
+  --qblue results/qblue.csv \
+  --baseline results/openfermion.csv \
+  --baseline-name openfermion \
+  --out results/qblue_vs_openfermion.csv
+```
+
 ## One-shot runner (QBlue → baselines → compare)
 
-`scripts/run.sh` runs datasets through QBlue, Phoenix, Paulihedral, and Tetris, then generates the joined CSV(s).
+`scripts/run.sh` runs datasets through QBlue, Phoenix, Paulihedral, Tetris, and OpenFermion, then generates the joined CSV(s).
 
 ```bash
 scripts/run.sh
@@ -144,7 +185,8 @@ Defaults / overrides (environment variables):
 - `PHOENIX_MAX_TERMS=5000` (skip very large Hamiltonians by setting this > 0; set 0 to disable)
 - `PAULIHEDRAL_MAX_TERMS=5000` / `PAULIHEDRAL_LIMIT=0`
 - `TETRIS_MAX_TERMS=5000` / `TETRIS_LIMIT=0` / `TETRIS_SWAP_COEFFICIENT=3` / `TETRIS_K=10`
-- `QBLUE_OUT=...` / `PHOENIX_OUT=...` / `PAULIHEDRAL_OUT=...` / `TETRIS_OUT=...`
-- `COMPARE_PHOENIX_OUT=...` / `COMPARE_PAULIHEDRAL_OUT=...` / `COMPARE_TETRIS_OUT=...`
+- `OPENFERMION_MAX_TERMS=5000` / `OPENFERMION_LIMIT=0` / `OPENFERMION_TROTTER_NUMBER=1` / `OPENFERMION_TROTTER_ORDER=1`
+- `QBLUE_OUT=...` / `PHOENIX_OUT=...` / `PAULIHEDRAL_OUT=...` / `TETRIS_OUT=...` / `OPENFERMION_OUT=...`
+- `COMPARE_PHOENIX_OUT=...` / `COMPARE_PAULIHEDRAL_OUT=...` / `COMPARE_TETRIS_OUT=...` / `COMPARE_OPENFERMION_OUT=...`
 
 On SLURM, outputs default to `results/*_${SLURM_JOB_ID}.csv`.
