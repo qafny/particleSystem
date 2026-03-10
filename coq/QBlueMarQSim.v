@@ -29,7 +29,7 @@ Fixpoint cnot_cost_ops (a b : PauStrType) (n : nat) : nat :=
   match n with 0 => 0
             | S m => 
       let x := (a m) in let y := (b m) in
-      let base := if paulimat_eqb x y then 1%nat else 0%nat in
+      let base := if paulimat_eqb x y then 0%nat else 1%nat in
       let extra := if andb (negb (is_I x)) (negb (is_I y))
                    then if paulimat_eqb x y then 1%nat else 0%nat
                    else 0%nat in
