@@ -32,9 +32,9 @@ COMPARE_PAULIHEDRAL_OUT="${COMPARE_PAULIHEDRAL_OUT:-results/qblue_vs_paulihedral
 COMPARE_TETRIS_OUT="${COMPARE_TETRIS_OUT:-results/qblue_vs_tetris${SUFFIX}.csv}"
 COMPARE_OPENFERMION_OUT="${COMPARE_OPENFERMION_OUT:-results/qblue_vs_openfermion${SUFFIX}.csv}"
 
-# Defaults chosen for easy 1:1 comparison with Phoenix (Phoenix has no "err").
-read -r -a QBLUE_ERRS_ARR <<< "${QBLUE_ERRS:-1e-1}"
-read -r -a TS_ARR <<< "${TS:-0.1}"
+# Default sweep: err in {0.5, 0.1}, t in {pi/4, pi/16}.
+read -r -a QBLUE_ERRS_ARR <<< "${QBLUE_ERRS:-0.5 0.1}"
+read -r -a TS_ARR <<< "${TS:-0.7853981633974483 0.19634954084936207}"
 read -r -a QBLUE_PIPELINES_ARR <<< "${QBLUE_PIPELINES:-std}"
 
 QBLUE_GROUPING="${QBLUE_GROUPING:-none}"

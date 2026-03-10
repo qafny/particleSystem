@@ -37,13 +37,13 @@ cd mlqblue
 opam exec -- dune build
 cd ..
 
-# Run all MarQSim inputs and write a single CSV.
+# Run all DataSet1 + DataSet2 inputs and write a single CSV.
 # This sweeps the (err, t) settings from TODO.md.
 python3 scripts/qblue_bench.py \
-  --dataset marqsim \
-  --out "results/marqsim_${SLURM_JOB_ID}.csv" \
-  --errs 1e-1 1e-3 \
-  --ts 0.1 0.5 1.0 \
+  --dataset all \
+  --out "results/datasets_${SLURM_JOB_ID}.csv" \
+  --errs 0.5 0.1 \
+  --ts 0.7853981633974483 0.19634954084936207 \
   --pipelines std \
   --grouping none \
   --timeout-s 1800

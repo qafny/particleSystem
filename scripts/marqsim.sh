@@ -14,12 +14,12 @@ fi
 JOB_ID="${SLURM_JOB_ID:-local}"
 
 python3 scripts/qblue_bench.py \
-  --inputs QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_Ar.txt \
+  --inputs mlqblue/DataSet1/dir_100/MarqSim_Ar.txt \
   --perf-exe _build/default/performance.exe \
   --no-build \
-  --out "results/marqsim_ar_${JOB_ID}.csv" \
-  --errs 1e-1 \
-  --ts 0.1 \
+  --out "results/dataset1_ar_${JOB_ID}.csv" \
+  --errs 0.5 0.1 \
+  --ts 0.7853981633974483 0.19634954084936207 \
   --pipelines std \
   --grouping none \
   --timeout-s 600

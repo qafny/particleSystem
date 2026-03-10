@@ -13,57 +13,26 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import os
-import re
 import sys
 import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from dataset_utils import (
+    DATASET_CHOICES,
+    GENESIS_TERM_RE,
+    MARQSIM_TERM_RE,
+    dataset_label_for_path,
+    detect_format,
+    iter_dataset_input_files,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 OPENFERMION_DIR = ROOT / "thirdparty" / "OpenFermion"
-
-_MARQSIM_TERM_RE = re.compile(
-    r"^\s*([+-])\s+([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)\s*\*\s*([IXYZ]+)\s*$"
-)
-_GENESIS_TERM_RE = re.compile(r"^\s*([IXYZ]+)\s+\(([^)]+)\)\s*$")
-
-
-def detect_format(path: Path) -> str:
-    # Return "marqsim" | "genesis" | "unknown"
-    with path.open("r", encoding="utf-8", errors="replace") as f:
-        for _ in range(50):
-            line = f.readline()
-            if not line:
-                break
-            s = line.strip()
-            if not s:
-                continue
-            if _MARQSIM_TERM_RE.match(s):
-                return "marqsim"
-            if _GENESIS_TERM_RE.match(s):
-                return "genesis"
-    return "unknown"
-
-
-def iter_input_files(dataset: str) -> list[Path]:
-    base = ROOT / "QBlue_Benchmark_Datasets"
-    if dataset == "marqsim":
-        files = list((base / "MarQSim_dataset").glob("*.txt"))
-        return sorted(files, key=lambda p: (p.stat().st_size, str(p)))
-    if dataset == "genesis":
-        files = list((base / "Genesis_dataset").rglob("*.txt"))
-        return sorted(files, key=lambda p: (p.stat().st_size, str(p)))
-    if dataset == "all":
-        mar = list((base / "MarQSim_dataset").glob("*.txt"))
-        mar = sorted(mar, key=lambda p: (p.stat().st_size, str(p)))
-        gen = list((base / "Genesis_dataset").rglob("*.txt"))
-        gen = sorted(gen, key=lambda p: (p.stat().st_size, str(p)))
-        return mar + gen
-    raise ValueError(f"unknown dataset: {dataset}")
-
 
 @dataclass(frozen=True)
 class ParsedHamiltonian:
@@ -100,7 +69,7 @@ def parse_hamiltonian_file(
             line = raw.strip()
             if not line:
                 continue
-            m = _MARQSIM_TERM_RE.match(line)
+            m = MARQSIM_TERM_RE.match(line)
             if not m:
                 continue
             sign_s, coeff_s, label = m.groups()
@@ -122,7 +91,7 @@ def parse_hamiltonian_file(
             line = raw.strip()
             if not line:
                 continue
-            m = _GENESIS_TERM_RE.match(line)
+            m = GENESIS_TERM_RE.match(line)
             if not m:
                 continue
             label, coeff_s = m.groups()
@@ -253,10 +222,10 @@ def openfermion_compile_to_circuit(
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", choices=["marqsim", "genesis", "all"], default="marqsim")
+    ap.add_argument("--dataset", choices=DATASET_CHOICES, default="dataset1")
     ap.add_argument("--inputs", nargs="+", type=Path, default=None, help="Explicit list of input files.")
     ap.add_argument("--out", type=Path, default=Path("results/openfermion.csv"))
-    ap.add_argument("--ts", nargs="+", type=float, default=[0.1], help="Evolution time(s) to benchmark.")
+    ap.add_argument("--ts", nargs="+", type=float, default=[math.pi / 4, math.pi / 16], help="Evolution time(s) to benchmark.")
     ap.add_argument("--no-qiskit-opt", action="store_true", help="Disable the final Qiskit optimization/transpile.")
     ap.add_argument(
         "--no-ibm-counts",
@@ -297,7 +266,7 @@ def main() -> int:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
-    input_files = [p.resolve() for p in args.inputs] if args.inputs else iter_input_files(args.dataset)
+    input_files = [p.resolve() for p in args.inputs] if args.inputs else iter_dataset_input_files(args.dataset)
     if args.limit and args.limit > 0:
         input_files = input_files[: args.limit]
 
@@ -341,12 +310,7 @@ def main() -> int:
 
         for input_file in input_files:
             fmt = detect_format(input_file)
-            if "MarQSim_dataset" in str(input_file):
-                dataset = "MarQSim_dataset"
-            elif "Genesis_dataset" in str(input_file):
-                dataset = "Genesis_dataset"
-            else:
-                dataset = "custom"
+            dataset = dataset_label_for_path(input_file)
 
             try:
                 ph = parse_hamiltonian_file(

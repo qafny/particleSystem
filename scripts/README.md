@@ -1,15 +1,15 @@
 # Benchmark scripts
 
-## Dataset formats: MarQSim vs Genesis
+## Supported datasets
 
-- `QBlue_Benchmark_Datasets/MarQSim_dataset/*.txt` uses lines like:
-  - `+ 1.1721681794967684 * IIIIIIIIIIIZ`
-- `QBlue_Benchmark_Datasets/Genesis_dataset/**/**/*.txt` uses lines like:
-  - `IIIIIIIIIIII (-5.152415944121773+0j)`
+- `mlqblue/DataSet1/**/*.txt`
+- `mlqblue/DataSet2/**/*.txt`
 
-These are not the same format. The QBlue OCaml parser natively consumes the MarQSim-style format.
+Both datasets are MarQSim-style Hamiltonian text. `DataSet2` uses compact signs such as `+1.0 * XIII`, and the scripts accept both spacing styles.
 
-## Convert Genesis → MarQSim
+Legacy Genesis inputs can still be passed explicitly to `qblue_bench.py` via `--inputs`; they are converted on the fly before calling `performance.exe`.
+
+## Convert Genesis → MarQSim (legacy utility)
 
 ```bash
 python3 scripts/genesis_to_marqsim.py QBlue_Benchmark_Datasets/Genesis_dataset/LiH/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt -o /tmp/lih.marqsim.txt
@@ -24,18 +24,18 @@ cd mlqblue
 opam exec -- dune build
 cd ..
 
-python3 scripts/qblue_bench.py --dataset marqsim --out results_marqsim.csv --limit 2
+python3 scripts/qblue_bench.py --dataset dataset1 --out results_dataset1.csv --limit 2
 ```
 
 Common options:
-- `--errs 1e-1 1e-3`
-- `--ts 0.1 0.5 1.0`
+- `--errs 0.5 0.1`
+- `--ts 0.7853981633974483 0.19634954084936207` (`pi/4`, `pi/16`)
 - `--pipelines auto std std2 qdrift marqsim` (maps to `performance.exe -p 0..4`)
 - `--grouping none|qwc|fc` (passed to `performance.exe -g`; some pipelines may ignore it)
 - `--timeout-s 1800`
 - `--perf-exe path/to/performance.exe` (if your build output path differs)
 
-To include Genesis (converted on-the-fly):
+To run both `DataSet1` and `DataSet2`:
 ```bash
 python3 scripts/qblue_bench.py --dataset all --out results_all.csv
 ```
@@ -52,14 +52,14 @@ have an environment that can `import qiskit` and `import scipy`, you can run:
 
 ```bash
 python3 scripts/phoenix_bench.py \
-  --inputs QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_Ar.txt \
-  --out results/phoenix_ar.csv \
-  --ts 0.1
+  --inputs mlqblue/DataSet1/dir_100/MarqSim_Ar.txt \
+  --out results/phoenix_dataset1_ar.csv \
+  --ts 0.7853981633974483 0.19634954084936207
 ```
 
-To run over all MarQSim inputs:
+To run over all `DataSet1` inputs:
 ```bash
-python3 scripts/phoenix_bench.py --dataset marqsim --out results/phoenix_marqsim.csv --ts 0.1
+python3 scripts/phoenix_bench.py --dataset dataset1 --out results/phoenix_dataset1.csv --ts 0.7853981633974483 0.19634954084936207
 ```
 
 Phoenix also emits QBlue-comparable IBM-basis counts by default:
@@ -69,7 +69,7 @@ Phoenix also emits QBlue-comparable IBM-basis counts by default:
 ## Benchmark Paulihedral and Tetris (vendored in Phoenix)
 
 Phoenix vendors/refactors Paulihedral and Tetris under `thirdparty/phoenix/`.
-These scripts run those baselines directly against `QBlue_Benchmark_Datasets`.
+These scripts run those baselines directly against `mlqblue/DataSet1` and `mlqblue/DataSet2`.
 
 Paulihedral:
 
@@ -77,7 +77,7 @@ Paulihedral:
 python3 scripts/paulihedral_bench.py \
   --dataset all \
   --out results/paulihedral.csv \
-  --ts 0.1
+  --ts 0.7853981633974483 0.19634954084936207
 ```
 
 Tetris:
@@ -86,11 +86,11 @@ Tetris:
 python3 scripts/tetris_bench.py \
   --dataset all \
   --out results/tetris.csv \
-  --ts 0.1
+  --ts 0.7853981633974483 0.19634954084936207
 ```
 
 Notes:
-- Both default to `--max-terms 5000` to skip extremely large Genesis instances (set `--max-terms 0` to disable).
+- Both default to `--max-terms 5000` to skip extremely large instances (set `--max-terms 0` to disable).
 - Both emit IBM-basis `gates_opt_*` columns by default for QBlue-style comparisons.
 
 ## Benchmark OpenFermion (3rd-party baseline)
@@ -108,15 +108,15 @@ Smoke test:
 
 ```bash
 python3 scripts/openfermion_bench.py \
-  --inputs QBlue_Benchmark_Datasets/MarQSim_dataset/_Pauli_string_Ar.txt \
-  --out results/openfermion_ar.csv \
-  --ts 0.1
+  --inputs mlqblue/DataSet1/dir_100/MarqSim_Ar.txt \
+  --out results/openfermion_dataset1_ar.csv \
+  --ts 0.7853981633974483 0.19634954084936207
 ```
 
-To run over all MarQSim inputs:
+To run over all `DataSet1` inputs:
 
 ```bash
-python3 scripts/openfermion_bench.py --dataset marqsim --out results/openfermion.csv --ts 0.1
+python3 scripts/openfermion_bench.py --dataset dataset1 --out results/openfermion.csv --ts 0.7853981633974483 0.19634954084936207
 ```
 
 Notes:
@@ -174,9 +174,9 @@ scripts/run.sh
 ```
 
 Defaults / overrides (environment variables):
-- `DATASET=all` (`marqsim` | `genesis` | `all`)
-- `TS="0.1"` (space-separated list; passed to all)
-- `QBLUE_ERRS="1e-1"` (Phoenix has no error bound; default is 1 value for 1:1 joins)
+- `DATASET=all` (`dataset1` | `dataset2` | `all`)
+- `TS="0.7853981633974483 0.19634954084936207"` (`pi/4 pi/16`; space-separated list; passed to all)
+- `QBLUE_ERRS="0.5 0.1"`
 - `QBLUE_PIPELINES="std"`
 - `QBLUE_GROUPING=none`
 - `QBLUE_TIMEOUT_S=1800`

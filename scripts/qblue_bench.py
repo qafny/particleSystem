@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-Run QBlue (mlqblue/performance.exe) over benchmark datasets and write a CSV.
+Run QBlue (mlqblue/performance.exe) over the mlqblue benchmark datasets and write a CSV.
 
 Focuses on TODO.md items:
 - per-benchmark compilation time (wall clock)
 - resource estimates (qubits + gate counts)
 - sweeps over (err, t) and pipeline choices
 
-It also detects dataset format differences:
-- MarQSim_dataset: "+ <float> * <IXYZ...>"
-- Genesis_dataset: "<IXYZ...> (<float>+0j)"
-Genesis inputs are converted on-the-fly using scripts/genesis_to_marqsim.py.
+The named dataset selections map to mlqblue/DataSet1 and mlqblue/DataSet2.
+Legacy Genesis-format inputs are still detected and converted on-the-fly when
+passed explicitly via --inputs.
 """
 
 from __future__ import annotations
@@ -19,6 +18,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -29,15 +29,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
+from dataset_utils import DATASET_CHOICES, dataset_label_for_path, detect_format, iter_dataset_input_files
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MLQBLUE = ROOT / "mlqblue"
 PERF_EXE = MLQBLUE / "_build" / "default" / "performance.exe"
 GENESIS_CONVERTER = ROOT / "scripts" / "genesis_to_marqsim.py"
 
-
-_MARQSIM_LINE_RE = re.compile(r"^\s*[+-]\s+(?:\d+(?:\.\d*)?)(?:[eE][-+]?\d+)?\s*\*\s*[IXYZ]+\s*$")
-_GENESIS_LINE_RE = re.compile(r"^\s*[IXYZ]+\s+\(\s*[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?\s*\+\s*0j\s*\)\s*$")
 
 _INPUT_RE = re.compile(r"Input circuit uses\s+(\d+)\s+qubits,\s+has\s+(\d+)\s+gates:\s+\{([^}]*)\}")
 _AFTER_RE = re.compile(r"After optimization, the circuit uses\s+(\d+)\s+gates\s+:\s+\{([^}]*)\}")
@@ -64,42 +63,6 @@ def _parse_kv_list(braced: str) -> dict[str, int]:
         k, v = chunk.split(":", 1)
         out[k.strip()] = int(v.strip())
     return out
-
-
-def detect_format(path: Path) -> str:
-    # Return "marqsim" | "genesis" | "unknown"
-    with path.open("r", encoding="utf-8", errors="replace") as f:
-        for _ in range(50):
-            line = f.readline()
-            if not line:
-                break
-            s = line.strip()
-            if not s:
-                continue
-            if _MARQSIM_LINE_RE.match(s):
-                return "marqsim"
-            if _GENESIS_LINE_RE.match(s):
-                return "genesis"
-    return "unknown"
-
-
-def iter_input_files(dataset: str) -> list[Path]:
-    base = ROOT / "QBlue_Benchmark_Datasets"
-    if dataset == "marqsim":
-        files = list((base / "MarQSim_dataset").glob("*.txt"))
-        # Prefer smaller instances first (useful when compute time is limited).
-        return sorted(files, key=lambda p: (p.stat().st_size, str(p)))
-    if dataset == "genesis":
-        files = list((base / "Genesis_dataset").rglob("*.txt"))
-        # Prefer smaller instances first (useful for smoke tests).
-        return sorted(files, key=lambda p: (p.stat().st_size, str(p)))
-    if dataset == "all":
-        mar = list((base / "MarQSim_dataset").glob("*.txt"))
-        mar = sorted(mar, key=lambda p: (p.stat().st_size, str(p)))
-        gen = list((base / "Genesis_dataset").rglob("*.txt"))
-        gen = sorted(gen, key=lambda p: (p.stat().st_size, str(p)))
-        return mar + gen
-    raise ValueError(f"unknown dataset: {dataset}")
 
 
 @dataclass(frozen=True)
@@ -336,7 +299,7 @@ def normalize_newlines_to_tmp(input_file: Path, tmp_dir: Path) -> Path:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", choices=["marqsim", "genesis", "all"], default="marqsim")
+    ap.add_argument("--dataset", choices=DATASET_CHOICES, default="dataset1")
     ap.add_argument(
         "--inputs",
         nargs="+",
@@ -352,8 +315,8 @@ def main() -> int:
         help="Path to mlqblue performance.exe (default: mlqblue/_build/default/performance.exe)",
     )
     ap.add_argument("--mlqblue-dir", type=Path, default=MLQBLUE, help="Path to mlqblue directory (default: ./mlqblue)")
-    ap.add_argument("--errs", nargs="+", type=float, default=[1e-1, 1e-3])
-    ap.add_argument("--ts", nargs="+", type=float, default=[0.1, 0.5, 1.0])
+    ap.add_argument("--errs", nargs="+", type=float, default=[0.5, 0.1])
+    ap.add_argument("--ts", nargs="+", type=float, default=[math.pi / 4, math.pi / 16])
     ap.add_argument(
         "--pipelines",
         nargs="+",
@@ -404,7 +367,9 @@ def main() -> int:
         )
         return 2
 
-    input_files = [resolve_path(p, base=ROOT) for p in args.inputs] if args.inputs else iter_input_files(args.dataset)
+    input_files = (
+        [resolve_path(p, base=ROOT) for p in args.inputs] if args.inputs else iter_dataset_input_files(args.dataset)
+    )
     if args.limit and args.limit > 0:
         input_files = input_files[: args.limit]
 
@@ -468,12 +433,7 @@ def main() -> int:
             tmp_dir = Path(td)
             for input_file in input_files:
                 fmt = detect_format(input_file)
-                if "MarQSim_dataset" in str(input_file):
-                    dataset = "MarQSim_dataset"
-                elif "Genesis_dataset" in str(input_file):
-                    dataset = "Genesis_dataset"
-                else:
-                    dataset = "custom"
+                dataset = dataset_label_for_path(input_file)
 
                 run_file = input_file
                 if fmt == "genesis":
