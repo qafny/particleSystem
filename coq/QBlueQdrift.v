@@ -30,11 +30,18 @@ Fixpoint sample_once (lp : lowprog) (num : R) : lowprog :=
     else sample_once app (Rminus num (Rabs (fst w)))
   end.
 
-Fixpoint sample (lp : lowprog) (N : nat) (totw : R) : lowprog :=
+Fixpoint sample_acc (lp : lowprog) (N : nat) (totw : R) (acc : lowprog) : lowprog :=
   match N with
-  | O => []
-  | S n' => (sample_once lp (random_float totw)) ++ (sample lp n' totw)
+  | O => rev acc
+  | S n' =>
+    match sample_once lp (random_float totw) with
+    | [] => sample_acc lp n' totw acc
+    | x :: _ => sample_acc lp n' totw (x :: acc)
+    end
   end.
+
+Definition sample (lp : lowprog) (N : nat) (totw : R) : lowprog :=
+  sample_acc lp N totw [].
 
 Definition trotter_qdrift (err t : R) (lp : lowprog) : lowprog :=
   let N := qdrift_step err t lp in
