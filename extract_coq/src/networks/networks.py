@@ -75,6 +75,12 @@ def genmat_gate_cancellation(list_coef, CNOT_matrix, singleQ_matrix=None):
     res = [[0.0 for i in range(nterm)] for j in range(nterm)]
     # normalization
     for ii in range(nterm):
+        if coef_scaled[ii] == 0:
+            # No outgoing capacity for this term; force a pure self-loop row.
+            for jj in range(nterm):
+                res[ii][jj] = 0.0
+            res[ii][ii] = 1.0
+            continue
         for jj in range(nterm):
             res[ii][jj] = float(flow_matrix[ii][jj]) / float(coef_scaled[ii])
     return res
