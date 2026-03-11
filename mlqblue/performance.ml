@@ -5,10 +5,11 @@ open Printf
 open Analyze_utility
 open Qblue_util
 
+exception Parse_timeout of int
 
 let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) : (int * int * int * int) =
-    let parse_timeout_seconds = getenv_int "QBLUE_PARSE_TIMEOUT_S" 30 in
-    let lp = with_timeout parse_timeout_seconds (fun () -> parse_pauli str_input) in
+    let to_second = 30 in
+    let lp = with_timeout (fun s -> Parse_timeout s) to_second (fun () -> parse_pauli str_input) in
 	let nqbit = get_dim_pauli str_input in
     let (nq1, nqm) = 
     if flag_path = 0 then translation_lowprog_optimize lp nqbit err t

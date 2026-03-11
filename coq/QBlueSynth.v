@@ -82,6 +82,38 @@ Fixpoint syn_analog_indiana_x' (nbit:nat) (f : nat -> paulimat) : nat -> paulima
 Definition syn_analog_indiana_x (t:R) (nbit:nat) (f : nat -> paulimat) : ugate :=
     (t, syn_analog_indiana_x' nbit f).
 
+
+(* Helper: builds result without repeated ++ on growing acc *)
+Fixpoint syn_analog_indiana_a_dl (nbit:nat) (f : nat -> paulimat)
+  (accf : list ugate -> list ugate) : (list ugate -> list ugate) :=
+  match nbit with
+  | 0 => accf
+  | S m =>
+    match f m with
+    | pauliy =>
+      let left := (Rdiv PI R4, (fun i => if i =? m then pauliz else paulii)) in
+      let right := (Rdiv (Rmult R7 PI) R4, (fun i => if i =? m then pauliz else paulii)) in
+      syn_analog_indiana_a_dl m f (fun tl => left :: (accf (right :: tl)))
+    | pauliz =>
+      let v1 := (Rdiv PI R4, (fun i => if i =? m then paulix else paulii)) in
+      let v2 := (Rdiv PI R4, (fun i => if i =? m then pauliz else paulii)) in
+      syn_analog_indiana_a_dl m f
+        (fun tl => v1 :: v2 :: v1 :: (accf (v1 :: v2 :: v1 :: tl)))
+    | _ => syn_analog_indiana_a_dl m f accf
+    end
+  end.
+
+Definition syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list ugate) : list ugate :=
+  syn_analog_indiana_a_dl nbit f (fun tl => rev_append (rev acc) tl) [].
+
+Definition synth_analog_indiana_single (t : R) (nbit : nat) (f : nat -> paulimat) : list ugate :=
+  syn_analog_indiana_a nbit f [syn_analog_indiana_x t nbit f].
+
+Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate :=
+  rev (fold_left (fun acc b =>
+    rev_append (synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)) acc) input []).
+
+(*
 Fixpoint syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list ugate) : list ugate :=
   match nbit with 
     0 => acc
@@ -100,13 +132,9 @@ Fixpoint syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list ugate)
       end
    end.
 
-Definition synth_analog_indiana_single (t:R) (nbit : nat) (f : nat -> paulimat) : list ugate :=
-  syn_analog_indiana_a nbit f [syn_analog_indiana_x t nbit f].
 
-(*
 Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate :=
   fold_left (fun a b => synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)::a) input [].
 *)
 
-Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate :=
-   fold_left (fun acc b => acc ++ synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)) input [].
+

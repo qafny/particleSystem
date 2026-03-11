@@ -1,11 +1,9 @@
 
-exception Parse_timeout of int
-
-let with_timeout (seconds : int) (f : unit -> 'a) : 'a =
+let with_timeout (exp_info : int -> exn) (seconds : int) (f : unit -> 'a) : 'a =
   if seconds <= 0 then f ()
   else
     let old_handler =
-      Sys.signal Sys.sigalrm (Sys.Signal_handle (fun _ -> raise (Parse_timeout seconds)))
+      Sys.signal Sys.sigalrm (Sys.Signal_handle (fun _ -> raise (exp_info seconds)))
     in
     ignore (Unix.alarm seconds);
     try

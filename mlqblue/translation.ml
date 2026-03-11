@@ -11,6 +11,19 @@ open Ab_group
 open Ab_trotter
 open Qblue_util
 
+let marqsim_term_limit = 2000
+
+let fail_big_program path_name lp =
+  let nterm = Stdlib.List.length lp in
+  if nterm > marqsim_term_limit then (
+    dbg
+      "Warning: skipping %s because the input has %d terms, above the supported limit %d."
+      path_name nterm marqsim_term_limit;
+    failwith
+      (Printf.sprintf
+         "skipping %s: input term count %d exceeds limit %d"
+         path_name nterm marqsim_term_limit))
+
 
 let print_optimization_detail n c0 c1 c2 c3 = 
   dbg "Input circuit uses %d qubits, has %d gates:  { H : %d, X : %d, Rzq : %d, CX : %d }." 
@@ -112,6 +125,7 @@ let trotterMarQSim_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : 
   Random.init 10;
 
   if verbose then dbg "---- Trotterization (MarQSim) -> IBMDigital circuits: ----";
+  fail_big_program "MarQSim -> IBMDigital" lp;
   let npau = qdrift_step err t lp in
   let lambda = sum_w lp (Stdlib.List.length lp) in
 
@@ -183,6 +197,8 @@ let trotterMarQSim_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : 
   Random.init 10;
 
   if verbose then dbg "---- Trotterization (MarQSim) -> IndiAnalog circuits: ----";
+
+  fail_big_program "MarQSim -> IndiAnalog" lp;
 
   let npau = qdrift_step err t lp in
   let lambda = sum_w lp (Stdlib.List.length lp) in

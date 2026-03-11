@@ -13,7 +13,8 @@ open Voqc.Qasm
 open Translation
 open Qblue_util
 
-let translation_timeout_seconds = getenv_int "QBLUE_TRANSLATION_TIMEOUT_S" 600
+let translation_timeout_seconds = 3600
+exception Compile_timeout of int
 
 let rec count_U1_ocaml (c : coq_U ucom) : int =
   match c with
@@ -72,7 +73,7 @@ let parse_pauli (input : string) : lowprog =
 
 (* 0.1 lowprog -> circ *)
 let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
-  Qblue_util.with_timeout translation_timeout_seconds (fun () ->
+  Qblue_util.with_timeout (fun s -> Compile_timeout s) translation_timeout_seconds (fun () ->
     match flag_path with
     | 1 -> trotterStd_IBMDigital ~verbose:verbose lp nq err t
     | 2 -> trotter2nd_IBMDigital ~verbose:verbose lp nq err t
@@ -81,7 +82,7 @@ let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t 
   )
 
 let lowprog_to_analog_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
-  Qblue_util.with_timeout translation_timeout_seconds (fun () ->
+  Qblue_util.with_timeout (fun s -> Compile_timeout s) translation_timeout_seconds (fun () ->
     match flag_path with
     | 11 -> trotterStd_IndiAnalog ~verbose:verbose lp nq err t
     | 12 -> trotter2nd_IndiAnalog ~verbose:verbose lp nq err t
