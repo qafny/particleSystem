@@ -73,6 +73,20 @@ let string_of_json_int_list = string_of_json_list string_of_int
 
 let string_of_json_int_matrix = string_of_json_list string_of_json_int_list
 
+let with_temp_json_arg (payload : string) (k : string -> 'a) : 'a =
+  (* Keep command-line args small to avoid E2BIG on large Hamiltonians. *)
+  let path = Filename.temp_file "qblue_api_" ".json" in
+  let oc = open_out_bin path in
+  output_string oc payload;
+  close_out oc;
+  try
+    let result = k ("@" ^ path) in
+    Sys.remove path;
+    result
+  with exn ->
+    (try Sys.remove path with _ -> ());
+    raise exn
+
 let skip_ws s idx =
   while
     !idx < String.length s
@@ -163,21 +177,30 @@ let get_matrix_pgc list_coef cnot_matrix singleq_matrix =
     | None -> "/usr/bin/python3"
   in
   let api_path = find_api_path () in
-  let extra_args =
-    match singleq_matrix_json with
-    | Some s -> [| list_coef_json; cnot_matrix_json; s |]
-    | None -> [| list_coef_json; cnot_matrix_json |]
-  in
-  let py_args =
-    Array.append [| python_bin; api_path; "genmat_gate_cancellation" |] extra_args
-  in
-  let ic = Unix.open_process_args_in python_bin py_args in
-  let output = read_all ic in
-  match Unix.close_process_in ic with
-  | Unix.WEXITED 0 -> parse_json_float_matrix (String.trim output)
-  | Unix.WEXITED code ->
-      failwith (Printf.sprintf "python api failed with exit code %d" code)
-  | Unix.WSIGNALED signal ->
-      failwith (Printf.sprintf "python api killed by signal %d" signal)
-  | Unix.WSTOPPED signal ->
-      failwith (Printf.sprintf "python api stopped by signal %d" signal)
+  with_temp_json_arg list_coef_json (fun list_coef_arg ->
+      with_temp_json_arg cnot_matrix_json (fun cnot_matrix_arg ->
+          let run singleq_arg_opt =
+            let extra_args =
+              match singleq_arg_opt with
+              | Some s -> [| list_coef_arg; cnot_matrix_arg; s |]
+              | None -> [| list_coef_arg; cnot_matrix_arg |]
+            in
+            let py_args =
+              Array.append
+                [| python_bin; api_path; "genmat_gate_cancellation" |]
+                extra_args
+            in
+            let ic = Unix.open_process_args_in python_bin py_args in
+            let output = read_all ic in
+            match Unix.close_process_in ic with
+            | Unix.WEXITED 0 -> parse_json_float_matrix (String.trim output)
+            | Unix.WEXITED code ->
+                failwith (Printf.sprintf "python api failed with exit code %d" code)
+            | Unix.WSIGNALED signal ->
+                failwith (Printf.sprintf "python api killed by signal %d" signal)
+            | Unix.WSTOPPED signal ->
+                failwith (Printf.sprintf "python api stopped by signal %d" signal)
+          in
+          match singleq_matrix_json with
+          | Some s -> with_temp_json_arg s (fun s_arg -> run (Some s_arg))
+          | None -> run None))
