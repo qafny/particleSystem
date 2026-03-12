@@ -28,6 +28,17 @@ require_file() {
   [[ -f "$1" ]] || die "missing required file: $1"
 }
 
+require_opam_package() {
+  local pkg="$1"
+  opam list --installed --short | grep -Fxq "$pkg" || die \
+    "missing opam package in switch $QBLUE_OPAM_SWITCH: $pkg
+Install the Coq dependencies from coq/opam-switch.export or at least:
+  coq
+  coq-quantumlib
+  coq-sqir
+  coq-voqc"
+}
+
 require_cmd opam
 require_cmd python3
 require_cmd make
@@ -40,6 +51,11 @@ require_file "$MLQBLUE_DIR/dune-project"
 log "Repo root: $ROOT"
 log "Using opam switch: $QBLUE_OPAM_SWITCH"
 eval "$(opam env --switch="$QBLUE_OPAM_SWITCH")"
+
+require_opam_package coq
+require_opam_package coq-quantumlib
+require_opam_package coq-sqir
+require_opam_package coq-voqc
 
 if [[ ! -f "$COQ_DIR/Makefile" ]]; then
   require_cmd coq_makefile
