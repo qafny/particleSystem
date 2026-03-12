@@ -2,6 +2,7 @@
 
 # dir of qblue coq project
 dir_src="src"
+PYTHON3_BIN="${PYTHON3_BIN:-python3}"
 
 # All other dirs are relative to src
 dir_coq="../../coq" # relative to the dir of Extract.v
@@ -30,6 +31,6 @@ coqc -R $dir_coq QBlue Extraction.v
 
 # Move the remaining extracted files to the 'ml' subdirectory.
 echo "Moving generated files to ml..."
-python3 prune.py $dir_ml_ori $dir_ml $modules
+"$PYTHON3_BIN" prune.py $dir_ml_ori $dir_ml $modules
 cp ./networks/* $dir_ml
  

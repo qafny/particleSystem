@@ -10,6 +10,8 @@ MLQBLUE_DIR="$ROOT/mlqblue"
 QBLUELIB_DIR="$MLQBLUE_DIR/qbluelib"
 
 QBLUE_OPAM_SWITCH="${QBLUE_OPAM_SWITCH:-${OPAMSWITCH:-qblue}}"
+QBLUE_PYTHON_MODULE="${QBLUE_PYTHON_MODULE:-}"
+PYTHON3_BIN="${PYTHON3_BIN:-python3}"
 
 log() {
   printf '[rebuild_after_merge] %s\n' "$*"
@@ -39,8 +41,55 @@ Install the Coq dependencies from coq/opam-switch.export or at least:
   coq-voqc"
 }
 
+require_python37() {
+  "$PYTHON3_BIN" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 7) else 1)' || die \
+    "python 3.7+ is required for extract_coq/src/prune.py
+Load a newer Python module or set PYTHON3_BIN explicitly, for example:
+  module load python/3.11.13
+or:
+  PYTHON3_BIN=python3.10"
+}
+
+ensure_module_cmd() {
+  if type module >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local init
+  for init in /usr/share/lmod/lmod/init/bash /etc/profile.d/modules.sh /usr/share/Modules/init/bash; do
+    if [[ -f "$init" ]]; then
+      # shellcheck disable=SC1090
+      source "$init"
+      break
+    fi
+  done
+
+  type module >/dev/null 2>&1
+}
+
+maybe_load_python_module() {
+  if [[ -z "$QBLUE_PYTHON_MODULE" ]]; then
+    return 0
+  fi
+
+  ensure_module_cmd || die \
+    "requested QBLUE_PYTHON_MODULE=$QBLUE_PYTHON_MODULE, but the environment-modules command is unavailable"
+
+  log "Loading python module: $QBLUE_PYTHON_MODULE"
+  module load "$QBLUE_PYTHON_MODULE"
+}
+
+clean_generated_artifacts() {
+  log "Cleaning stale Coq and extraction artifacts"
+  find "$COQ_DIR" -mindepth 1 -maxdepth 1 \( -name '*.vo' -o -name '*.glob' -o -name '*.vos' -o -name '*.vok' \) -delete
+  rm -rf "$COQ_DIR/.coq-native"
+
+  find "$EXTRACT_DIR/src" -mindepth 1 -maxdepth 2 \( -name '*.vo' -o -name '*.glob' -o -name '*.vos' -o -name '*.vok' \) -delete
+  rm -rf "$EXTRACT_DIR/src/.coq-native" "$EXTRACT_DIR/src/extracted" "$EXTRACT_ML_DIR"
+}
+
 require_cmd opam
-require_cmd python3
+require_cmd "$PYTHON3_BIN"
 require_cmd make
 require_cmd cp
 
@@ -50,21 +99,24 @@ require_file "$MLQBLUE_DIR/dune-project"
 
 log "Repo root: $ROOT"
 log "Using opam switch: $QBLUE_OPAM_SWITCH"
+maybe_load_python_module
+log "Using python: $PYTHON3_BIN"
 eval "$(opam env --switch="$QBLUE_OPAM_SWITCH")"
 
 require_opam_package coq
 require_opam_package coq-quantumlib
 require_opam_package coq-sqir
 require_opam_package coq-voqc
+require_python37
 
-if [[ ! -f "$COQ_DIR/Makefile" ]]; then
-  require_cmd coq_makefile
-  log "Generating coq/Makefile"
-  (
-    cd "$COQ_DIR"
-    coq_makefile -f _CoqProject -o Makefile
-  )
-fi
+require_cmd coq_makefile
+log "Regenerating coq/Makefile"
+(
+  cd "$COQ_DIR"
+  coq_makefile -f _CoqProject -o Makefile
+)
+
+clean_generated_artifacts
 
 log "Building Coq sources"
 (
@@ -75,7 +127,7 @@ log "Building Coq sources"
 log "Running extraction"
 (
   cd "$EXTRACT_DIR"
-  bash extract.sh
+  PYTHON3_BIN="$PYTHON3_BIN" bash extract.sh
 )
 
 require_file "$EXTRACT_ML_DIR/QBlueCompile.ml"

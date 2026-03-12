@@ -208,3 +208,16 @@ It does four things:
 - rebuilds `mlqblue` and checks for `performance.exe`
 
 If your opam switch has a different name, set `QBLUE_OPAM_SWITCH` accordingly.
+If you use environment modules on a cluster, load Python the same way as the
+sbatch scripts, or let the script do it for you:
+
+```bash
+QBLUE_PYTHON_MODULE=python/3.11.13 QBLUE_OPAM_SWITCH=qblue-coq816 ./scripts/rebuild_after_merge.sh
+```
+
+If the machine's default `python3` is too old for `extract_coq/src/prune.py`
+and you are not using modules, set `PYTHON3_BIN`, for example:
+
+```bash
+PYTHON3_BIN=python3.10 QBLUE_OPAM_SWITCH=qblue ./scripts/rebuild_after_merge.sh
+```
