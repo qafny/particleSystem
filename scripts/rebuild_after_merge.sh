@@ -11,12 +11,8 @@ QBLUELIB_DIR="$MLQBLUE_DIR/qbluelib"
 OPAMROOT="$HOME/.opam"
 QBLUE_OPAM_SWITCH="${QBLUE_OPAM_SWITCH:-${OPAMSWITCH:-qblue-coq816}}"
 
-<<<<<<< HEAD
-module load python/3.11.13
-=======
 QBLUE_OPAM_SWITCH="qblue-coq816"
 QBLUE_PYTHON_MODULE="python/3.11.13"
->>>>>>> 38fee8a (pre-merge)
 
 log() {
   printf '[rebuild_after_merge] %s\n' "$*"
