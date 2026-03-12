@@ -9,8 +9,9 @@ EXTRACT_ML_DIR="$EXTRACT_DIR/ml"
 MLQBLUE_DIR="$ROOT/mlqblue"
 QBLUELIB_DIR="$MLQBLUE_DIR/qbluelib"
 
-QBLUE_OPAM_SWITCH="${QBLUE_OPAM_SWITCH:-qblue-coq816}"
-QBLUE_PYTHON_MODULE="${QBLUE_PYTHON_MODULE:-python/3.11.13}"
+QBLUE_OPAM_SWITCH="${QBLUE_OPAM_SWITCH:-${OPAMSWITCH:-qblue-coq816}}"
+
+module load python/3.11.13
 
 log() {
   printf '[rebuild_after_merge] %s\n' "$*"
