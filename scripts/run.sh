@@ -58,16 +58,16 @@ OPENFERMION_LIMIT="${OPENFERMION_LIMIT:-0}"
 OPENFERMION_TROTTER_NUMBER="${OPENFERMION_TROTTER_NUMBER:-1}"
 OPENFERMION_TROTTER_ORDER="${OPENFERMION_TROTTER_ORDER:-1}"
 
-echo "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" >&2
-python3 scripts/qblue_bench.py \
-  --dataset "${DATASET}" \
-  --out "${QBLUE_OUT}" \
-  --errs "${QBLUE_ERRS_ARR[@]}" \
-  --ts "${TS_ARR[@]}" \
-  --pipelines "${QBLUE_PIPELINES_ARR[@]}" \
-  --grouping "${QBLUE_GROUPING}" \
-  --timeout-s "${QBLUE_TIMEOUT_S}" \
-  --limit "${QBLUE_LIMIT}"
+# echo "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" >&2
+# python3 scripts/qblue_bench.py \
+#   --dataset "${DATASET}" \
+#   --out "${QBLUE_OUT}" \
+#   --errs "${QBLUE_ERRS_ARR[@]}" \
+#   --ts "${TS_ARR[@]}" \
+#   --pipelines "${QBLUE_PIPELINES_ARR[@]}" \
+#   --grouping "${QBLUE_GROUPING}" \
+#   --timeout-s "${QBLUE_TIMEOUT_S}" \
+#   --limit "${QBLUE_LIMIT}"
 
 echo "[2/9] Phoenix (${DATASET}) -> ${PHOENIX_OUT}" >&2
 python3 scripts/phoenix_bench.py \
@@ -106,32 +106,32 @@ python3 scripts/openfermion_bench.py \
   --max-terms "${OPENFERMION_MAX_TERMS}" \
   --limit "${OPENFERMION_LIMIT}"
 
-echo "[6/9] Compare (Phoenix) -> ${COMPARE_PHOENIX_OUT}" >&2
-python3 scripts/compare_bench_csv.py \
-  --qblue "${QBLUE_OUT}" \
-  --baseline "${PHOENIX_OUT}" \
-  --baseline-name phoenix \
-  --out "${COMPARE_PHOENIX_OUT}"
+# echo "[6/9] Compare (Phoenix) -> ${COMPARE_PHOENIX_OUT}" >&2
+# python3 scripts/compare_bench_csv.py \
+#   --qblue "${QBLUE_OUT}" \
+#   --baseline "${PHOENIX_OUT}" \
+#   --baseline-name phoenix \
+#   --out "${COMPARE_PHOENIX_OUT}"
 
-echo "[7/9] Compare (Paulihedral) -> ${COMPARE_PAULIHEDRAL_OUT}" >&2
-python3 scripts/compare_bench_csv.py \
-  --qblue "${QBLUE_OUT}" \
-  --baseline "${PAULIHEDRAL_OUT}" \
-  --baseline-name paulihedral \
-  --out "${COMPARE_PAULIHEDRAL_OUT}"
+# echo "[7/9] Compare (Paulihedral) -> ${COMPARE_PAULIHEDRAL_OUT}" >&2
+# python3 scripts/compare_bench_csv.py \
+#   --qblue "${QBLUE_OUT}" \
+#   --baseline "${PAULIHEDRAL_OUT}" \
+#   --baseline-name paulihedral \
+#   --out "${COMPARE_PAULIHEDRAL_OUT}"
 
-echo "[8/9] Compare (Tetris) -> ${COMPARE_TETRIS_OUT}" >&2
-python3 scripts/compare_bench_csv.py \
-  --qblue "${QBLUE_OUT}" \
-  --baseline "${TETRIS_OUT}" \
-  --baseline-name tetris \
-  --out "${COMPARE_TETRIS_OUT}"
+# echo "[8/9] Compare (Tetris) -> ${COMPARE_TETRIS_OUT}" >&2
+# python3 scripts/compare_bench_csv.py \
+#   --qblue "${QBLUE_OUT}" \
+#   --baseline "${TETRIS_OUT}" \
+#   --baseline-name tetris \
+#   --out "${COMPARE_TETRIS_OUT}"
 
-echo "[9/9] Compare (OpenFermion) -> ${COMPARE_OPENFERMION_OUT}" >&2
-python3 scripts/compare_bench_csv.py \
-  --qblue "${QBLUE_OUT}" \
-  --baseline "${OPENFERMION_OUT}" \
-  --baseline-name openfermion \
-  --out "${COMPARE_OPENFERMION_OUT}"
+# echo "[9/9] Compare (OpenFermion) -> ${COMPARE_OPENFERMION_OUT}" >&2
+# python3 scripts/compare_bench_csv.py \
+#   --qblue "${QBLUE_OUT}" \
+#   --baseline "${OPENFERMION_OUT}" \
+#   --baseline-name openfermion \
+#   --out "${COMPARE_OPENFERMION_OUT}"
 
 echo "Done." >&2

@@ -191,6 +191,24 @@ Defaults / overrides (environment variables):
 
 On SLURM, outputs default to `results/*_${SLURM_JOB_ID}.csv`.
 
+Cluster wrapper for the one-shot runner:
+
+```bash
+sbatch scripts/run_all_bench.sbatch
+```
+
+This wrapper uses the current cluster defaults:
+- `python/3.11.13`
+- `qblue-coq816`
+- `DATASET=all`
+- `QBLUE_TIMEOUT_S=0`
+- `QBLUE_PARSE_TIMEOUT_S=0`
+- `QBLUE_TRANSLATION_TIMEOUT_S=0`
+- `PHOENIX_MAX_TERMS=0`
+- `PAULIHEDRAL_MAX_TERMS=0`
+- `TETRIS_MAX_TERMS=0`
+- `OPENFERMION_MAX_TERMS=0`
+
 ## Rebuild after merging `master`
 
 When a merge updates the Coq sources, the extracted OCaml snapshot under
@@ -198,7 +216,7 @@ When a merge updates the Coq sources, the extracted OCaml snapshot under
 full rebuild:
 
 ```bash
-QBLUE_OPAM_SWITCH=qblue ./scripts/rebuild_after_merge.sh
+./scripts/rebuild_after_merge.sh
 ```
 
 It does four things:
@@ -207,9 +225,13 @@ It does four things:
 - refreshes `mlqblue/qbluelib` from `extract_coq/ml`
 - rebuilds `mlqblue` and checks for `performance.exe`
 
-If your opam switch has a different name, set `QBLUE_OPAM_SWITCH` accordingly.
-If you use environment modules on a cluster, load Python the same way as the
-sbatch scripts, or let the script do it for you:
+The script now defaults to:
+- `QBLUE_OPAM_SWITCH=qblue-coq816`
+- `QBLUE_PYTHON_MODULE=python/3.11.13`
+
+If your environment is different, override either variable explicitly. If you
+use environment modules on a cluster, you can still let the script load Python
+for you:
 
 ```bash
 QBLUE_PYTHON_MODULE=python/3.11.13 QBLUE_OPAM_SWITCH=qblue-coq816 ./scripts/rebuild_after_merge.sh
