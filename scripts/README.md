@@ -225,21 +225,10 @@ It does four things:
 - refreshes `mlqblue/qbluelib` from `extract_coq/ml`
 - rebuilds `mlqblue` and checks for `performance.exe`
 
-The script now defaults to:
+The script hardcodes:
 - `QBLUE_OPAM_SWITCH=qblue-coq816`
 - `QBLUE_PYTHON_MODULE=python/3.11.13`
 
-If your environment is different, override either variable explicitly. If you
-use environment modules on a cluster, you can still let the script load Python
-for you:
-
 ```bash
-QBLUE_PYTHON_MODULE=python/3.11.13 QBLUE_OPAM_SWITCH=qblue-coq816 ./scripts/rebuild_after_merge.sh
-```
-
-If the machine's default `python3` is too old for `extract_coq/src/prune.py`
-and you are not using modules, set `PYTHON3_BIN`, for example:
-
-```bash
-PYTHON3_BIN=python3.10 QBLUE_OPAM_SWITCH=qblue ./scripts/rebuild_after_merge.sh
+./scripts/rebuild_after_merge.sh
 ```

@@ -11,7 +11,12 @@ QBLUELIB_DIR="$MLQBLUE_DIR/qbluelib"
 OPAMROOT="$HOME/.opam"
 QBLUE_OPAM_SWITCH="${QBLUE_OPAM_SWITCH:-${OPAMSWITCH:-qblue-coq816}}"
 
+<<<<<<< HEAD
 module load python/3.11.13
+=======
+QBLUE_OPAM_SWITCH="qblue-coq816"
+QBLUE_PYTHON_MODULE="python/3.11.13"
+>>>>>>> 38fee8a (pre-merge)
 
 log() {
   printf '[rebuild_after_merge] %s\n' "$*"
@@ -42,16 +47,13 @@ Install the Coq dependencies from coq/opam-switch.export or at least:
 }
 
 python_bin() {
-  printf '%s\n' "${PYTHON3_BIN:-python3}"
+  printf '%s\n' "python3"
 }
 
 require_python37() {
   "$(python_bin)" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 7) else 1)' || die \
     "python 3.7+ is required for extract_coq/src/prune.py
-Load a newer Python module or set PYTHON3_BIN explicitly, for example:
-  module load python/3.11.13
-or:
-  PYTHON3_BIN=python3.10"
+The script loads $QBLUE_PYTHON_MODULE and expects python3 to come from that module."
 }
 
 ensure_module_cmd() {
@@ -72,12 +74,8 @@ ensure_module_cmd() {
 }
 
 maybe_load_python_module() {
-  if [[ -z "$QBLUE_PYTHON_MODULE" ]]; then
-    return 0
-  fi
-
   ensure_module_cmd || die \
-    "requested QBLUE_PYTHON_MODULE=$QBLUE_PYTHON_MODULE, but the environment-modules command is unavailable"
+    "the environment-modules command is unavailable"
 
   log "Loading python module: $QBLUE_PYTHON_MODULE"
   module load "$QBLUE_PYTHON_MODULE"
@@ -131,7 +129,7 @@ log "Building Coq sources"
 log "Running extraction"
 (
   cd "$EXTRACT_DIR"
-  PYTHON3_BIN="$(python_bin)" bash extract.sh
+  bash extract.sh
 )
 
 require_file "$EXTRACT_ML_DIR/QBlueCompile.ml"
