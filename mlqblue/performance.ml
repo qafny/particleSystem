@@ -7,7 +7,7 @@ open Qblue_util
 
 
 let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) : (int * int * int * int) =
-    let parse_timeout_seconds = 30 in
+    let parse_timeout_seconds = getenv_int "QBLUE_PARSE_TIMEOUT_S" 30 in
     let lp = with_timeout parse_timeout_seconds (fun () -> parse_pauli str_input) in
 	let nqbit = get_dim_pauli str_input in
     let (nq1, nqm) = 
@@ -139,4 +139,3 @@ let () =
   Yojson.Basic.pretty_to_channel Stdlib.stdout json_data;
   output_char Stdlib.stdout '\n';
   flush Stdlib.stdout
-

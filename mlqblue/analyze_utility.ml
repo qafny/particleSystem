@@ -13,7 +13,7 @@ open Voqc.Qasm
 open Translation
 open Qblue_util
 
-let translation_timeout_seconds = 600
+let translation_timeout_seconds = getenv_int "QBLUE_TRANSLATION_TIMEOUT_S" 600
 
 let rec count_U1_ocaml (c : coq_U ucom) : int =
   match c with

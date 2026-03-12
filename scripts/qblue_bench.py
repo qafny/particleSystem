@@ -185,6 +185,7 @@ def run_one(
         grouping,
     ]
     t0 = time.time()
+    run_timeout = timeout_s if timeout_s > 0 else None
     try:
         proc = subprocess.run(
             cmd,
@@ -192,7 +193,7 @@ def run_one(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout_s,
+            timeout=run_timeout,
             check=False,
         )
         wall = time.time() - t0
@@ -330,7 +331,7 @@ def main() -> int:
         default="none",
         help="Grouping mode passed to performance.exe -g (ab1/ab2 only; std/qdrift currently ignore it).",
     )
-    ap.add_argument("--timeout-s", type=int, default=1800)
+    ap.add_argument("--timeout-s", type=int, default=1800, help="Per-run timeout in seconds; 0 disables the Python wrapper timeout.")
     ap.add_argument("--limit", type=int, default=0, help="Limit number of input files (0 = no limit)")
     ap.add_argument("--no-build", action="store_true", help="Do not run dune build if performance.exe is missing")
     args = ap.parse_args()

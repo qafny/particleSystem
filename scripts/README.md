@@ -190,3 +190,21 @@ Defaults / overrides (environment variables):
 - `COMPARE_PHOENIX_OUT=...` / `COMPARE_PAULIHEDRAL_OUT=...` / `COMPARE_TETRIS_OUT=...` / `COMPARE_OPENFERMION_OUT=...`
 
 On SLURM, outputs default to `results/*_${SLURM_JOB_ID}.csv`.
+
+## Rebuild after merging `master`
+
+When a merge updates the Coq sources, the extracted OCaml snapshot under
+`mlqblue/qbluelib` needs to be refreshed as well. This script automates the
+full rebuild:
+
+```bash
+QBLUE_OPAM_SWITCH=qblue ./scripts/rebuild_after_merge.sh
+```
+
+It does four things:
+- rebuilds `coq/`
+- reruns `extract_coq/extract.sh`
+- refreshes `mlqblue/qbluelib` from `extract_coq/ml`
+- rebuilds `mlqblue` and checks for `performance.exe`
+
+If your opam switch has a different name, set `QBLUE_OPAM_SWITCH` accordingly.

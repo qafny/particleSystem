@@ -35,15 +35,17 @@ let make_absolute path =
 
 let find_api_path () =
   let cwd_api = Filename.concat (Sys.getcwd ()) "qbluelib/ml/api.py" in
+  let cwd_api_flat = Filename.concat (Sys.getcwd ()) "qbluelib/api.py" in
   let exe_dir = make_absolute (Filename.dirname Sys.executable_name) in
   let build_api = Filename.concat exe_dir "qbluelib/ml/api.py" in
+  let build_api_flat = Filename.concat exe_dir "qbluelib/api.py" in
   let env_api =
     try Some (Sys.getenv "QBLUE_API_PY") with Not_found -> None
   in
   let candidates =
     match env_api with
-    | Some path -> [ path; cwd_api; build_api ]
-    | None -> [ cwd_api; build_api ]
+    | Some path -> [ path; cwd_api; cwd_api_flat; build_api; build_api_flat ]
+    | None -> [ cwd_api; cwd_api_flat; build_api; build_api_flat ]
   in
   let rec loop = function
     | [] ->
