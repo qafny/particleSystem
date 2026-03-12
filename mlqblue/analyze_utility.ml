@@ -13,7 +13,7 @@ open Voqc.Qasm
 open Translation
 open Qblue_util
 
-let translation_timeout_seconds = 3600
+let translation_timeout_seconds = 600
 exception Compile_timeout of int
 
 let rec count_U1_ocaml (c : coq_U ucom) : int =
