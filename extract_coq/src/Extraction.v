@@ -110,6 +110,8 @@ Extract Inlined Constant Complex.Copp => "(fun (a, b) -> (-. a, -. b))".
 Extract Inlined Constant random_float => "Random.float".
 From QBlue Require Import QBlueMarQSim.
 Extract Inlined Constant GenPgc => "Bridge.get_matrix_pgc".
+Extract Constant nsampe_gatesize_est => "100".
+Extract Constant ngates_per_chunk => "20000".
 
 
 Set Extraction Optimize.

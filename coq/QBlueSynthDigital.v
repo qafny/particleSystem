@@ -128,6 +128,12 @@ Fixpoint prune_SKIP (c : EG.ucom EG.U) : EG.ucom EG.U :=
 
 Definition synth_digital_ibm t nbit input := prune_SKIP (synth_digital_ibm_raw t nbit input EG.SKIP).
 
+Fixpoint ucom_gate_count (circ : EG.ucom EG.U) : nat :=
+  match circ with
+  | EG.useq c1 c2 => ucom_gate_count c1 + ucom_gate_count c2
+  | EG.uapp _ _ => 1%nat
+  end.
+
 
 (* Convert from ExtractionGateSet to FullGateSet so can use optimization in VOQC *)
 Fixpoint cvt_egate_fullgate (dim : nat) (u : EG.ucom EG.U) : full_ucom_l dim :=
@@ -178,3 +184,15 @@ Definition voqc_make_lnn_ring := VOQC.Main.make_lnn_ring.
 Definition voqc_trivial_layout := VOQC.Main.trivial_layout.
 Definition voqc_lnn_ring_path_finding_fun := VOQC.Main.lnn_ring_path_finding_fun.
 
+
+Definition ibmdigi_to_rzq (nbit : nat) (circ : EG.ucom EG.U) : VOQC.Main.circ nbit := 
+  let c0 := decompose_to_voqc_gates circ in
+  let c1 := cvt_egate_fullgate nbit c0 in
+  voqc_convert_to_rzq nbit c1.
+
+Definition ibmdigi_voqc_optimize (nbit : nat) (circ : EG.ucom EG.U) : VOQC.Main.circ nbit :=
+  let c2 := ibmdigi_to_rzq nbit circ in
+  let cg := voqc_make_lnn_ring nbit in
+  let la := voqc_trivial_layout nbit in
+  let c3 := voqc_decompose_swaps nbit (voqc_swap_route nbit c2 la cg (voqc_lnn_ring_path_finding_fun nbit)) cg in
+  voqc_optimize nbit c3.

@@ -4,6 +4,8 @@ Require Import Psatz.
 Require Import QuantumLib.Complex.
 Require Import QuantumLib.Matrix.
 From SQIR Require Import ExtractionGateSet.
+From VOQC Require Import FullGateSet.
+From VOQC Require Import Main.
 
 Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueParTransJwt.
@@ -18,44 +20,90 @@ Require Import QBlue.QBlueTTS.
 Require Import QBlue.QBlueMarQSim.
 
 
+Module EG := ExtractionGateSet.
+(* number of samples used to estimate the # of gates per sample: 100 *)
+Parameter nsampe_gatesize_est : nat.
+(* # of gates in one chunk: 20000 *)
+Parameter ngates_per_chunk : nat. 
+
 (* Translate from high-level hamiltonian to IBM digital gates
 err: tolerance; t: time;
 exp: high-level hamiltonian;
 it: high-level hamiltonian type;
 nbit: number of qubits for exp, length of it *)
-Definition translate_highp2circ (err t : R) (exp : blueExp) (it : iota) (nbit : nat) 
-  : ucom ExtractionGateSet.U :=
+Definition translate_highp2circ (err t : R) (exp : blueExp) (it : iota) (nbit : nat) : EG.ucom EG.U :=
   let lowp1 : lowprog := bexp_to_lowprog exp it in
   let lowp : lowprog := trotter err t lowp1 in
   synth_digital_ibm t nbit lowp.
 
-  
-Definition translate (err t : R) (exp : blueExp) (it : iota) : lowprog := 
-  let lowp1 : lowprog := bexp_to_lowprog exp it in
-  let lowp : lowprog := trotter err t lowp1 in lowp.
 
-
-Definition translate_lowp2circ_std (err t : R) (lp : lowprog) (nbit : nat) : ucom ExtractionGateSet.U := 
+Definition translate_lowp2circ_std (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
   let lowp : lowprog := trotter err t lp in 
   synth_digital_ibm t nbit lowp.
 
-Definition translate_lowp2circ_std_2nd_order (err t : R) (lp : lowprog) (nbit : nat) : ucom ExtractionGateSet.U := 
+Definition translate_lowp2circ_std_2nd_order (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
   let lowp : lowprog := trotter_2nd_order err t lp in 
   synth_digital_ibm t nbit lowp.
 
-Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) 
-: ucom ExtractionGateSet.U := 
-  let lowp : lowprog := trotter_qdrift err t lp in 
+Definition ngates_per_term (t : R) (lp : lowprog) (nbit : nat) (totw : R) : nat :=
+  let lowp_sample := sample lp nsampe_gatesize_est totw in
+  let circ := synth_digital_ibm t nbit lowp_sample in
+  Nat.div (ucom_gate_count circ) nsampe_gatesize_est.
+
+Definition translate_1stTrotter_ibmdigi (ist : nat) (lp : lowprog) (nbit : nat) 
+  (scale t : R) (sp_size : nat) : EG.ucom EG.U := 
+  let lowp := firstn sp_size (skipn ist lp) in
+  let lp1 := mult_r_hplus scale lowp in
+  synth_digital_ibm t nbit lp1.
+
+
+Fixpoint translate_lowp2circ_chunks
+  (t : R) (lp : lowprog) (nbit : nat) (scale : R)
+  (f_translate : lowprog -> nat -> R -> R -> nat -> EG.ucom EG.U)
+  (f_opt : EG.ucom EG.U -> full_ucom_l nbit)
+  (fuel remaining_samples ns : nat) (acc_rev : full_ucom_l nbit)
+  : full_ucom_l nbit :=
+  match fuel with
+  | O => List.rev acc_rev
+  | S fuel' =>
+    match remaining_samples with
+    | O => List.rev acc_rev
+    | S _ =>
+      let this_chunk := Nat.min ns remaining_samples in
+      let cc := f_translate lp nbit scale t ns in
+      let opt := f_opt cc in
+      translate_lowp2circ_chunks t lp nbit scale f_translate f_opt fuel'
+        (remaining_samples - this_chunk) ns
+        (List.rev_append opt acc_rev)
+    end
+  end.
+
+
+Definition translate_qdrift_ibmdigi (totw : R) (lp : lowprog) (nbit : nat)
+  (scale t : R) (sp_size : nat) : EG.ucom EG.U := 
+  let lp1 := sample lp sp_size totw in
+  let lowp := mult_r_hplus scale lp1 in
   synth_digital_ibm t nbit lowp.
 
-Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
-: ucom ExtractionGateSet.U := 
+Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
+  let N := qdrift_step err t lp in
+  let totw := sum_w lp (length lp) in
+  let scale := (totw / INR N)%R in
+  let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
+  let nch := S ((Nat.div N ns)%nat) in
+  match ns with
+  | O => []
+  | S _ => translate_lowp2circ_chunks t lp nbit scale 
+  (translate_qdrift_ibmdigi totw) (ibmdigi_voqc_optimize nbit) nch N ns []
+  end.
+
+
+Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
   let lowp : lowprog := trotter_marqsim err t lp nbit in 
   synth_digital_ibm t nbit lowp.
 
 
-Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) 
-: ucom ExtractionGateSet.U := 
+Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
   TTS_LCU err t nbit lp.
 
 Definition translate_lowp2Indiana_std (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
@@ -74,6 +122,9 @@ Definition translate_lowp2Indiana_marqsim (err t : R) (lp : lowprog) (nbit : nat
   let lowp : lowprog := trotter_marqsim err t lp nbit in 
   synth_analog_indiana t nbit lowp.
 
+
+
+(* The following optimization would be in ocaml
 Record Pipeline := {
   p_ham_sim : R -> R -> lowprog -> lowprog;
   p_synth   : R -> nat -> lowprog -> ucom ExtractionGateSet.U
@@ -139,8 +190,5 @@ Definition qblue_compile (H : lowprog) (err t : R) (nbit : nat)
     p_synth  := synth_digital_ibm;
     |} in
   greedy_best_pipeline H err t nbit (all_pipelines ham_sim_list synth_list) best.
-
-
-
-
+*)
 

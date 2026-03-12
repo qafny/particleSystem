@@ -14,10 +14,9 @@ Definition paulimat_eqb (a b : paulimat) : bool :=
   | _, _ => false
   end.
 
-Fixpoint mult_r_hplus (r : R) (p : lowprog) : lowprog :=
-  match p with [] => []
-  | x :: ax => (r * (fst x), snd x) :: (mult_r_hplus r ax)
-  end.  
+Definition mult_r_hplus (r : R) (lp : lowprog) : lowprog :=
+  map (fun p => let '(x, f) := p in 
+  let z : C := ((r * (fst x)) %R, (r * (snd x)) %R) in (z, f)) lp.
 
 
 Definition R2 : R := R1 + R1.
