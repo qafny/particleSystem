@@ -8,7 +8,7 @@ EXTRACT_DIR="$ROOT/extract_coq"
 EXTRACT_ML_DIR="$EXTRACT_DIR/ml"
 MLQBLUE_DIR="$ROOT/mlqblue"
 QBLUELIB_DIR="$MLQBLUE_DIR/qbluelib"
-
+OPAMROOT="$HOME/.opam"
 QBLUE_OPAM_SWITCH="${QBLUE_OPAM_SWITCH:-${OPAMSWITCH:-qblue-coq816}}"
 
 module load python/3.11.13
