@@ -11,7 +11,6 @@ QBLUELIB_DIR="$MLQBLUE_DIR/qbluelib"
 
 QBLUE_OPAM_SWITCH="${QBLUE_OPAM_SWITCH:-${OPAMSWITCH:-qblue}}"
 QBLUE_PYTHON_MODULE="${QBLUE_PYTHON_MODULE:-}"
-PYTHON3_BIN="${PYTHON3_BIN:-python3}"
 
 log() {
   printf '[rebuild_after_merge] %s\n' "$*"
@@ -41,8 +40,12 @@ Install the Coq dependencies from coq/opam-switch.export or at least:
   coq-voqc"
 }
 
+python_bin() {
+  printf '%s\n' "${PYTHON3_BIN:-python3}"
+}
+
 require_python37() {
-  "$PYTHON3_BIN" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 7) else 1)' || die \
+  "$(python_bin)" -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 7) else 1)' || die \
     "python 3.7+ is required for extract_coq/src/prune.py
 Load a newer Python module or set PYTHON3_BIN explicitly, for example:
   module load python/3.11.13
@@ -89,7 +92,6 @@ clean_generated_artifacts() {
 }
 
 require_cmd opam
-require_cmd "$PYTHON3_BIN"
 require_cmd make
 require_cmd cp
 
@@ -100,7 +102,8 @@ require_file "$MLQBLUE_DIR/dune-project"
 log "Repo root: $ROOT"
 log "Using opam switch: $QBLUE_OPAM_SWITCH"
 maybe_load_python_module
-log "Using python: $PYTHON3_BIN"
+require_cmd "$(python_bin)"
+log "Using python: $(python_bin)"
 eval "$(opam env --switch="$QBLUE_OPAM_SWITCH")"
 
 require_opam_package coq
@@ -127,7 +130,7 @@ log "Building Coq sources"
 log "Running extraction"
 (
   cd "$EXTRACT_DIR"
-  PYTHON3_BIN="$PYTHON3_BIN" bash extract.sh
+  PYTHON3_BIN="$(python_bin)" bash extract.sh
 )
 
 require_file "$EXTRACT_ML_DIR/QBlueCompile.ml"
