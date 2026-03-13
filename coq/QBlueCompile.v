@@ -88,7 +88,8 @@ Definition translate_stdTrotter_ibmdigi (lp : lowprog) (ist nbit : nat)
   let lp1 := mult_r_hplus scale lowp in
   synth_digital_ibm t nbit lp1.
 
-Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
+Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat)
+  (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
   let r := trotter_step err t lp in
   let nt := length lp in
   let totw := sum_w lp nt in
@@ -98,10 +99,11 @@ Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat
   match ns with
   | O => []
   | S _ => translate_lowp2circ_chunks t lp 0%nat nbit scale 
-  translate_stdTrotter_ibmdigi (ibmdigi_voqc_optimize nbit) nch nt ns []
+  translate_stdTrotter_ibmdigi f_opt nch nt ns []
   end.
 
-Definition translate_lowp2circ_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
+Definition translate_lowp2circ_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) 
+  (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
   let r := trotter_step_2nd_order err t lp in
   let nt := length lp in
   let totw := sum_w lp nt in
@@ -112,10 +114,10 @@ Definition translate_lowp2circ_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat
   | O => []
   | S _ => 
     let acc1 := translate_lowp2circ_chunks_acc t (rev lp) 0%nat nbit scale
-      translate_stdTrotter_ibmdigi (ibmdigi_voqc_optimize nbit) nch nt ns [] in
+      translate_stdTrotter_ibmdigi f_opt nch nt ns [] in
     List.rev
       (translate_lowp2circ_chunks_acc t lp 0%nat nbit scale
-         translate_stdTrotter_ibmdigi (ibmdigi_voqc_optimize nbit) nch nt ns acc1)
+         translate_stdTrotter_ibmdigi f_opt nch nt ns acc1)
   end.
 
 
@@ -126,7 +128,8 @@ Definition translate_qdrift_ibmdigi (totw : R) (lp : lowprog) (ist nbit : nat)
   synth_digital_ibm t nbit lowp.
 
 
-Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
+Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) 
+  (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
   let N := qdrift_step err t lp in
   let totw := sum_w lp (length lp) in
   let scale := (totw / INR N)%R in
@@ -135,7 +138,7 @@ Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) : 
   match ns with
   | O => []
   | S _ => translate_lowp2circ_chunks t lp 0%nat nbit scale 
-  (translate_qdrift_ibmdigi totw) (ibmdigi_voqc_optimize nbit) nch N ns []
+  (translate_qdrift_ibmdigi totw) f_opt nch N ns []
   end.
 
 
@@ -145,7 +148,8 @@ Definition translate_marqsim_ibmdigi (prob_init : list R) (trans_matrix : nat ->
   let lowp := mult_r_hplus scale lp1 in
   synth_digital_ibm t nbit lowp.
 
-Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
+Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
+  (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
   let N := qdrift_step err t lp in
   let prob_init := get_coef lp in
   let trans_matrix := get_trans lp nbit in 
@@ -157,7 +161,7 @@ Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) :
   | O => []
   | S _ =>
     translate_lowp2circ_chunks t lp 0%nat nbit scale
-    (translate_marqsim_ibmdigi prob_init trans_matrix) (ibmdigi_voqc_optimize nbit) nch N ns []
+    (translate_marqsim_ibmdigi prob_init trans_matrix) f_opt nch N ns []
   end.
 
 

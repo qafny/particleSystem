@@ -132,6 +132,7 @@ Separate Extraction
   ExtractionGateSet.decompose_to_voqc_gates
 
 (* VOQC functions you want in the same local type universe *)
+  QBlueSynthDigital.ibmdigi_voqc_optimize
   QBlueSynthDigital.cvt_egate_fullgate
   QBlueSynthDigital.voqc_count_total
   QBlueSynthDigital.voqc_count_H

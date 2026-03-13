@@ -188,10 +188,12 @@ let summarize_counts (cc : Main.circ) (nqbit : int) (r : int) : int * int =
 
 let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) =
   let best_path = ref 100 in
+  let ts_tot = ref 0.0 in
   let best_score = ref max_int in 
   for flag_path = 1 to 4 do
-    let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
+    let (cc, _, ts, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
     let (nq1, score) = summarize_counts cc nqbit r in
+	ts_tot := !ts_tot +. ts;
 	dbg "Path flag: %d; # Single-bit gates: %d; # CNOT gates: %d.\n" flag_path nq1 score;
 	if score < !best_score then 
 	begin
@@ -199,9 +201,8 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
       best_path := flag_path;
     end
   done; 
-  let (cc, r) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
-  summarize_counts cc nqbit r
-
+  let (c1, c_bf, _, r) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
+  (c1, c_bf, !ts_tot, r)
 
 let summarize_analog_counts (cc : ugate list) (r : int) (npau : int) : int * int =
   let ntot = r * (List.length cc) in
@@ -209,13 +210,15 @@ let summarize_analog_counts (cc : ugate list) (r : int) (npau : int) : int * int
   (* # single-qubits, multiple-qubits  *)
   (nq1, npau)
 
-let translation_lowprog_analog (lp : lowprog) (nqbit : int) (err : float) (t : float) : (int * int) =
+let translation_lowprog_analog (lp : lowprog) (nqbit : int) (err : float) (t : float) =
   let best_path = ref 100 in
+  let ts_tot = ref 0.0 in
   let best_score = ref max_int in
   for flag_path = 11 to 14 do
-    let (cc, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
+    let (cc, ts, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
 	(* currently use number of pauli strings *)
 	let (nq1, score) = summarize_analog_counts cc nqbit npau in
+    ts_tot := !ts_tot +. ts;
 	dbg "Path flag: %d; # Single-bit gates: %d; # multi-bit gates: %d.\n" flag_path nq1 score;
     if score < !best_score then
     begin
@@ -223,8 +226,8 @@ let translation_lowprog_analog (lp : lowprog) (nqbit : int) (err : float) (t : f
       best_path := flag_path;
     end
   done;
-  let (cc, r, npau) = lowprog_to_analog_circ ~verbose:false lp nqbit err t !best_path in
-  summarize_analog_counts cc r npau  
+  let (cc, _, r, npau) = lowprog_to_analog_circ ~verbose:false lp nqbit err t !best_path in
+  (cc, !ts_tot, r, npau)
 
 
 
