@@ -61,6 +61,18 @@ let ibmdigi_voqc_optimize1 ?(verbose=false) nqubit circ =
   c3;;
 
 
+let trotterStd_IBMDigi_est (lp : lowprog) (nbit : int) (err : float) (t : float) f_opt =
+  let r = trotter_step err t lp in
+  let nt = Stdlib.List.length lp in
+  let totw = sum_w lp nt in
+  let scale = 1.0 /. Float.of_int r in
+  let gates_per_term = max 1 (ngates_per_term t lp nbit totw) in
+  let ns = max 1 (ngates_per_chunk / gates_per_term) in
+  let first_chunk_terms = min ns nt in
+  let cc = translate_stdTrotter_ibmdigi lp 0 nbit scale t first_chunk_terms in
+  let _ = f_opt cc in
+  ns
+
 
 (* std trotterization; decompose to IBM digital *)
 let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
@@ -71,12 +83,19 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
-  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+  let ns, first_chunk_time =
+    time_call (fun () -> trotterStd_IBMDigi_est lp nq err t (ibmdigi_voqc_optimize nq)) in
+  let total_chunks = (nterm + ns - 1) / ns in
   try
-    let n = trotter_step err t lp in
-    let astep = trotter_astep (Float.of_int n) lp in
-    let cc = synth_digital_ibm t nq astep in	
-    (ibmdigi_voqc_optimize1 ~verbose:verbose nq cc, n)	
+    if verbose then 
+	begin
+      dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+      dbg "Chunk size: %d sampled terms; total chunks: %d." ns total_chunks;
+      dbg "Estimated total compile time from first chunk: %.3fs." (first_chunk_time *. float_of_int total_chunks)
+    end;
+
+    let cc = translate_lowp2circ_stdTrotter err t lp nq in
+	(cc, r)
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -86,18 +105,24 @@ let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   if verbose then dbg "---- Trotterization (2nd-order) -> IBMDigital circuits: ----";
   let r = trotter_step_2nd_order err t lp in
   let nterm = Stdlib.List.length lp in
-  let npau = r * nterm in
+  let npau = r * nterm * 2 in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
-  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+  let ns, first_chunk_time =
+    time_call (fun () -> trotterStd_IBMDigi_est lp nq err t (ibmdigi_voqc_optimize nq)) in
+  let total_chunks = (2 * nterm + ns - 1) / ns in
   try
-    let n = trotter_step_2nd_order err t lp in
-    let astep1 = trotter_astep (( /. ) (Float.of_int n) 2.0) (Stdlib.List.rev lp) in
-    let astep2 = trotter_astep (( /. ) (Float.of_int n) 2.0) lp in
-    let astep = Stdlib.List.append astep1 astep2 in
-    let cc = synth_digital_ibm t nq astep in	
-    (ibmdigi_voqc_optimize1 ~verbose:verbose nq cc, n)	
+    if verbose then 
+	begin
+      dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+      dbg "Chunk size: %d sampled terms; total chunks: %d." ns total_chunks;
+      dbg "Estimated total compile time from first chunk: %.3fs." (first_chunk_time *. float_of_int total_chunks)
+    end;
+
+    let cc = translate_lowp2circ_2ndTrotter err t lp nq in
+    (cc, r) 
+  
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -109,7 +134,7 @@ let trotterQDrift_IBMDigi_est (lp : lowprog) (nbit : int) (err : float) (t : flo
   let gates_per_term = max 1 (ngates_per_term t lp nbit totw) in
   let ns = max 1 (ngates_per_chunk / gates_per_term) in
   let first_chunk_terms = min ns npau in
-  let cc = translate_qdrift_ibmdigi totw lp nbit scale t first_chunk_terms in
+  let cc = translate_qdrift_ibmdigi totw lp 0 nbit scale t first_chunk_terms in
   let _ = f_opt cc in
   ns
   
@@ -125,9 +150,7 @@ let trotterQDrift_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : f
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
   let ns, first_chunk_time =
-    time_call (fun () ->
-        trotterQDrift_IBMDigi_est lp nq err t (ibmdigi_voqc_optimize nq))
-  in
+    time_call (fun () -> trotterQDrift_IBMDigi_est lp nq err t (ibmdigi_voqc_optimize nq)) in
   let total_chunks = (npau + ns - 1) / ns in
   try
     if verbose then begin

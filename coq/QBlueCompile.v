@@ -50,36 +50,76 @@ Definition ngates_per_term (t : R) (lp : lowprog) (nbit : nat) (totw : R) : nat 
   let circ := synth_digital_ibm t nbit lowp_sample in
   Nat.div (ucom_gate_count circ) nsampe_gatesize_est.
 
-Definition translate_1stTrotter_ibmdigi (ist : nat) (lp : lowprog) (nbit : nat) 
-  (scale t : R) (sp_size : nat) : EG.ucom EG.U := 
-  let lowp := firstn sp_size (skipn ist lp) in
-  let lp1 := mult_r_hplus scale lowp in
-  synth_digital_ibm t nbit lp1.
 
-
-Fixpoint translate_lowp2circ_chunks
-  (t : R) (lp : lowprog) (nbit : nat) (scale : R)
-  (f_translate : lowprog -> nat -> R -> R -> nat -> EG.ucom EG.U)
+Fixpoint translate_lowp2circ_chunks_acc (t : R) (lp : lowprog) (ist nbit : nat) (scale : R)
+  (* (lp : lowprog) (ist nbit : nat) (scale t : R) (sp_size : nat) *)
+  (f_translate : lowprog -> nat -> nat -> R -> R -> nat -> EG.ucom EG.U)
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit)
   (fuel remaining_samples ns : nat) (acc_rev : full_ucom_l nbit)
   : full_ucom_l nbit :=
   match fuel with
-  | O => List.rev acc_rev
+  | O => acc_rev
   | S fuel' =>
     match remaining_samples with
-    | O => List.rev acc_rev
+    | O => acc_rev
     | S _ =>
       let this_chunk := Nat.min ns remaining_samples in
-      let cc := f_translate lp nbit scale t ns in
+      let cc := f_translate lp ist nbit scale t this_chunk in
       let opt := f_opt cc in
-      translate_lowp2circ_chunks t lp nbit scale f_translate f_opt fuel'
+      translate_lowp2circ_chunks_acc t lp (ist + this_chunk) nbit scale f_translate f_opt fuel'
         (remaining_samples - this_chunk) ns
         (List.rev_append opt acc_rev)
     end
   end.
 
+Definition translate_lowp2circ_chunks (t : R) (lp : lowprog) (ist nbit : nat) (scale : R)
+  (* (lp : lowprog) (ist nbit : nat) (scale t : R) (sp_size : nat) *)
+  (f_translate : lowprog -> nat -> nat -> R -> R -> nat -> EG.ucom EG.U)
+  (f_opt : EG.ucom EG.U -> full_ucom_l nbit)
+  (fuel remaining_samples ns : nat) (acc_rev : full_ucom_l nbit)
+  : full_ucom_l nbit :=
+  List.rev
+    (translate_lowp2circ_chunks_acc t lp ist nbit scale f_translate f_opt
+       fuel remaining_samples ns acc_rev).
+  
+Definition translate_stdTrotter_ibmdigi (lp : lowprog) (ist nbit : nat) 
+  (scale t : R) (sp_size : nat) : EG.ucom EG.U := 
+  let lowp := firstn sp_size (skipn ist lp) in
+  let lp1 := mult_r_hplus scale lowp in
+  synth_digital_ibm t nbit lp1.
 
-Definition translate_qdrift_ibmdigi (totw : R) (lp : lowprog) (nbit : nat)
+Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
+  let r := trotter_step err t lp in
+  let nt := length lp in
+  let totw := sum_w lp nt in
+  let scale := (R1 / INR r) % R in
+  let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
+  let nch := S ((Nat.div nt ns)%nat) in
+  match ns with
+  | O => []
+  | S _ => translate_lowp2circ_chunks t lp 0%nat nbit scale 
+  translate_stdTrotter_ibmdigi (ibmdigi_voqc_optimize nbit) nch nt ns []
+  end.
+
+Definition translate_lowp2circ_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
+  let r := trotter_step_2nd_order err t lp in
+  let nt := length lp in
+  let totw := sum_w lp nt in
+  let scale := (R1 / R2 / INR r) % R in
+  let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
+  let nch := S ((Nat.div nt ns)%nat) in
+  match ns with
+  | O => []
+  | S _ => 
+    let acc1 := translate_lowp2circ_chunks_acc t (rev lp) 0%nat nbit scale
+      translate_stdTrotter_ibmdigi (ibmdigi_voqc_optimize nbit) nch nt ns [] in
+    List.rev
+      (translate_lowp2circ_chunks_acc t lp 0%nat nbit scale
+         translate_stdTrotter_ibmdigi (ibmdigi_voqc_optimize nbit) nch nt ns acc1)
+  end.
+
+
+Definition translate_qdrift_ibmdigi (totw : R) (lp : lowprog) (ist nbit : nat)
   (scale t : R) (sp_size : nat) : EG.ucom EG.U := 
   let lp1 := sample lp sp_size totw in
   let lowp := mult_r_hplus scale lp1 in
@@ -93,7 +133,7 @@ Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) : 
   let nch := S ((Nat.div N ns)%nat) in
   match ns with
   | O => []
-  | S _ => translate_lowp2circ_chunks t lp nbit scale 
+  | S _ => translate_lowp2circ_chunks t lp 0%nat nbit scale 
   (translate_qdrift_ibmdigi totw) (ibmdigi_voqc_optimize nbit) nch N ns []
   end.
 
@@ -191,4 +231,3 @@ Definition qblue_compile (H : lowprog) (err t : R) (nbit : nat)
     |} in
   greedy_best_pipeline H err t nbit (all_pipelines ham_sim_list synth_list) best.
 *)
-
