@@ -21,7 +21,9 @@ Definition get_coef (h : lowprog) : list R :=
   map (fun x => fst (fst x)) h.
 
 Definition is_I (p : paulimat) : bool := paulimat_eqb p paulii.
+
 Definition is_XY (p : paulimat) : bool := orb (paulimat_eqb p paulix) (paulimat_eqb p pauliy).
+
 
 (* calculate the CNOT costs of to Pauli String
 n: # of qubits of a pauli string *)
@@ -59,8 +61,39 @@ Fixpoint sample_aterm_markov (lp : list R) (num : R) (aux : nat) : nat :=
     else sample_aterm_markov app (Rminus num (Rabs w)) (S aux)
   end.
 
+
 (* Based on the given term ID and transition matrix, sample the next term *)
-Fixpoint markov (prob_init : list R) (nq termID Nsample : nat) (mat : nat -> list R) : list nat :=
+Fixpoint markov_lowprog_acc (prob_init : list R) (lp : lowprog) (termID Nsample : nat)
+  (mat : nat -> list R) (acc : lowprog) : lowprog :=
+  let rn := random_float 1 in
+  match Nsample with
+  | 0 => rev acc
+  | S n' =>
+    let lprob := if Nat.ltb termID 0 then prob_init else mat termID in
+    let nid := sample_aterm_markov lprob rn 0 in
+    let '(coef, h) := nth_default (C0, fun _ => paulii) lp nid in
+    let theT :=
+      if Rltb (fst coef) R0
+      then (RtoC (Rminus R0 R1), h)
+      else (C1, h)
+    in markov_lowprog_acc prob_init lp nid n' mat (theT :: acc)
+  end.
+
+
+Definition gen_lowprog_markov (lp : lowprog) (Nsample : nat)  
+  (prob_init : list R) (trans_matrix : nat -> list R) : lowprog :=
+  markov_lowprog_acc prob_init lp (0 - 1)%nat Nsample trans_matrix []. 
+
+
+Definition trotter_marqsim (err t : R) (lp : lowprog) (nq : nat) : lowprog :=
+  let N := qdrift_step err t lp in
+  let prob_init := get_coef lp in
+  let trans_matrix := get_trans lp nq in 
+  let totw := sum_w lp (length lp) in
+  mult_r_hplus (totw / (INR N)) (gen_lowprog_markov lp N prob_init trans_matrix).
+
+
+(* Fixpoint markov (prob_init : list R) (nq termID Nsample : nat) (mat : nat -> list R) : list nat :=
   let rn := random_float 1 in
   match Nsample with 
   | 0 => []
@@ -69,7 +102,7 @@ Fixpoint markov (prob_init : list R) (nq termID Nsample : nat) (mat : nat -> lis
     nid :: (markov prob_init nq nid n' mat)
   end.
 
-Definition get_markov_chain (lp : lowprog) (nq Nsample : nat) := 
+Definition get_markov_chain (lp : lowprog) (nq Nsample : nat) : list nat := 
   let prob_init := get_coef lp in
   let trans_matrix := get_trans lp nq in
   markov prob_init nq (0 - 1)%nat Nsample trans_matrix.
@@ -80,13 +113,8 @@ Fixpoint gen_lowprog_markov (lp : lowprog) (ltid : list nat) : lowprog :=
   | tid :: app => let (coef, h) := nth_default (C0, fun _ => paulii) lp tid in
     let theT := if Rltb (fst coef) R0 then (RtoC (Rminus R0 R1), h) else (C1, h) in
     theT :: gen_lowprog_markov lp app
-  end.
+  end. *)
 
-Definition trotter_marqsim (err t : R) (lp : lowprog) (nq : nat) : lowprog :=
-  let N := qdrift_step err t lp in
-  let markov_chain := get_markov_chain lp nq N in
-  let totw := sum_w lp (length lp) in
-  mult_r_hplus (totw / (INR N)) (gen_lowprog_markov lp markov_chain).
   
 
 (*

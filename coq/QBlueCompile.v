@@ -125,6 +125,7 @@ Definition translate_qdrift_ibmdigi (totw : R) (lp : lowprog) (ist nbit : nat)
   let lowp := mult_r_hplus scale lp1 in
   synth_digital_ibm t nbit lowp.
 
+
 Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
   let N := qdrift_step err t lp in
   let totw := sum_w lp (length lp) in
@@ -138,9 +139,26 @@ Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) : 
   end.
 
 
-Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
-  let lowp : lowprog := trotter_marqsim err t lp nbit in 
+Definition translate_marqsim_ibmdigi (prob_init : list R) (trans_matrix : nat -> list R)
+  (lp : lowprog) (ist nbit : nat) (scale t : R) (sp_size : nat) : EG.ucom EG.U :=
+  let lp1 := gen_lowprog_markov lp sp_size prob_init trans_matrix in
+  let lowp := mult_r_hplus scale lp1 in
   synth_digital_ibm t nbit lowp.
+
+Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) : full_ucom_l nbit :=
+  let N := qdrift_step err t lp in
+  let prob_init := get_coef lp in
+  let trans_matrix := get_trans lp nbit in 
+  let totw := sum_w lp (length lp) in
+  let scale := (totw / INR N)%R in
+  let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
+  let nch := S ((Nat.div N ns)%nat) in
+  match ns with
+  | O => []
+  | S _ =>
+    translate_lowp2circ_chunks t lp 0%nat nbit scale
+    (translate_marqsim_ibmdigi prob_init trans_matrix) (ibmdigi_voqc_optimize nbit) nch N ns []
+  end.
 
 
 Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 

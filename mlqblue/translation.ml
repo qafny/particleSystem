@@ -177,7 +177,7 @@ let trotterMarQSim_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : 
   if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
   try
     let cc = translate_lowp2circ_marqsim err t lp nq in
-    (ibmdigi_voqc_optimize1 ~verbose:verbose nq cc, 1)
+    (cc, 1)
   with exn -> dbg "trotterMarQSim_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
