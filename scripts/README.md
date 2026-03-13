@@ -4,6 +4,9 @@
 
 - `mlqblue/DataSet1/**/*.txt`
 - `mlqblue/DataSet2/**/*.txt`
+- `mlqblue/Buckets/S/**/*.txt`
+- `mlqblue/Buckets/M/**/*.txt`
+- `mlqblue/Buckets/L/**/*.txt`
 
 Both datasets are MarQSim-style Hamiltonian text. `DataSet2` uses compact signs such as `+1.0 * XIII`, and the scripts accept both spacing styles.
 
@@ -28,6 +31,7 @@ python3 scripts/qblue_bench.py --dataset dataset1 --out results_dataset1.csv --l
 ```
 
 Common options:
+- `--dataset dataset1|dataset2|bucket_s|bucket_m|bucket_l|all|buckets`
 - `--errs 0.5 0.1`
 - `--ts 0.7853981633974483 0.19634954084936207` (`pi/4`, `pi/16`)
 - `--pipelines auto std std2 qdrift marqsim` (maps to `performance.exe -p 0..4`)

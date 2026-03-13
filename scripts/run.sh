@@ -58,16 +58,16 @@ OPENFERMION_LIMIT="${OPENFERMION_LIMIT:-0}"
 OPENFERMION_TROTTER_NUMBER="${OPENFERMION_TROTTER_NUMBER:-1}"
 OPENFERMION_TROTTER_ORDER="${OPENFERMION_TROTTER_ORDER:-1}"
 
-# echo "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" >&2
-# python3 scripts/qblue_bench.py \
-#   --dataset "${DATASET}" \
-#   --out "${QBLUE_OUT}" \
-#   --errs "${QBLUE_ERRS_ARR[@]}" \
-#   --ts "${TS_ARR[@]}" \
-#   --pipelines "${QBLUE_PIPELINES_ARR[@]}" \
-#   --grouping "${QBLUE_GROUPING}" \
-#   --timeout-s "${QBLUE_TIMEOUT_S}" \
-#   --limit "${QBLUE_LIMIT}"
+echo "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" >&2
+python3 scripts/qblue_bench.py \
+  --dataset "${DATASET}" \
+  --out "${QBLUE_OUT}" \
+  --errs "${QBLUE_ERRS_ARR[@]}" \
+  --ts "${TS_ARR[@]}" \
+  --pipelines "${QBLUE_PIPELINES_ARR[@]}" \
+  --grouping "${QBLUE_GROUPING}" \
+  --timeout-s "${QBLUE_TIMEOUT_S}" \
+  --limit "${QBLUE_LIMIT}"
 
 echo "[2/9] Phoenix (${DATASET}) -> ${PHOENIX_OUT}" >&2
 python3 scripts/phoenix_bench.py \

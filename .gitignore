@@ -32,3 +32,5 @@ CoqMakefile.conf
 .CoqMakefile.d
 .nia.cache
 .nra.cache
+
+.claude/

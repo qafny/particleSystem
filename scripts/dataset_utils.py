@@ -10,8 +10,15 @@ MLQBLUE = ROOT / "mlqblue"
 DATASET_DIRS = {
     "dataset1": MLQBLUE / "DataSet1",
     "dataset2": MLQBLUE / "DataSet2",
+    "bucket_s": MLQBLUE / "Buckets" / "S",
+    "bucket_m": MLQBLUE / "Buckets" / "M",
+    "bucket_l": MLQBLUE / "Buckets" / "L",
 }
-DATASET_CHOICES = tuple(DATASET_DIRS.keys()) + ("all",)
+DATASET_GROUPS = {
+    "all": ("dataset1", "dataset2"),
+    "buckets": ("bucket_s", "bucket_m", "bucket_l"),
+}
+DATASET_CHOICES = tuple(DATASET_DIRS.keys()) + tuple(DATASET_GROUPS.keys())
 
 MARQSIM_TERM_RE = re.compile(
     r"^\s*([+-])\s*((?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)\s*\*\s*([IXYZ]+)\s*$"
@@ -41,9 +48,9 @@ def _sorted_txt_files(base: Path) -> list[Path]:
 
 
 def iter_dataset_input_files(dataset: str) -> list[Path]:
-    if dataset == "all":
+    if dataset in DATASET_GROUPS:
         files: list[Path] = []
-        for name in ("dataset1", "dataset2"):
+        for name in DATASET_GROUPS[dataset]:
             files.extend(_sorted_txt_files(DATASET_DIRS[name]))
         return files
     if dataset in DATASET_DIRS:
