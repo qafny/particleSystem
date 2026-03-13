@@ -209,7 +209,6 @@ def phoenix_compile_to_circuit(
     *,
     time_t: float,
     order_method: str,
-    qiskit_opt: bool,
 ):
     import numpy as np
 
@@ -235,10 +234,7 @@ def phoenix_compile_to_circuit(
         sub_simplified, simp_steps = simplify_hamiltonian(sub)
         circuits.append(constr_circuit_from_simp_steps(sub_simplified, simp_steps))
 
-    qc = order_circuits(circuits, method=order_method)
-    if qiskit_opt:
-        qc = _optimize_phoenix_circuit_by_qiskit(qc)
-    return qc
+    return order_circuits(circuits, method=order_method)
 
 
 def _count_two_qubit_gates(qc) -> int:
@@ -320,6 +316,9 @@ def main() -> int:
                 "n_qubits",
                 "qubits",
                 "ok",
+                "compile_s",
+                "optimize_s",
+                "ibm_basis_s",
                 "wall_s",
                 "depth",
                 "gates_total",
@@ -360,6 +359,9 @@ def main() -> int:
                         "n_terms": "",
                         "n_qubits": "",
                         "ok": False,
+                        "compile_s": 0.0,
+                        "optimize_s": 0.0,
+                        "ibm_basis_s": 0.0,
                         "wall_s": 0.0,
                         "depth": "",
                         "gates_total": "",
@@ -386,6 +388,9 @@ def main() -> int:
                         "n_terms": ph.n_terms,
                         "n_qubits": ph.n_qubits,
                         "ok": False,
+                        "compile_s": 0.0,
+                        "optimize_s": 0.0,
+                        "ibm_basis_s": 0.0,
                         "wall_s": 0.0,
                         "depth": "",
                         "gates_total": "",
@@ -401,6 +406,9 @@ def main() -> int:
             for tval in args.ts:
                 t0 = time.time()
                 ok = False
+                compile_s = 0.0
+                optimize_s = 0.0
+                ibm_basis_s = 0.0
                 depth = ""
                 gates_total = ""
                 cx = ""
@@ -414,19 +422,30 @@ def main() -> int:
                 gates_opt_cx = ""
                 gates_opt_json = ""
                 err_s = ""
+                compile_t0 = None
+                optimize_t0 = None
+                ibm_t0 = None
                 try:
+                    compile_t0 = time.time()
                     qc = phoenix_compile_to_circuit(
                         ph,
                         time_t=tval,
                         order_method=args.order_method,
-                        qiskit_opt=(not args.no_qiskit_opt),
                     )
+                    compile_s = time.time() - compile_t0
+
+                    if not args.no_qiskit_opt:
+                        optimize_t0 = time.time()
+                        qc = _optimize_phoenix_circuit_by_qiskit(qc)
+                        optimize_s = time.time() - optimize_t0
 
                     qc_ibm = None
                     ops_ibm = None
                     if not args.no_ibm_counts:
                         ibm_opt_level = 3 if (not args.no_qiskit_opt) else 0
+                        ibm_t0 = time.time()
                         qc_ibm, ops_ibm = _ibm_basis_gate_counts(qc, optimization_level=ibm_opt_level)
+                        ibm_basis_s = time.time() - ibm_t0
 
                     wall = time.time() - t0
                     ops = {str(k): int(v) for k, v in qc.count_ops().items()}
@@ -445,7 +464,14 @@ def main() -> int:
                         gates_opt_cx = ops_ibm.get("CX", 0)
                         gates_opt_json = json.dumps(ops_ibm, sort_keys=True)
                 except Exception as e:
-                    wall = time.time() - t0
+                    now = time.time()
+                    if compile_t0 is not None and compile_s == 0.0:
+                        compile_s = now - compile_t0
+                    elif optimize_t0 is not None and optimize_s == 0.0:
+                        optimize_s = now - optimize_t0
+                    elif ibm_t0 is not None and ibm_basis_s == 0.0:
+                        ibm_basis_s = now - ibm_t0
+                    wall = now - t0
                     err_s = str(e)
 
                 w.writerow(
@@ -462,6 +488,9 @@ def main() -> int:
                         "n_qubits": ph.n_qubits,
                         "qubits": ph.n_qubits,
                         "ok": ok,
+                        "compile_s": f"{compile_s:.6f}",
+                        "optimize_s": f"{optimize_s:.6f}",
+                        "ibm_basis_s": f"{ibm_basis_s:.6f}",
                         "wall_s": f"{wall:.6f}",
                         "depth": depth,
                         "gates_total": gates_total,
@@ -482,7 +511,10 @@ def main() -> int:
 
                 status = "OK" if ok else "WARN"
                 print(
-                    f"{status}: {input_file.name} t={tval} order={args.order_method} wall_s={wall:.2f}",
+                    (
+                        f"{status}: {input_file.name} t={tval} order={args.order_method} "
+                        f"compile_s={compile_s:.2f} wall_s={wall:.2f}"
+                    ),
                     file=sys.stderr,
                 )
 

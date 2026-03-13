@@ -49,6 +49,9 @@ _DEALING_STD_RE = re.compile(
 _DEALING_QDRIFT_RE = re.compile(
     r"Dealing with\s+(\d+)\s+pauli strings;\s+lambda\s*=\s*([-+]?[\d.]+(?:[eE][-+]?\d+)?);\s+relaxation factor:\s+([-+]?[\d.]+(?:[eE][-+]?\d+)?)\."
 )
+_TIMING_RE = re.compile(
+    r"Timing\s+compile_s\s*=\s*([-+]?[\d.]+(?:[eE][-+]?\d+)?)\s*;\s*optimize_s\s*=\s*([-+]?[\d.]+(?:[eE][-+]?\d+)?)\."
+)
 
 
 def _parse_kv_list(braced: str) -> dict[str, int]:
@@ -69,6 +72,8 @@ def _parse_kv_list(braced: str) -> dict[str, int]:
 class RunResult:
     ok: bool
     wall_s: float
+    compile_s: Optional[float] = None
+    optimize_s: Optional[float] = None
     algorithm: str = ""
     backend: str = ""
     n_terms: Optional[int] = None
@@ -101,6 +106,8 @@ def _parse_metrics(combined: str) -> dict[str, object]:
     splitting_r = None
     lambda_ = None
     relaxation_factor = None
+    compile_s = None
+    optimize_s = None
 
     qubits = None
     gates_in_total = None
@@ -143,6 +150,11 @@ def _parse_metrics(combined: str) -> dict[str, object]:
             gates_opt_total = int(m.group(1))
             gates_opt = _parse_kv_list(m.group(2))
 
+        m = _TIMING_RE.search(line)
+        if m:
+            compile_s = float(m.group(1))
+            optimize_s = float(m.group(2))
+
     return {
         "algorithm": algo,
         "backend": backend,
@@ -151,6 +163,8 @@ def _parse_metrics(combined: str) -> dict[str, object]:
         "splitting_r": splitting_r,
         "lambda": lambda_,
         "relaxation_factor": relaxation_factor,
+        "compile_s": compile_s,
+        "optimize_s": optimize_s,
         "qubits": qubits,
         "gates_in_total": gates_in_total,
         "gates_in": gates_in,
@@ -206,6 +220,8 @@ def run_one(
         return RunResult(
             ok=False,
             wall_s=wall,
+            compile_s=metrics["compile_s"] if isinstance(metrics["compile_s"], float) else None,
+            optimize_s=metrics["optimize_s"] if isinstance(metrics["optimize_s"], float) else None,
             algorithm=str(metrics.get("algorithm") or ""),
             backend=str(metrics.get("backend") or ""),
             n_terms=metrics["n_terms"] if isinstance(metrics["n_terms"], int) else None,
@@ -236,6 +252,8 @@ def run_one(
     return RunResult(
         ok=ok,
         wall_s=wall,
+        compile_s=metrics["compile_s"] if isinstance(metrics["compile_s"], float) else None,
+        optimize_s=metrics["optimize_s"] if isinstance(metrics["optimize_s"], float) else None,
         algorithm=str(metrics.get("algorithm") or ""),
         backend=str(metrics.get("backend") or ""),
         n_terms=metrics["n_terms"] if isinstance(metrics["n_terms"], int) else None,
@@ -410,6 +428,8 @@ def main() -> int:
                 "lambda",
                 "relaxation_factor",
                 "ok",
+                "compile_s",
+                "optimize_s",
                 "wall_s",
                 "qubits",
                 "gates_in_total",
@@ -451,6 +471,8 @@ def main() -> int:
                                 "t": "",
                                 "pipeline": "",
                                 "ok": False,
+                                "compile_s": 0.0,
+                                "optimize_s": 0.0,
                                 "wall_s": 0.0,
                                 "qubits": "",
                                 "gates_in_total": "",
@@ -508,6 +530,8 @@ def main() -> int:
                                     "lambda": rr.lambda_val if rr.lambda_val is not None else "",
                                     "relaxation_factor": rr.relaxation_factor if rr.relaxation_factor is not None else "",
                                     "ok": rr.ok,
+                                    "compile_s": f"{rr.compile_s:.6f}" if rr.compile_s is not None else "",
+                                    "optimize_s": f"{rr.optimize_s:.6f}" if rr.optimize_s is not None else "",
                                     "wall_s": f"{rr.wall_s:.6f}",
                                     "qubits": rr.qubits if rr.qubits is not None else "",
                                     "gates_in_total": rr.gates_in_total if rr.gates_in_total is not None else "",
@@ -540,7 +564,11 @@ def main() -> int:
                                 )
                             else:
                                 print(
-                                    f"OK: {input_file.name} err={err} t={t} pipeline={pipeline} wall_s={rr.wall_s:.2f}",
+                                    (
+                                        f"OK: {input_file.name} err={err} t={t} pipeline={pipeline} "
+                                        f"compile_s={(rr.compile_s if rr.compile_s is not None else 0.0):.2f} "
+                                        f"wall_s={rr.wall_s:.2f}"
+                                    ),
                                     file=sys.stderr,
                                 )
 

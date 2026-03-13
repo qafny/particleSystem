@@ -9,22 +9,31 @@ exception Parse_timeout of int
 
 let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) : (int * int * int * int) =
     let to_second = 30 in
-    let lp = with_timeout (fun s -> Parse_timeout s) to_second (fun () -> parse_pauli str_input) in
-	let nqbit = get_dim_pauli str_input in
-    let (nq1, nqm) = 
-    if flag_path = 0 then translation_lowprog_optimize lp nqbit err t
+    reset_benchmark_timing ();
+    try
+      let lp = with_timeout (fun s -> Parse_timeout s) to_second (fun () -> parse_pauli str_input) in
+	  let nqbit = get_dim_pauli str_input in
+      let (nq1, nqm) =
+      if flag_path = 0 then translation_lowprog_optimize lp nqbit err t
 
-	else if flag_path > 0 && flag_path < 10  
-      then let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in
-	  summarize_counts cc nqbit r
+	  else if flag_path > 0 && flag_path < 10
+        then let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in
+	    summarize_counts cc nqbit r
 
-    else if flag_path = 10 then translation_lowprog_analog lp nqbit err t
+      else if flag_path = 10 then translation_lowprog_analog lp nqbit err t
 
-    else 
-	  let (cc, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
-	  summarize_analog_counts cc r npau
+      else
+	    let (cc, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
+	    summarize_analog_counts cc r npau
 
-    in (nqbit, List.length lp, nq1, nqm)
+      in
+      let (compile_s, optimize_s) = get_benchmark_timing () in
+      dbg "Timing compile_s=%f; optimize_s=%f." compile_s optimize_s;
+      (nqbit, List.length lp, nq1, nqm)
+    with exn ->
+      let (compile_s, optimize_s) = get_benchmark_timing () in
+      dbg "Timing compile_s=%f; optimize_s=%f." compile_s optimize_s;
+      raise exn
 
 
 let is_txt_file (path : string) : bool =

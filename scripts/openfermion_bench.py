@@ -289,6 +289,9 @@ def main() -> int:
                 "n_qubits",
                 "qubits",
                 "ok",
+                "compile_s",
+                "optimize_s",
+                "ibm_basis_s",
                 "wall_s",
                 "depth",
                 "gates_total",
@@ -333,6 +336,9 @@ def main() -> int:
                         "n_qubits": "",
                         "qubits": "",
                         "ok": False,
+                        "compile_s": 0.0,
+                        "optimize_s": 0.0,
+                        "ibm_basis_s": 0.0,
                         "wall_s": 0.0,
                         "depth": "",
                         "gates_total": "",
@@ -370,6 +376,9 @@ def main() -> int:
                         "n_qubits": ph.n_qubits,
                         "qubits": ph.n_qubits,
                         "ok": False,
+                        "compile_s": 0.0,
+                        "optimize_s": 0.0,
+                        "ibm_basis_s": 0.0,
                         "wall_s": 0.0,
                         "depth": "",
                         "gates_total": "",
@@ -393,6 +402,9 @@ def main() -> int:
             for tval in args.ts:
                 t0 = time.time()
                 ok = False
+                compile_s = 0.0
+                optimize_s = 0.0
+                ibm_basis_s = 0.0
                 depth = ""
                 gates_total = ""
                 cx = ""
@@ -407,15 +419,18 @@ def main() -> int:
                 gates_opt_json = ""
                 qasm_gate_count = ""
                 err_s = ""
+                compile_t0 = None
+                ibm_t0 = None
 
                 try:
+                    compile_t0 = time.time()
                     qc, meta = openfermion_compile_to_circuit(
                         ph,
                         time_t=tval,
                         trotter_number=args.trotter_number,
                         trotter_order=args.trotter_order,
                     )
-                    wall = time.time() - t0
+                    compile_s = time.time() - compile_t0
                     ops = {str(k): int(v) for k, v in qc.count_ops().items()}
                     ok = True
                     depth = int(qc.depth())
@@ -427,7 +442,9 @@ def main() -> int:
 
                     if not args.no_ibm_counts:
                         ibm_opt_level = 3 if (not args.no_qiskit_opt) else 0
+                        ibm_t0 = time.time()
                         qc_ibm, ops_ibm = _ibm_basis_gate_counts(qc, optimization_level=ibm_opt_level)
+                        ibm_basis_s = time.time() - ibm_t0
                         ibm_depth = int(qc_ibm.depth())
                         gates_opt_total = sum(ops_ibm.values())
                         gates_opt_u1 = ops_ibm.get("U1", 0)
@@ -436,8 +453,14 @@ def main() -> int:
                         gates_opt_cx = ops_ibm.get("CX", 0)
                         gates_opt_json = json.dumps(ops_ibm, sort_keys=True)
 
-                except Exception as e:
                     wall = time.time() - t0
+                except Exception as e:
+                    now = time.time()
+                    if compile_t0 is not None and compile_s == 0.0:
+                        compile_s = now - compile_t0
+                    elif ibm_t0 is not None and ibm_basis_s == 0.0:
+                        ibm_basis_s = now - ibm_t0
+                    wall = now - t0
                     err_s = str(e)
 
                 w.writerow(
@@ -456,6 +479,9 @@ def main() -> int:
                         "n_qubits": ph.n_qubits,
                         "qubits": ph.n_qubits,
                         "ok": ok,
+                        "compile_s": f"{compile_s:.6f}",
+                        "optimize_s": f"{optimize_s:.6f}",
+                        "ibm_basis_s": f"{ibm_basis_s:.6f}",
                         "wall_s": f"{wall:.6f}",
                         "depth": depth,
                         "gates_total": gates_total,
@@ -479,6 +505,7 @@ def main() -> int:
                 print(
                     (
                         f"{status}: {input_file.name} t={tval} "
+                        f"compile_s={compile_s:.2f} "
                         f"trotter={args.trotter_order}/{args.trotter_number} wall_s={wall:.2f}"
                     ),
                     file=sys.stderr,

@@ -71,6 +71,11 @@ let parse_pauli (input : string) : lowprog =
       in raise (Pauli_parse_error msg)
 
 
+let reset_benchmark_timing () = reset_timing_accumulators ()
+
+let get_benchmark_timing () = get_timing_accumulators ()
+
+
 (* 0.1 lowprog -> circ *)
 let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
   Qblue_util.with_timeout (fun s -> Compile_timeout s) translation_timeout_seconds (fun () ->

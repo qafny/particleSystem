@@ -42,6 +42,10 @@ python3 scripts/qblue_bench.py --dataset all --out results_all.csv
 
 ## Notes on CSV columns
 
+- `compile_s` is the core synthesis/compilation time for the row.
+- `wall_s` remains the broader end-to-end timed span used by the script.
+- Baseline scripts also expose `ibm_basis_s` for the extra Qiskit/IBM-basis transpile/count pass.
+- `qblue_bench.py` also exposes `optimize_s`, parsed from internal `performance.exe` timing output.
 - `stdout_tail` falls back to stderr output when stdout is empty (most `performance.exe` debug logs go to stderr).
 - `gates_in_json` / `gates_opt_json` include the full gate-count dictionaries so new/unknown gate keys are not dropped.
 
