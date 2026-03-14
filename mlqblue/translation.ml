@@ -93,13 +93,9 @@ let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
       dbg "Estimated total compile time from first chunk: %.3fs." (first_chunk_time *. float_of_int total_chunks)
     end;
 
-    let cir_bf =
-      translate_lowp2circ_2ndTrotter err t lp nq (ibmdigi_to_rzq nq)
-    in
-    let cc, ts =
-      time_call (fun () -> translate_lowp2circ_2ndTrotter err t lp nq (ibmdigi_voqc_optimize nq))
-    in
-    (cc, cir_bf, ts, r) 
+    let cir_bf = translate_lowp2circ_2ndTrotter err t lp nq (ibmdigi_to_rzq nq) in
+    let cc, ts = time_call (fun () -> translate_lowp2circ_2ndTrotter err t lp nq (ibmdigi_voqc_optimize nq))
+    in (cc, cir_bf, ts, r) 
   
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
@@ -238,3 +234,84 @@ let trotterMarQSim_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : 
     (cc, ts, 1, npau)
   with exn -> dbg "trotterMarQSim_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
+
+
+(* std trotterization; decompose to IBM Analog *)
+let trotterStd_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- Trotterization (1st-order) -> IBM analog circuits: ----";
+  let r = trotter_step err t lp in
+  let nterm = Stdlib.List.length lp in
+  let npau = r * nterm in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
+  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+  try
+    if check_2local nq lp then
+      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_stdTrotter err t lp nq) in
+      (cc, ts, r, npau)
+    else
+      failwith "IBM analog synthesis requires 2-local input terms"
+  with exn -> dbg "trotterStd_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+(* 2nd-order trotterization; decompose to IBM Analog *)
+let trotter2nd_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- Trotterization (2nd-order) -> IBM analog circuits: ----";
+  let r = trotter_step_2nd_order err t lp in
+  let nterm = Stdlib.List.length lp in
+  let npau = r * nterm in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
+  if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
+  try
+    if check_2local nq lp then
+      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_std_2ndTrotter err t lp nq) in
+      (cc, ts, r, npau)
+    else
+      failwith "IBM analog synthesis requires 2-local input terms"
+  with exn -> dbg "trotter2nd_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+let trotterQDrift_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  (* Set seed to reproduce results *)
+  Random.init 10;
+
+  if verbose then dbg "---- Trotterization (QDrift) -> IBM analog circuits: ----";
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+  try
+    if check_2local nq lp then
+      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_qdrift err t lp nq) in
+      (cc, ts, 1, npau)
+    else
+      failwith "IBM analog synthesis requires 2-local input terms"
+  with exn -> dbg "trotterQDrift_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+let trotterMarQSim_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  (* Set seed to reproduce results *)
+  Random.init 10;
+
+  if verbose then dbg "---- Trotterization (MarQSim) -> IBM analog circuits: ----";
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+  try
+    if check_2local nq lp then
+      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_marqsim err t lp nq) in
+      (cc, ts, 1, npau)
+    else
+      failwith "IBM analog synthesis requires 2-local input terms"
+  with exn -> dbg "trotterMarQSim_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+

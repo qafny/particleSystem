@@ -117,6 +117,7 @@ Extract Constant ngates_per_chunk => "3000".
 Set Extraction Optimize.
 Cd "./extracted".
 Separate Extraction
+  QBlueSynth.check_2local
   QBlueCompile.translate_highp2circ 
   QBlueCompile.translate_lowp2circ_stdTrotter 
   QBlueCompile.translate_lowp2circ_2ndTrotter 
