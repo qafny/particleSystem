@@ -58,8 +58,6 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
     time_call (fun () -> trotterStd_IBMDigi_est lp nq err t (ibmdigi_voqc_optimize nq)) in
   let total_chunks = (nterm + ns - 1) / ns in
 
-  let _, cir_bf = trotterStd_IBMDigi_est lp nq err t (ibmdigi_to_rzq nq) in
-
   try
     if verbose then 
 	begin
@@ -67,6 +65,7 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
       dbg "Chunk size: %d sampled terms; total chunks: %d." ns total_chunks;
       dbg "Estimated total compile time from first chunk: %.3fs." (first_chunk_time *. float_of_int total_chunks)
     end;
+    let cir_bf = translate_lowp2circ_stdTrotter err t lp nq (ibmdigi_to_rzq nq) in
 
     let cc, ts = time_call (fun () -> translate_lowp2circ_stdTrotter err t lp nq (ibmdigi_voqc_optimize nq)) in
 	(cc, cir_bf, ts, r)
@@ -182,9 +181,7 @@ let trotterStd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
   if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
   try
-    let n = trotter_step err t lp in
-    let astep = trotter_astep (Float.of_int n) lp in
-    let cc, ts = time_call (fun () -> synth_analog_indiana t nq astep) in
+    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_stdTrotter err t lp nq) in
     (cc, ts, r, npau)	
   with exn -> dbg "trotterStd_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
@@ -200,12 +197,8 @@ let trotter2nd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp( (float_of_int nterm) *. t /. (float_of_int r)) in
   if verbose then dbg "Dealing with %d pauli strings; relaxation factor: %f; splitting r: %d." npau rfactor r;
-  try
-    let n = trotter_step_2nd_order err t lp in
-    let astep1 = trotter_astep (( /. ) (Float.of_int n) 2.0) (Stdlib.List.rev lp) in
-    let astep2 = trotter_astep (( /. ) (Float.of_int n) 2.0) lp in
-    let astep = Stdlib.List.append astep1 astep2 in
-    let cc, ts = time_call (fun () -> synth_analog_indiana t nq astep) in
+  try 
+    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_2ndTrotter err t lp nq ) in
     (cc, ts, r, npau)	
   with exn -> dbg "trotterStd_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
@@ -223,7 +216,7 @@ let trotterQDrift_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : f
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
   if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
   try
-    let cc, ts = time_call (fun () -> translate_lowp2Indiana_qdrift err t lp nq) in
+    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_qdrift err t lp nq) in
     (cc, ts, 1, npau)
   with exn -> dbg "trotterQDrift_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
@@ -241,7 +234,7 @@ let trotterMarQSim_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : 
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
   if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
   try
-    let cc, ts = time_call (fun () -> translate_lowp2Indiana_marqsim err t lp nq) in
+    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_marqsim err t lp nq) in
     (cc, ts, 1, npau)
   with exn -> dbg "trotterMarQSim_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn

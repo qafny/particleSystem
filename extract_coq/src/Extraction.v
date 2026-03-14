@@ -111,7 +111,7 @@ Extract Inlined Constant random_float => "Random.float".
 From QBlue Require Import QBlueMarQSim.
 Extract Inlined Constant GenPgc => "Bridge.get_matrix_pgc".
 Extract Constant nsampe_gatesize_est => "100".
-Extract Constant ngates_per_chunk => "20000".
+Extract Constant ngates_per_chunk => "3000".
 
 
 Set Extraction Optimize.
@@ -123,10 +123,14 @@ Separate Extraction
   QBlueCompile.translate_lowp2circ_qdrift
   QBlueCompile.translate_lowp2circ_marqsim
   QBlueCompile.translate_lowp2circ_TTS_LCU
-  QBlueCompile.translate_lowp2Indiana_std
-  QBlueCompile.translate_lowp2Indiana_std_2nd_order 
-  QBlueCompile.translate_lowp2Indiana_qdrift
-  QBlueCompile.translate_lowp2Indiana_marqsim
+  QBlueCompile.translate_lowp2IndiAna_stdTrotter
+  QBlueCompile.translate_lowp2IndiAna_2ndTrotter
+  QBlueCompile.translate_lowp2IndiAna_qdrift
+  QBlueCompile.translate_lowp2IndiAna_marqsim
+  QBlueCompile.translate_lowp2IBMAna_stdTrotter
+  QBlueCompile.translate_lowp2IBMAna_std_2ndTrotter
+  QBlueCompile.translate_lowp2IBMAna_qdrift
+  QBlueCompile.translate_lowp2IBMAna_marqsim
 
 (* gate decomposition pass *)
   ExtractionGateSet.decompose_to_voqc_gates

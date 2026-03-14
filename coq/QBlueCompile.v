@@ -164,25 +164,133 @@ Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat)
     (translate_marqsim_ibmdigi prob_init trans_matrix) f_opt nch N ns []
   end.
 
-
 Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
   TTS_LCU err t nbit lp.
 
-Definition translate_lowp2Indiana_std (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+
+(* Translate to Indiana Analog by chunks *)
+Fixpoint translate_lowp2IndiAna_chunks_acc (t : R) (lp : lowprog) (ist nbit : nat) (scale : R)
+  (* (lp : lowprog) (ist nbit : nat) (scale t : R) (sp_size : nat) *)
+  (f_translate : lowprog -> nat -> nat -> R -> R -> nat -> list ugate)
+  (fuel remaining_samples ns : nat) (acc_rev : list ugate)
+  : list ugate :=
+  match fuel with
+  | O => acc_rev
+  | S fuel' =>
+    match remaining_samples with
+    | O => acc_rev
+    | S _ =>
+      let this_chunk := Nat.min ns remaining_samples in
+      let cc := f_translate lp ist nbit scale t this_chunk in
+      translate_lowp2IndiAna_chunks_acc t lp (ist + this_chunk) nbit scale f_translate fuel'
+        (remaining_samples - this_chunk) ns
+        (List.rev_append cc acc_rev)
+    end
+  end.
+
+Definition translate_lowp2IndiAna_chunks (t : R) (lp : lowprog) (ist nbit : nat) (scale : R)
+  (* (lp : lowprog) (ist nbit : nat) (scale t : R) (sp_size : nat) *)
+  (f_translate : lowprog -> nat -> nat -> R -> R -> nat -> list ugate)
+  (fuel remaining_samples ns : nat) (acc_rev : list ugate) : list ugate :=
+  List.rev
+    (translate_lowp2IndiAna_chunks_acc t lp ist nbit scale f_translate 
+       fuel remaining_samples ns acc_rev).
+
+Definition translate_stdTrotter_indiAna (lp : lowprog) (ist nbit : nat) 
+  (scale t : R) (sp_size : nat) : list ugate := 
+  let lowp := firstn sp_size (skipn ist lp) in
+  let lp1 := mult_r_hplus scale lowp in
+  synth_analog_indiana t nbit lp1.
+
+
+Definition translate_lowp2IndiAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let r := trotter_step err t lp in
+  let nt := length lp in
+  let totw := sum_w lp nt in
+  let scale := (R1 / INR r) % R in
+  let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
+  let nch := S ((Nat.div nt ns)%nat) in
+  match ns with
+  | O => []
+  | S _ => translate_lowp2IndiAna_chunks t lp 0%nat nbit scale 
+  translate_stdTrotter_indiAna nch nt ns []
+  end.
+
+Definition translate_lowp2IndiAna_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let r := trotter_step_2nd_order err t lp in
+  let nt := length lp in
+  let totw := sum_w lp nt in
+  let scale := (R1 / R2 / INR r) % R in
+  let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
+  let nch := S ((Nat.div nt ns)%nat) in
+  match ns with
+  | O => []
+  | S _ => 
+    let acc1 := translate_lowp2IndiAna_chunks_acc t (rev lp) 0%nat nbit scale
+      translate_stdTrotter_indiAna nch nt ns [] in
+    List.rev
+      (translate_lowp2IndiAna_chunks_acc t lp 0%nat nbit scale
+         translate_stdTrotter_indiAna nch nt ns acc1)
+  end.
+
+
+Definition translate_qdrift_indiAna (totw : R) (lp : lowprog) (ist nbit : nat)
+  (scale t : R) (sp_size : nat) : list ugate := 
+  let lp1 := sample lp sp_size totw in
+  let lowp := mult_r_hplus scale lp1 in
+  synth_analog_indiana t nbit lowp.
+
+Definition translate_lowp2IndiAna_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let N := qdrift_step err t lp in
+  let totw := sum_w lp (length lp) in
+  let scale := (totw / INR N)%R in
+  let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
+  let nch := S ((Nat.div N ns)%nat) in
+  match ns with
+  | O => []
+  | S _ => translate_lowp2IndiAna_chunks t lp 0%nat nbit scale 
+  (translate_qdrift_indiAna totw) nch N ns []
+  end.
+
+
+Definition translate_marqsim_indiAna (prob_init : list R) (trans_matrix : nat -> list R)
+  (lp : lowprog) (ist nbit : nat) (scale t : R) (sp_size : nat) : list ugate :=
+  let lp1 := gen_lowprog_markov lp sp_size prob_init trans_matrix in
+  let lowp := mult_r_hplus scale lp1 in
+  synth_analog_indiana t nbit lowp.
+
+Definition translate_lowp2IndiAna_marqsim (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let N := qdrift_step err t lp in
+  let prob_init := get_coef lp in
+  let trans_matrix := get_trans lp nbit in 
+  let totw := sum_w lp (length lp) in
+  let scale := (totw / INR N)%R in
+  let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
+  let nch := S ((Nat.div N ns)%nat) in
+  match ns with
+  | O => []
+  | S _ => translate_lowp2IndiAna_chunks t lp 0%nat nbit scale
+    (translate_marqsim_indiAna prob_init trans_matrix) nch N ns []
+  end.
+
+
+
+Definition translate_lowp2IBMAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
   let lowp : lowprog := trotter err t lp in 
-  synth_analog_indiana t nbit lowp.
+  synth_analog_ibm t nbit lowp.
 
-Definition translate_lowp2Indiana_std_2nd_order (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+Definition translate_lowp2IBMAna_std_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
   let lowp : lowprog := trotter_2nd_order err t lp in 
-  synth_analog_indiana t nbit lowp.
+  synth_analog_ibm t nbit lowp.
 
-Definition translate_lowp2Indiana_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+
+Definition translate_lowp2IBMAna_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
   let lowp : lowprog := trotter_qdrift err t lp in 
-  synth_analog_indiana t nbit lowp.
+  synth_analog_ibm t nbit lowp.
 
-Definition translate_lowp2Indiana_marqsim (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
+Definition translate_lowp2IBMAna_marqsim (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
   let lowp : lowprog := trotter_marqsim err t lp nbit in 
-  synth_analog_indiana t nbit lowp.
+  synth_analog_ibm t nbit lowp.
 
 
 

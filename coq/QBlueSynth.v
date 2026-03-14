@@ -38,13 +38,23 @@ Definition S_u (qid : nat) : list ugate :=
 Definition SDag_u (qid : nat) : list ugate := 
   let zu := exp_ugate (R7 * PI/R4) (fill_pl [qid] pauliz) in zu :: nil. 
 
-(* Find the nonI in pauli_str. qid starts from the length of pauli_str. *)
-Fixpoint find_nonI (qid : nat) (pauli_str : nat -> paulimat) : list nat :=
-  match qid with 
-  | 0 %nat => []
-  | S n => let aux := find_nonI n pauli_str in
-    (if (paulimat_eqb (pauli_str n) paulii) then aux else n :: aux)
-  end.  
+(* Scan for non-I entries, but stop immediately once there are more than 2. *)
+Fixpoint find_nonI_bounded_aux (qid remaining : nat) (pauli_str : nat -> paulimat)
+  (acc : list nat) : option (list nat) :=
+  match qid with
+  | 0 %nat => Some (rev acc)
+  | S n =>
+    if paulimat_eqb (pauli_str n) paulii then
+      find_nonI_bounded_aux n remaining pauli_str acc
+    else
+      match remaining with
+      | 0 %nat => None
+      | S remaining' => find_nonI_bounded_aux n remaining' pauli_str (n :: acc)
+      end
+  end.
+
+Definition find_nonI (qid : nat) (pauli_str : nat -> paulimat) : option (list nat) :=
+  find_nonI_bounded_aux qid 2 pauli_str [].
 
 (* Input is 2-local. Convert to X, Z, ZZ basis *)
 Fixpoint synth_analog_ibm_helper (ml : list nat) (nbit : nat) (pauli_str : nat -> paulimat) : 
@@ -63,15 +73,32 @@ Fixpoint synth_analog_ibm_helper (ml : list nat) (nbit : nat) (pauli_str : nat -
       end in
     (left ++ app1, app2 ++ right) end.
 
-Definition synth_analog_ibm (t : R) (nbit : nat) (pauli_str : nat -> paulimat) 
+Definition synth_analog_ibm_single (r : R) (nbit : nat) (pauli_str : nat -> paulimat) 
   : list ugate :=
-  let ml := find_nonI nbit pauli_str in 
-  if Nat.leb (length ml) 2 then
-    let mid := exp_ugate t (fill_pl ml pauliz) in
+  match find_nonI nbit pauli_str with
+  | Some ml =>
+    let mid := exp_ugate r (fill_pl ml pauliz) in
     let (left, right) := synth_analog_ibm_helper ml nbit pauli_str in
     left ++ [mid] ++ right
-  else [].
+  | None => []
+  end.
 
+Definition synth_analog_ibm (t : R) (nbit : nat) (input : lowprog) : list ugate :=
+  rev (fold_left (fun acc b =>
+    rev_append (synth_analog_ibm_single (Rmult t (fst (fst b))) nbit (snd b)) acc) input []).
+
+Fixpoint check_2local (nbit : nat) (lp : lowprog) : bool :=
+  match lp with
+  | [] => true
+  | (_, f) :: ax =>
+    match find_nonI nbit f with
+    | None => false
+    | Some _ => check_2local nbit ax
+    end
+  end.
+
+
+(* Translate to Indiana Analog hardware *)
 Fixpoint syn_analog_indiana_x' (nbit:nat) (f : nat -> paulimat) : nat -> paulimat :=
   match nbit with
     0 => fun _ => paulii
@@ -106,8 +133,8 @@ Fixpoint syn_analog_indiana_a_dl (nbit:nat) (f : nat -> paulimat)
 Definition syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list ugate) : list ugate :=
   syn_analog_indiana_a_dl nbit f (fun tl => rev_append (rev acc) tl) [].
 
-Definition synth_analog_indiana_single (t : R) (nbit : nat) (f : nat -> paulimat) : list ugate :=
-  syn_analog_indiana_a nbit f [syn_analog_indiana_x t nbit f].
+Definition synth_analog_indiana_single (r : R) (nbit : nat) (f : nat -> paulimat) : list ugate :=
+  syn_analog_indiana_a nbit f [syn_analog_indiana_x r nbit f].
 
 Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate :=
   rev (fold_left (fun acc b =>
@@ -136,5 +163,3 @@ Fixpoint syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list ugate)
 Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate :=
   fold_left (fun a b => synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)::a) input [].
 *)
-
-
