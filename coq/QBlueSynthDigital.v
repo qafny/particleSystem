@@ -188,10 +188,15 @@ Definition voqc_lnn_ring_path_finding_fun := VOQC.Main.lnn_ring_path_finding_fun
 Definition ibmdigi_to_rzq (nbit : nat) (circ : EG.ucom EG.U) : VOQC.Main.circ nbit := 
   let c0 := decompose_to_voqc_gates circ in
   let c1 := cvt_egate_fullgate nbit c0 in
-  voqc_convert_to_rzq nbit c1.
-
+  let c2 := voqc_convert_to_rzq nbit c1 in 
+  let cg := voqc_make_lnn_ring nbit in
+  let la := voqc_trivial_layout nbit in
+  let c3 := voqc_decompose_swaps nbit (voqc_swap_route nbit c2 la cg (voqc_lnn_ring_path_finding_fun nbit)) cg in c3.
+ 
 Definition ibmdigi_voqc_optimize (nbit : nat) (circ : EG.ucom EG.U) : VOQC.Main.circ nbit :=
-  let c2 := ibmdigi_to_rzq nbit circ in
+  let c0 := decompose_to_voqc_gates circ in
+  let c1 := cvt_egate_fullgate nbit c0 in
+  let c2 := voqc_convert_to_rzq nbit c1 in 
   let cg := voqc_make_lnn_ring nbit in
   let la := voqc_trivial_layout nbit in
   let c3 := voqc_decompose_swaps nbit (voqc_swap_route nbit c2 la cg (voqc_lnn_ring_path_finding_fun nbit)) cg in
