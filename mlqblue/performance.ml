@@ -148,10 +148,10 @@ let () =
 		("nqubit", `Int nqubit);
 		("npau", `Int nterm);
         ("compilation_time", `Float tc);
-        ("single_qubit_gates", `Int single_qubit_gates);
-        ("multi_qubit_gates", `Int multi_qubit_gates);
         ("single_qubit_gates_bfopt", `Int single_qubit_gates_bfopt);
-        ("multi_qubit_gates_bfopt", `Int multi_qubit_gates_bfopt) ]
+        ("multi_qubit_gates_bfopt", `Int multi_qubit_gates_bfopt);
+        ("single_qubit_gates", `Int single_qubit_gates);
+        ("multi_qubit_gates", `Int multi_qubit_gates) ]
   in
   Yojson.Basic.pretty_to_channel Stdlib.stdout json_data;
   output_char Stdlib.stdout '\n';

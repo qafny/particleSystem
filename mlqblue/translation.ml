@@ -6,6 +6,7 @@ open QBlueSynthDigital
 open QBlueSynth
 open QBlueTrotter
 open QBlueQdrift
+open QBlueMarQSim
 open QBlueCompile
 open ExtractionGateSet
 open Qblue_util
@@ -142,12 +143,34 @@ let trotterQDrift_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : f
   with exn -> dbg "trotterQDrift_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
-let trotterMarQSim_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+let trotterMarQSim_CNOT_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   (* Set seed to reproduce results *)
   Random.init 10;
 
-  if verbose then dbg "---- Trotterization (MarQSim) -> IBMDigital circuits: ----";
-  fail_big_program "MarQSim -> IBMDigital" lp;
+  if verbose then dbg "---- Trotterization (MarQSim, CNOT matrix) -> IBMDigital circuits: ----";
+  fail_big_program "MarQSim (CNOT matrix) -> IBMDigital" lp;
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+	try
+		let (transition_mat, ts1) = time_call (fun () -> get_trans_CNOT lp nq) in
+    let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
+    let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
+    let ts = ts1 +. ts2 in
+    (cc, cir_bf, ts, 1)
+  with exn -> dbg "trotterMarQSim_CNOT_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+
+let trotterMarQSim_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  (* Set seed to reproduce results *)
+  Random.init 10;
+
+  if verbose then dbg "---- Trotterization (MarQSim, CNOT + single-qubit matrix) -> IBMDigital circuits: ----";
+  fail_big_program "MarQSim (CNOT + single-qubit matrix) -> IBMDigital" lp;
   let npau = qdrift_step err t lp in
   let lambda = sum_w lp (Stdlib.List.length lp) in
 
@@ -155,15 +178,60 @@ let trotterMarQSim_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : 
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
   if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
   try
-    let cir_bf =
-      translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq)
-    in
-    let cc, ts =
-      time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq))
-    in
+	let (transition_mat, ts1) = time_call (fun () -> get_trans_mixed lp nq) in
+    let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
+    let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
+    let ts = ts1 +. ts2 in
     (cc, cir_bf, ts, 1)
-  with exn -> dbg "trotterMarQSim_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+  with exn -> dbg "trotterMarQSim_mix_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
+
+let trotterMarQdrift_CNOT_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  (* Set seed to reproduce results *)
+  Random.init 10;
+
+  if verbose then dbg "---- Trotterization (MarQSim, 0.6 * CNOT + 0.4 * qdrift) -> IBMDigital circuits: ----";
+  fail_big_program "MarQSim (CNOT + qdrift) -> IBMDigital" lp;
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+  try
+	let (f_mat, ts1) = time_call (fun () -> get_trans_CNOT lp nq) in
+	 let (transition_mat, ts3) = time_call (fun () -> get_trans_MarQdrift lp 0.6 f_mat) in
+    
+	let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
+    let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
+    let ts = ts1 +. ts2 +. ts3 in
+    (cc, cir_bf, ts, 1)
+  with exn -> dbg "trotterMarQdrift_CNOT_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+
+let trotterMarQdrift_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  (* Set seed to reproduce results *)
+  Random.init 10;
+
+  if verbose then dbg "---- Trotterization (MarQdrift, 0.6 * CNOT + single-qubit + 0.4 * qdrift) -> IBMDigital circuits: ----";
+  fail_big_program "MarQdrift ( CNOT + single-qubit + qdrift) -> IBMDigital" lp;
+  let npau = qdrift_step err t lp in
+  let lambda = sum_w lp (Stdlib.List.length lp) in
+
+  (* rfactor must be very close to 1 to make sure error <= expected error  *)
+  let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
+  if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
+  try
+	let (f_mat, ts1) = time_call (fun () -> get_trans_mixed lp nq) in
+	let (transition_mat, ts3) = time_call (fun () -> get_trans_MarQdrift lp 0.6 f_mat) in
+    let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
+    let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
+    let ts = ts1 +. ts2 +. ts3 in
+    (cc, cir_bf, ts, 1)
+  with exn -> dbg "trotterMarQdrift_mix_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
 
 
 (* std trotterization; decompose to Indiana Analog *)
@@ -230,7 +298,8 @@ let trotterMarQSim_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : 
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
   if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
   try
-    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_marqsim err t lp nq) in
+    let transition_mat = get_trans_CNOT lp nq in
+    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_marqsim err t lp nq transition_mat) in
     (cc, ts, 1, npau)
   with exn -> dbg "trotterMarQSim_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
@@ -307,11 +376,10 @@ let trotterMarQSim_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : f
   if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
   try
     if check_2local nq lp then
-      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_marqsim err t lp nq) in
+	  let transition_mat = get_trans_CNOT lp nq in
+      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_marqsim err t lp nq transition_mat) in
       (cc, ts, 1, npau)
     else
       failwith "IBM analog synthesis requires 2-local input terms"
   with exn -> dbg "trotterMarQSim_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
-
-

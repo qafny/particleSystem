@@ -25,7 +25,8 @@
 
 - flag `-t`, followed by the input phase `t` in `exp(-itH)`. If not set, the default error is 0.01.
 
-- flag `-p`, followed by the path flag to control which algorithm to use for compilation. If not set, default is 0 (optimal CNOT gate counts path). Options include 0-4 (digital) and 10-14 (Indiana Analog).
+- flag `-p`, followed by the path flag to control which algorithm to use for compilation. If not set, default is 0 (optimal CNOT gate counts path). 
+Options include 0-7 (digital); 10-17 (Indiana Analog); 20-27 (IBM Analog).
 
 
 ## DataSet

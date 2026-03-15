@@ -118,6 +118,10 @@ Set Extraction Optimize.
 Cd "./extracted".
 Separate Extraction
   QBlueSynth.check_2local
+  QBlueMarQSim.get_trans_CNOT
+  QBlueMarQSim.get_trans_mixed
+  QBlueMarQSim.get_trans_MarQdrift
+
   QBlueCompile.translate_highp2circ 
   QBlueCompile.translate_lowp2circ_stdTrotter 
   QBlueCompile.translate_lowp2circ_2ndTrotter 

@@ -149,19 +149,18 @@ Definition translate_marqsim_ibmdigi (prob_init : list R) (trans_matrix : nat ->
   synth_digital_ibm t nbit lowp.
 
 Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
-  (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
+  (f_opt : EG.ucom EG.U -> full_ucom_l nbit) 
+  (f_mat : nat -> list R) : full_ucom_l nbit :=
   let N := qdrift_step err t lp in
   let prob_init := get_coef lp in
-  let trans_matrix := get_trans lp nbit in 
   let totw := sum_w lp (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div N ns)%nat) in
   match ns with
   | O => []
-  | S _ =>
-    translate_lowp2circ_chunks t lp 0%nat nbit scale
-    (translate_marqsim_ibmdigi prob_init trans_matrix) f_opt nch N ns []
+  | S _ => translate_lowp2circ_chunks t lp 0%nat nbit scale
+    (translate_marqsim_ibmdigi prob_init f_mat) f_opt nch N ns []
   end.
 
 Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
@@ -259,10 +258,10 @@ Definition translate_marqsim_indiAna (prob_init : list R) (trans_matrix : nat ->
   let lowp := mult_r_hplus scale lp1 in
   synth_analog_indiana t nbit lowp.
 
-Definition translate_lowp2IndiAna_marqsim (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+Definition translate_lowp2IndiAna_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
+(f_mat : nat -> list R) : list ugate :=
   let N := qdrift_step err t lp in
   let prob_init := get_coef lp in
-  let trans_matrix := get_trans lp nbit in 
   let totw := sum_w lp (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
@@ -270,11 +269,10 @@ Definition translate_lowp2IndiAna_marqsim (err t : R) (lp : lowprog) (nbit : nat
   match ns with
   | O => []
   | S _ => translate_lowp2IndiAna_chunks t lp 0%nat nbit scale
-    (translate_marqsim_indiAna prob_init trans_matrix) nch N ns []
+    (translate_marqsim_indiAna prob_init f_mat) nch N ns []
   end.
 
-
-
+(* Translate to IBM Analog *)
 Definition translate_lowp2IBMAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
   let lowp : lowprog := trotter err t lp in 
   synth_analog_ibm t nbit lowp.
@@ -283,13 +281,13 @@ Definition translate_lowp2IBMAna_std_2ndTrotter (err t : R) (lp : lowprog) (nbit
   let lowp : lowprog := trotter_2nd_order err t lp in 
   synth_analog_ibm t nbit lowp.
 
-
 Definition translate_lowp2IBMAna_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
   let lowp : lowprog := trotter_qdrift err t lp in 
   synth_analog_ibm t nbit lowp.
 
-Definition translate_lowp2IBMAna_marqsim (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
-  let lowp : lowprog := trotter_marqsim err t lp nbit in 
+Definition translate_lowp2IBMAna_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
+(f_mat : nat -> list R) : list ugate :=  
+let lowp : lowprog := trotter_marqsim err t lp nbit f_mat in 
   synth_analog_ibm t nbit lowp.
 
 
