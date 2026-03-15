@@ -91,7 +91,10 @@ let lowprog_to_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
     | 11 -> trotterStd_IndiAnalog ~verbose:verbose lp nq err t
     | 12 -> trotter2nd_IndiAnalog ~verbose:verbose lp nq err t
     | 13 -> trotterQDrift_IndiAnalog ~verbose:verbose lp nq err t
-    | _ -> trotterMarQSim_IndiAnalog ~verbose:verbose lp nq err t
+    | 14 -> trotterMarQSim_CNOT_IndiAnalog ~verbose:verbose lp nq err t
+    | 15 -> trotterMarQSim_mix_IndiAnalog ~verbose:verbose lp nq err t
+    | 16 -> trotterMarQdrift_CNOT_IndiAnalog ~verbose:verbose lp nq err t
+    | _ -> trotterMarQdrift_mix_IndiAnalog ~verbose:verbose lp nq err t
   )
 
 let lowprog_to_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
@@ -100,7 +103,10 @@ let lowprog_to_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float
     | 21 -> trotterStd_IBMAnalog ~verbose:verbose lp nq err t
     | 22 -> trotter2nd_IBMAnalog ~verbose:verbose lp nq err t
     | 23 -> trotterQDrift_IBMAnalog ~verbose:verbose lp nq err t
-    | _ -> trotterMarQSim_IBMAnalog ~verbose:verbose lp nq err t
+    | 24 -> trotterMarQSim_CNOT_IBMAnalog ~verbose:verbose lp nq err t
+    | 25 -> trotterMarQSim_mix_IBMAnalog ~verbose:verbose lp nq err t
+    | 26 -> trotterMarQdrift_CNOT_IBMAnalog ~verbose:verbose lp nq err t
+    | _ -> trotterMarQdrift_mix_IBMAnalog ~verbose:verbose lp nq err t
 )
 
 
@@ -226,7 +232,7 @@ let translation_lowprog_IndiAnalog (lp : lowprog) (nqbit : int) (err : float) (t
   let best_path = ref 100 in
   let ts_tot = ref 0.0 in
   let best_score = ref max_int in
-  for flag_path = 11 to 14 do
+  for flag_path = 11 to 17 do
     let (cc, ts, r, npau) = lowprog_to_IndiAnalog ~verbose:true lp nqbit err t flag_path in
 	(* currently use number of pauli strings *)
 	let (nq1, score) = summarize_analog_counts cc nqbit npau in
@@ -245,7 +251,7 @@ let translation_lowprog_IBMAnalog (lp : lowprog) (nqbit : int) (err : float) (t 
   let best_path = ref 100 in
   let ts_tot = ref 0.0 in
   let best_score = ref max_int in
-  for flag_path = 21 to 24 do
+  for flag_path = 21 to 27 do
     let (cc, ts, r, npau) = lowprog_to_IBMAnalog ~verbose:true lp nqbit err t flag_path in
     (* currently use number of pauli strings *)
     let (nq1, score) = summarize_analog_counts cc nqbit npau in
