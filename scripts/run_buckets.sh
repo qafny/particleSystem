@@ -38,6 +38,9 @@ COMPARE_OPENFERMION_OUT="${COMPARE_OPENFERMION_OUT:-results/qblue_${RESULT_TAG}_
 read -r -a QBLUE_ERRS_ARR <<< "${QBLUE_ERRS:-0.5 0.1}"
 read -r -a TS_ARR <<< "${TS:-0.7853981633974483 0.19634954084936207}"
 read -r -a QBLUE_PIPELINES_ARR <<< "${QBLUE_PIPELINES:-std}"
+read -r -a BENCHMARKS_ARR <<< "${BENCHMARKS:-qblue phoenix paulihedral tetris openfermion}"
+
+_bench_enabled() { local b; for b in "${BENCHMARKS_ARR[@]}"; do [[ "$b" == "$1" ]] && return 0; done; return 1; }
 
 QBLUE_GROUPING="${QBLUE_GROUPING:-none}"
 QBLUE_TIMEOUT_S="${QBLUE_TIMEOUT_S:-1800}"
@@ -93,7 +96,7 @@ wait_for_jobs() {
 
 trap cleanup EXIT INT TERM
 
-start_job "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" \
+! _bench_enabled qblue || start_job "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" \
   python3 scripts/qblue_bench.py \
     --dataset "${DATASET}" \
     --out "${QBLUE_OUT}" \
@@ -104,7 +107,7 @@ start_job "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" \
     --timeout-s "${QBLUE_TIMEOUT_S}" \
     --limit "${QBLUE_LIMIT}"
 
-start_job "[2/9] Phoenix (${DATASET}) -> ${PHOENIX_OUT}" \
+! _bench_enabled phoenix || start_job "[2/9] Phoenix (${DATASET}) -> ${PHOENIX_OUT}" \
   python3 scripts/phoenix_bench.py \
     --dataset "${DATASET}" \
     --out "${PHOENIX_OUT}" \
@@ -113,7 +116,7 @@ start_job "[2/9] Phoenix (${DATASET}) -> ${PHOENIX_OUT}" \
     --max-terms "${PHOENIX_MAX_TERMS}" \
     --limit "${PHOENIX_LIMIT}"
 
-start_job "[3/9] Paulihedral (${DATASET}) -> ${PAULIHEDRAL_OUT}" \
+! _bench_enabled paulihedral || start_job "[3/9] Paulihedral (${DATASET}) -> ${PAULIHEDRAL_OUT}" \
   python3 scripts/paulihedral_bench.py \
     --dataset "${DATASET}" \
     --out "${PAULIHEDRAL_OUT}" \
@@ -121,7 +124,7 @@ start_job "[3/9] Paulihedral (${DATASET}) -> ${PAULIHEDRAL_OUT}" \
     --max-terms "${PAULIHEDRAL_MAX_TERMS}" \
     --limit "${PAULIHEDRAL_LIMIT}"
 
-start_job "[4/9] Tetris (${DATASET}) -> ${TETRIS_OUT}" \
+! _bench_enabled tetris || start_job "[4/9] Tetris (${DATASET}) -> ${TETRIS_OUT}" \
   python3 scripts/tetris_bench.py \
     --dataset "${DATASET}" \
     --out "${TETRIS_OUT}" \
@@ -131,7 +134,7 @@ start_job "[4/9] Tetris (${DATASET}) -> ${TETRIS_OUT}" \
     --max-terms "${TETRIS_MAX_TERMS}" \
     --limit "${TETRIS_LIMIT}"
 
-start_job "[5/9] OpenFermion (${DATASET}) -> ${OPENFERMION_OUT}" \
+! _bench_enabled openfermion || start_job "[5/9] OpenFermion (${DATASET}) -> ${OPENFERMION_OUT}" \
   python3 scripts/openfermion_bench.py \
     --dataset "${DATASET}" \
     --out "${OPENFERMION_OUT}" \
