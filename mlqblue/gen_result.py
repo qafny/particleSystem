@@ -4,13 +4,43 @@ import csv
 import argparse
 from pathlib import Path
 
+
+CSV_FIELDS = [
+    "file_name",
+    "error",
+    "time",
+    "path_flag",
+    "nqubit",
+    "program_size",
+    "compilation_time",
+    "compilation_terms",
+    "single_qubit_gates",
+    "multi_qubit_gates",
+    "single_qubit_gates_bfopt",
+    "multi_qubit_gates_bfopt",
+    "trotter_step",
+    "status",
+    "message",
+]
+
+REPO_ROOT = Path(__file__).resolve().parent
+PERFORMANCE_EXE = REPO_ROOT / "_build" / "default" / "performance.exe"
+
+
+def get_performance_executable():
+    if not PERFORMANCE_EXE.is_file():
+        raise FileNotFoundError(
+            f"Expected built executable at {PERFORMANCE_EXE}. "
+            "Build it first, for example with `dune build performance.exe`."
+        )
+
+    return PERFORMANCE_EXE
+
+
 def call_ocaml(file_name, error, time_value, path_flag):
     proc = subprocess.run(
         [
-            "dune",
-            "exec",
-            "--",
-            "./performance.exe",
+            str(get_performance_executable()),
             file_name,
             "-e",
             str(error),
@@ -122,12 +152,14 @@ def main():
                 "time": result.get("time", result.get("simu_time")),
                 "path_flag": result.get("path_flag"),
 				"nqubit": result.get("nqubit"),
-				"npau": result.get("npau"),
+				"program_size": result.get("program_size"),
                 "compilation_time": result.get("compilation_time"),
+                "compilation_terms": result.get("compilation_terms"),
                 "single_qubit_gates": result.get("single_qubit_gates"),
                 "multi_qubit_gates": result.get("multi_qubit_gates"),
                 "single_qubit_gates_bfopt": result.get("single_qubit_gates_bfopt"),
                 "multi_qubit_gates_bfopt": result.get("multi_qubit_gates_bfopt"),
+                "trotter_step": result.get("trotter_step"),
                 "status": "ok",
                 "message": ""
             }
@@ -139,29 +171,25 @@ def main():
                 "time": time_value,
                 "path_flag": path_flag,
                 "nqubit": "",
-                "npau": "",
+                "program_size": "",
                 "compilation_time": "",
+                "compilation_terms": "",
                 "single_qubit_gates": "",
                 "multi_qubit_gates": "",
                 "single_qubit_gates_bfopt": "",
                 "multi_qubit_gates_bfopt": "",
+                "trotter_step": "",
                 "status": "error",
                 "message": str(e)
             }
 
         rows.append(row)
+        print(row)
 
     with open(args.output, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
-            fieldnames=[
-                "file_name", "error", "time", "path_flag",
-                "nqubit", "npau",
-                "compilation_time",
-   				"single_qubit_gates", "multi_qubit_gates",
-                "single_qubit_gates_bfopt", "multi_qubit_gates_bfopt",
-                "status", "message"
-            ]
+            fieldnames=CSV_FIELDS
         )
         writer.writeheader()
         writer.writerows(rows)
