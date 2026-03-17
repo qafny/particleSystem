@@ -13,6 +13,23 @@ fi
 
 mkdir -p results
 
+detect_cpu_count() {
+  local n
+  n="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
+  if [[ ! "$n" =~ ^[0-9]+$ ]] || (( n < 1 )); then
+    n=1
+  fi
+  printf '%s\n' "$n"
+}
+
+sanitize_positive_int() {
+  local value="$1" fallback="$2"
+  if [[ ! "$value" =~ ^[0-9]+$ ]] || (( value < 1 )); then
+    value="$fallback"
+  fi
+  printf '%s\n' "$value"
+}
+
 if [[ -n "${SLURM_JOB_ID:-}" ]]; then
   SUFFIX="_${SLURM_JOB_ID}"
 else
@@ -63,23 +80,21 @@ OPENFERMION_LIMIT="${OPENFERMION_LIMIT:-0}"
 OPENFERMION_TROTTER_NUMBER="${OPENFERMION_TROTTER_NUMBER:-1}"
 OPENFERMION_TROTTER_ORDER="${OPENFERMION_TROTTER_ORDER:-1}"
 
+CPU_COUNT="$(detect_cpu_count)"
+RUN_BUCKETS_JOBS="$(sanitize_positive_int "${RUN_BUCKETS_JOBS:-$CPU_COUNT}" 1)"
+
 PIDS=()
 LABELS=()
+TMP_PATHS=()
 
 cleanup() {
-  local pid
+  local pid path
   for pid in "${PIDS[@]:-}"; do
     kill "$pid" 2>/dev/null || true
   done
-}
-
-start_job() {
-  local label="$1"
-  shift
-  echo "${label}" >&2
-  "$@" &
-  PIDS+=("$!")
-  LABELS+=("${label}")
+  for path in "${TMP_PATHS[@]:-}"; do
+    [[ -n "$path" && -e "$path" ]] && rm -rf -- "$path"
+  done
 }
 
 wait_for_jobs() {
@@ -91,21 +106,72 @@ wait_for_jobs() {
       failed=1
     fi
   done
+  PIDS=()
+  LABELS=()
   return "$failed"
 }
 
-trap cleanup EXIT INT TERM
+maybe_wait_for_slot() {
+  if (( ${#PIDS[@]} >= RUN_BUCKETS_JOBS )); then
+    wait_for_jobs
+  fi
+}
 
-! _bench_enabled qblue || start_job "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" \
+start_job() {
+  local label="$1"
+  shift
+  echo "${label}" >&2
+  "$@" &
+  PIDS+=("$!")
+  LABELS+=("${label}")
+  maybe_wait_for_slot
+}
+
+merge_csv_shards() {
+  local out="$1"
+  shift
+  local shard first=1
+  for shard in "$@"; do
+    [[ -f "$shard" ]] || continue
+    if (( first )); then
+      cat "$shard" > "$out"
+      first=0
+    else
+      tail -n +2 "$shard" >> "$out"
+    fi
+  done
+  if (( first )); then
+    echo "ERROR: no QBlue shard outputs were produced for ${out}" >&2
+    return 1
+  fi
+}
+
+ensure_qblue_ready() {
+  if [[ -x "$ROOT/mlqblue/_build/default/performance.exe" ]]; then
+    return
+  fi
+  echo "[prep] Building QBlue performance.exe" >&2
+  (
+    cd "$ROOT/mlqblue"
+    opam exec -- dune build
+  )
+}
+
+run_qblue_combo() {
+  local out="$1" err="$2" t="$3" pipeline="$4"
   python3 scripts/qblue_bench.py \
     --dataset "${DATASET}" \
-    --out "${QBLUE_OUT}" \
-    --errs "${QBLUE_ERRS_ARR[@]}" \
-    --ts "${TS_ARR[@]}" \
-    --pipelines "${QBLUE_PIPELINES_ARR[@]}" \
+    --out "${out}" \
+    --errs "${err}" \
+    --ts "${t}" \
+    --pipelines "${pipeline}" \
     --grouping "${QBLUE_GROUPING}" \
     --timeout-s "${QBLUE_TIMEOUT_S}" \
-    --limit "${QBLUE_LIMIT}"
+    --limit "${QBLUE_LIMIT}" \
+    --no-build
+}
+
+trap cleanup EXIT INT TERM
 
 ! _bench_enabled phoenix || start_job "[2/9] Phoenix (${DATASET}) -> ${PHOENIX_OUT}" \
   python3 scripts/phoenix_bench.py \
@@ -144,7 +210,44 @@ trap cleanup EXIT INT TERM
     --max-terms "${OPENFERMION_MAX_TERMS}" \
     --limit "${OPENFERMION_LIMIT}"
 
+QBLUE_SHARDS=()
+if _bench_enabled qblue; then
+  QBLUE_COMBO_COUNT=$(( ${#QBLUE_ERRS_ARR[@]} * ${#TS_ARR[@]} * ${#QBLUE_PIPELINES_ARR[@]} ))
+  if (( RUN_BUCKETS_JOBS <= 1 || QBLUE_COMBO_COUNT <= 1 )); then
+    start_job "[1/9] QBlue (${DATASET}) -> ${QBLUE_OUT}" \
+      python3 scripts/qblue_bench.py \
+        --dataset "${DATASET}" \
+        --out "${QBLUE_OUT}" \
+        --errs "${QBLUE_ERRS_ARR[@]}" \
+        --ts "${TS_ARR[@]}" \
+        --pipelines "${QBLUE_PIPELINES_ARR[@]}" \
+        --grouping "${QBLUE_GROUPING}" \
+        --timeout-s "${QBLUE_TIMEOUT_S}" \
+        --limit "${QBLUE_LIMIT}"
+  else
+    ensure_qblue_ready
+    QBLUE_TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/qblue_${RESULT_TAG}.XXXXXX")"
+    TMP_PATHS+=("${QBLUE_TMP_DIR}")
+    combo_idx=0
+    for err in "${QBLUE_ERRS_ARR[@]}"; do
+      for t in "${TS_ARR[@]}"; do
+        for pipeline in "${QBLUE_PIPELINES_ARR[@]}"; do
+          combo_idx=$((combo_idx + 1))
+          shard_out="${QBLUE_TMP_DIR}/qblue_${combo_idx}.csv"
+          QBLUE_SHARDS+=("${shard_out}")
+          start_job "[QBlue ${combo_idx}/${QBLUE_COMBO_COUNT}] ${DATASET} err=${err} t=${t} pipeline=${pipeline}" \
+            run_qblue_combo "${shard_out}" "${err}" "${t}" "${pipeline}"
+        done
+      done
+    done
+  fi
+fi
+
 wait_for_jobs
+
+if (( ${#QBLUE_SHARDS[@]} > 0 )); then
+  merge_csv_shards "${QBLUE_OUT}" "${QBLUE_SHARDS[@]}"
+fi
 
 # echo "[6/9] Compare (Phoenix) -> ${COMPARE_PHOENIX_OUT}" >&2
 # python3 scripts/compare_bench_csv.py \
