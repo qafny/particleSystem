@@ -1,11 +1,12 @@
 #!/bin/bash
 #
-# Run QBlue and Phoenix benchmarks across all bucket datasets, t values, pipelines,
-# and error bounds needed for paper plots.
+# Run QBlue, Phoenix, and OpenFermion benchmarks across all bucket datasets,
+# t values, pipelines, and error bounds needed for paper plots.
 #
 # Each run_buckets.sh invocation can fan QBlue out across multiple cores.
 # Set RUN_PAIR_JOBS>1 to process multiple (dataset, t) pairs at once.
-# Output files: results/qblue_<tag>.csv and results/phoenix_<tag>.csv
+# Output files: results/qblue_<tag>.csv, results/phoenix_<tag>.csv,
+# and results/openfermion_<tag>.csv
 
 set -euo pipefail
 
@@ -92,7 +93,7 @@ trap cleanup EXIT INT TERM
 run_bucket_pair() {
   local dataset="$1" tag="$2" pipelines="$3" timeout_s="$4" t="$5"
   DATASET="${dataset}" RESULT_TAG="${tag}" \
-  BENCHMARKS='qblue phoenix' \
+  BENCHMARKS='qblue phoenix openfermion' \
   QBLUE_PIPELINES="${pipelines}" \
   QBLUE_ERRS='0.02 0.1 0.5' \
   QBLUE_TIMEOUT_S="${timeout_s}" \
