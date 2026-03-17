@@ -20,6 +20,9 @@ extract_coq/src/extracted
 .tmp*
 *.qasm
 *.DS_Store
+*.idea/
+*__pycache__/
+
 
 # Ignore coq_makefile-generated files
 .coqdeps.d
