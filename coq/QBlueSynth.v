@@ -140,26 +140,4 @@ Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate 
   rev (fold_left (fun acc b =>
     rev_append (synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)) acc) input []).
 
-(*
-Fixpoint syn_analog_indiana_a (nbit:nat) (f : nat -> paulimat) (acc: list ugate) : list ugate :=
-  match nbit with 
-    0 => acc
-  | S m => 
-     match f m with 
-       pauliy => 
-          syn_analog_indiana_a m f 
-            ((Rdiv PI R4, (fun i => if i =? m then pauliz else paulii))
-                ::acc++[((Rdiv (Rmult R7 PI) R4), (fun i => if i =? m then pauliz else paulii))])
-       | pauliz => 
-          let v := (Rdiv PI R4, fun i => if i =? m then paulix else paulii)
-                      ::(Rdiv PI R4, fun i => if i =? m then pauliz else paulii)
-                      ::(Rdiv PI R4, fun i => if i =? m then paulix else paulii)::[] in
-          syn_analog_indiana_a m f (v++acc++v)
-       | _ => syn_analog_indiana_a m f acc
-      end
-   end.
 
-
-Definition synth_analog_indiana (t:R) (nbit:nat) (input : lowprog) : list ugate :=
-  fold_left (fun a b => synth_analog_indiana_single (Rmult t (fst (fst b))) nbit (snd b)::a) input [].
-*)
