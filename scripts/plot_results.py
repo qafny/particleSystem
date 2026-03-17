@@ -240,12 +240,18 @@ def plot_gates_vs_err(qb: pd.DataFrame, out: Path, t_label: str = "") -> None:
 # ---------------------------------------------------------------------------
 
 def plot_algorithm_selection(qb: pd.DataFrame, out: Path) -> None:
-    algos = qb["algorithm"].dropna().unique()
+    # Only use `auto` pipeline rows — that's where QBlue freely chose the algorithm
+    auto = qb[qb["pipeline"] == "auto"]
+    if auto.empty:
+        print("  [skip] algorithm_selection: no `auto` pipeline data")
+        return
+
+    algos = auto["algorithm"].dropna().unique()
     if len(algos) < 2:
         print(f"  [skip] algorithm_selection: only one algorithm present ({algos})")
         return
 
-    errs_present = sorted(qb["err"].dropna().unique())
+    errs_present = sorted(auto["err"].dropna().unique())
     algo_labels = {
         "Trotterization (1st-order)": "1st order",
         "Trotterization (2nd-order)": "2nd order",
@@ -263,8 +269,8 @@ def plot_algorithm_selection(qb: pd.DataFrame, out: Path) -> None:
     group_labels = [f"{DATASET_LABELS.get(ds,ds)}\n{ERR_LABELS.get(err,err)}"
                     for ds, err in groups]
 
-    # one row per (file, err) — deduplicate across pipelines by taking first
-    deduped = qb.drop_duplicates(subset=["input_name", "dataset", "err", "t"])
+    # one row per (file, err, t) within auto pipeline
+    deduped = auto.drop_duplicates(subset=["input_name", "dataset", "err", "t"])
 
     algo_order = [a for a in [
         "Trotterization (1st-order)", "Trotterization (2nd-order)",
