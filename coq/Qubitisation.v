@@ -8,9 +8,7 @@ Require Import QBlueTTS.              (* Taylor series: taylor_exp, findK, get_n
 
 Open Scope R_scope.
 
-(* ------------------------------------------------------------------ *)
 (* 1. Adjoint (dagger) of a gate and of a ucom circuit               *)
-(* ------------------------------------------------------------------ *)
 
 Definition inv_gate (g : Gate) : Gate :=
   match g with
@@ -31,9 +29,7 @@ Fixpoint dagger_ucom (c : ucom ExtractionGateSet.U) : ucom ExtractionGateSet.U :
   | USEQ g rest => USEQ (dagger_ucom rest) (inv_gate g)
   end.
 
-(* ------------------------------------------------------------------ *)
 (* 2. Reflection on ancilla qubits: 2|0...0⟩⟨0...0| - I              *)
-(* ------------------------------------------------------------------ *)
 
 (* Build a multi-controlled Z using an auxiliary qubit (must be |0⟩).
    ancilla qubits are [0 .. n-1]; aux is an extra qubit (index n). *)
@@ -46,18 +42,14 @@ Definition reflect_ancilla (n : nat) (aux : nat) : ucom ExtractionGateSet.U :=
   let flip2 := fold_left (fun acc i => USEQ (X i) acc) anc SKIP in
   USEQ (USEQ flip1 (USEQ compute_and apply_z)) (USEQ uncompute_and flip2).
 
-(* ------------------------------------------------------------------ *)
 (* 3. Quantum walk operator W = R · U · R · U^\dagger                 *)
-(* ------------------------------------------------------------------ *)
 
 Definition walk_operator (U : ucom ExtractionGateSet.U) (n_anc : nat) (aux : nat) : ucom ExtractionGateSet.U :=
   let R := reflect_ancilla n_anc aux in
   let Ud := dagger_ucom U in
   USEQ (USEQ (USEQ R U) R) Ud.
 
-(* ------------------------------------------------------------------ *)
 (* 4. Qubitisation for low-level Pauli representation (lowprog)      *)
-(* ------------------------------------------------------------------ *)
 
 Definition TTS_Qubitisation (err t : R) (nbit : nat) (input : lowprog) : ucom ExtractionGateSet.U :=
   let nseg := get_nseg t input in
@@ -70,9 +62,7 @@ Definition TTS_Qubitisation (err t : R) (nbit : nat) (input : lowprog) : ucom Ex
   let walk := walk_operator circ_seg n_anc aux in
   fold_left (fun acc _ => USEQ walk acc) (seq 0 nseg) SKIP.
 
-(* ------------------------------------------------------------------ *)
 (* 5. Qubitisation for second-quantised Hamiltonians (highprog)      *)
-(* ------------------------------------------------------------------ *)
 
 Definition TTS_Qubitisation_high (err t : R) (nbit : nat) (H : highprog) : ucom ExtractionGateSet.U :=
   let low := highprog_to_lowprog H nbit in
