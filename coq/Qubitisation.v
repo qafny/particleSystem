@@ -4,7 +4,6 @@ Require Import Reals List.
 Import ListNotations.
 Require Import QBlueSyntax.
 Require Import QBlueParTransJwt.      (* Jordan-Wigner: highprog_to_lowprog *)
-Require Import QBlueTTS.              (* Taylor series: taylor_exp, findK, get_nseg, build_circuit_seg *)
 
 Open Scope R_scope.
 

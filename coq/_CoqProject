@@ -11,11 +11,11 @@ QBlueParTransJwt.v
 QBlueParTransJwtProof.v
 QBlueTrotter.v
 QBlueTrotterProof.v
+QBlueTTS.v
 QBlueQdrift.v
 QBlueSynth.v
 QBlueSynthDigital.v
 QBlueCompile.v
-QBlueTTS.v
 QBlueMarQSim.v
 
 MarQsim/NetworkX.v

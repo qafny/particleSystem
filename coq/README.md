@@ -21,6 +21,15 @@ pip install networkx[default]
 
 ```
 
+To install SQIR, run opam pin coq-sqir https://github.com/inQWIRE/SQIR.git
+
+To pull subsequent updates, run opam install coq-sqir.
+
+To import SQIR files, use Require Import SQIR.FILENAME
+
+To install VOQC, run opam pin coq-voqc https://github.com/inQWIRE/SQIR.git
+
+To pull subsequent updates, run opam install coq-voqc.
 
 
 ## Compile & Running QBlue
