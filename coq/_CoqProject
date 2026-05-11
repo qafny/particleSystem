@@ -17,6 +17,7 @@ QBlueSynth.v
 QBlueSynthDigital.v
 QBlueCompile.v
 QBlueMarQSim.v
+QBlueQuantumWalk.v
 
 MarQsim/NetworkX.v
 MarQsim/Marqsim.v
@@ -27,4 +28,3 @@ MarQsim/CompileTime.v
 MarQsim/Exp.v
 
 Main.v
-

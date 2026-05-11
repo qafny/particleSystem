@@ -3,6 +3,7 @@ From SQIR Require Import ExtractionGateSet.
 From QBlue Require Import QBlueUtility.
 From QBlue Require Import QBlueCompile.
 From QBlue Require Import QBlueSynthDigital.
+From QBlue Require Import QBlueQuantumWalk.
 
 Require Coq.extraction.Extraction.
 (* Standard utilities for bools, options, etc. *)
@@ -68,12 +69,65 @@ Extract Inlined Constant sin => "sin".
 Extract Inlined Constant tan => "tan".
 Extract Inlined Constant atan => "atan".
 Extract Inlined Constant acos => "acos".
+Extract Inlined Constant asin => "asin".
 Extract Inlined Constant exp => "Float.exp".
+
+(* Bessel J_k(tau): Miller backward recurrence, normalised to J_0+2*J_2+...=1 *)
+Extract Constant QBlue.QBlueQuantumWalk.bessel_j =>
+  "(fun k tau ->
+    let tau = abs_float tau in
+    if tau < 1e-15 then (if k = 0 then 1.0 else 0.0)
+    else begin
+      (* m robust bound: k + tau + offset based on log(1/eps) *)
+      let m = max k (int_of_float tau) + 40 in
+      let b = Array.make (m + 2) 0.0 in
+      b.(m) <- 1e-30;
+      for i = m - 1 downto 0 do
+        b.(i) <- 2.0 *. float_of_int (i+1) /. tau *. b.(i+1) -. b.(i+2);
+        if b.(i) > 1e100 then (for j = i to m do b.(j) <- b.(j) *. 1e-100 done)
+      done;
+      let sum = ref b.(0) in
+      let i = ref 2 in
+      while !i <= m do sum := !sum +. 2.0 *. b.(!i); i := !i + 2 done;
+      if k <= m then b.(k) /. !sum else 0.0
+    end)".
+
+Extract Constant QBlue.QBlueQuantumWalk.findK_qwalk =>
+  "(fun tau eps ->
+    let tau = abs_float tau in
+    let eps = max eps 1e-18 in
+    let k_try = int_of_float (tau *. 2.0 +. 40.0 +. log (1.0 /. eps) *. 2.0) in
+    let b = Array.make (k_try + 2) 0.0 in
+    b.(k_try) <- 1e-30;
+    for i = k_try - 1 downto 0 do
+      b.(i) <- 2.0 *. float_of_int (i+1) /. tau *. b.(i+1) -. b.(i+2);
+      if b.(i) > 1e100 then (for j = i to k_try do b.(j) <- b.(j) *. 1e-100 done)
+    done;
+    let sum = ref b.(0) in
+    let i = ref 2 in
+    while !i <= k_try do sum := !sum +. 2.0 *. b.(!i); i := !i + 2 done;
+    let norm_b k = if k <= k_try then b.(k) /. !sum else 0.0 in
+    let tail = ref 0.0 in
+    let best = ref k_try in
+    for k = k_try downto 1 do
+      tail := !tail +. 2.0 *. abs_float (norm_b k);
+      if !tail < eps then best := k - 1
+    done;
+    !best)".
+
 Extract Inlined Constant PI => "Float.pi".
 Extract Inlined Constant QBlueUtility.Reqb => "Stdlib.( = )".
 Extract Inlined Constant ChangeRotationBasis.Rltb => "Stdlib.( < )".
 Extract Inlined Constant QBlueUtility.Rltb => "Stdlib.( < )".
 Extract Inlined Constant Coq.Reals.ROrderedType.Reqb => "Stdlib.( = )".
+Extract Inlined Constant Rlt_dec => "( < )".
+Extract Inlined Constant Rle_dec => "( <= )".
+Extract Inlined Constant Req_dec => "( = )".
+
+(* total_order_T for R is expected to return 'bool option' in the Rdefinitions module context.
+   Some true -> r1 < r2, None -> r2 < r1, Some false -> r1 = r2. *)
+Extract Constant total_order_T => 
+"(fun r1 r2 -> if r1 < r2 then Some true else if r2 < r1 then None else Some false)".
 
 (* Map Q<->R with the generated QArith_base.ml *)
 Extract Inlined Constant Coq.Reals.Rdefinitions.Q2R =>
@@ -128,6 +182,7 @@ Separate Extraction
   QBlueCompile.translate_lowp2circ_qdrift
   QBlueCompile.translate_lowp2circ_marqsim
   QBlueCompile.translate_lowp2circ_TTS_LCU
+  QBlueCompile.translate_lowp2circ_qwalk
   QBlueCompile.translate_lowp2IndiAna_stdTrotter
   QBlueCompile.translate_lowp2IndiAna_2ndTrotter
   QBlueCompile.translate_lowp2IndiAna_qdrift
@@ -136,6 +191,11 @@ Separate Extraction
   QBlueCompile.translate_lowp2IBMAna_std_2ndTrotter
   QBlueCompile.translate_lowp2IBMAna_qdrift
   QBlueCompile.translate_lowp2IBMAna_marqsim
+  QBlueQuantumWalk.build_qwalk_lcu_circuit
+  QBlueQuantumWalk.build_state_prep
+  QBlueQuantumWalk.build_inner_prep
+  QBlueQuantumWalk.build_outer_prep
+  QBlueQuantumWalk.findK_qwalk
 
 (* gate decomposition pass *)
   ExtractionGateSet.decompose_to_voqc_gates

@@ -73,6 +73,17 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
+(* Quantum Walk; decompose to IBM digital *)
+let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- Quantum Walk -> IBMDigital circuits: ----";
+  try
+    let cir_ast = translate_lowp2circ_qwalk err t lp nq in
+    let cir_bf = ibmdigi_to_rzq nq cir_ast in
+    let cc, ts = time_call (fun () -> ibmdigi_voqc_optimize nq cir_ast) in
+    (cc, cir_bf, ts, 1)
+  with exn -> dbg "qwalk_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
 
 (* 2nd-order trotterization; decompose to IBM digital *)
 let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
