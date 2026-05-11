@@ -17,6 +17,7 @@ Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueSynthDigital.
 Require Import QBlue.QBlueSynth.
 Require Import QBlue.QBlueTTS.
+Require Import QBlue.QBlueTTS_v4.
 Require Import QBlue.QBlueMarQSim.
 Require Import QBlue.QBlueQuantumWalk.
 

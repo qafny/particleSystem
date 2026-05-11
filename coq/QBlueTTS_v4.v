@@ -108,7 +108,7 @@ Definition build_circuit_seg (nqv : nat) (input : lowprog) : ucom ExtractionGate
 (* LCU Taylor series simulation of e^{-itH} to within error err.
    Splits [0,t] into r segments of length tau = t/r,
    builds Taylor LCU circuit for each segment, composes r copies. *)
-Definition TTS_LCU (err t : R) (nbit : nat) (input : lowprog) : ucom ExtractionGateSet.U :=
+Definition TTS_LCU1 (err t : R) (nbit : nat) (input : lowprog) : ucom ExtractionGateSet.U :=
   let nseg     := get_nseg t input in
   let tau      := (t / INR nseg)%R in
   let K        := findK_tau err nseg in

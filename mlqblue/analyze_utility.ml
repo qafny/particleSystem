@@ -9,7 +9,6 @@ open Parserlib.Parser
 open Parserlib.Lexer
 
 open ExtractionGateSet
-open Voqc.Qasm
 open Translation
 open Qblue_util
 

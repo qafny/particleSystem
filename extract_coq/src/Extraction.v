@@ -4,6 +4,7 @@ From QBlue Require Import QBlueUtility.
 From QBlue Require Import QBlueCompile.
 From QBlue Require Import QBlueSynthDigital.
 From QBlue Require Import QBlueQuantumWalk.
+From QBlue Require Import QBlueTTS_v4.
 
 Require Coq.extraction.Extraction.
 (* Standard utilities for bools, options, etc. *)
@@ -172,6 +173,9 @@ Set Extraction Optimize.
 Cd "./extracted".
 Separate Extraction
   QBlueSynth.check_2local
+
+  QBlueTTS_v4.TTS_LCU1
+
   QBlueMarQSim.get_trans_CNOT
   QBlueMarQSim.get_trans_mixed
   QBlueMarQSim.get_trans_MarQdrift
