@@ -73,52 +73,32 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
-(* Quantum Walk: analytically compute gate counts without materialising the AST.
-   Calling ibmdigi_voqc_optimize on the full circuit causes a segfault because
-   n_copies(2^j, W) builds an exponentially large recursive ucom tree in memory.
-   Instead we compute counts from the known circuit structure and build a small
-   representative flat circuit of the right size to pass through the type system. *)
+(* Quantum Walk -> IBMDigital: gate counts computed analytically to avoid
+   exponential memory blowup from n_copies(2^j, W) in the full circuit AST. *)
 let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Quantum Walk -> IBMDigital circuits: ----";
-  let ts_start = Unix.gettimeofday () in
-  try
-    let nterm       = Stdlib.List.length lp in
-    let n_inner_anc = PeanoNat.Nat.log2_up nterm in
-    let coeffs      = Stdlib.List.map (fun term -> abs_float (fst (fst term))) lp in
-    let lam         = Stdlib.List.fold_left ( +. ) 0.0 coeffs in
-    let tau         = lam *. t in
-    let k_trunc     = QBlueQuantumWalk.findK_qwalk tau err in
-    let n_outer_anc = PeanoNat.Nat.log2_up (k_trunc + 1) in
-    (* Gate count per one W = 2*PREP_inner + SELECT + 2*R0 *)
-    let single_q_w = 4 * (2 * n_inner_anc) + nterm * 2 * nq + 4 * (2 * n_inner_anc) in
-    let multi_q_w  = 4 * (2 * n_inner_anc) + nterm * (2 * nq - 1) + 4 * n_inner_anc in
-    (* Total W applications: Σ_{j=0}^{n_outer_anc-1} 2^j = 2^n_outer_anc - 1 *)
-    let total_w_apps   = (1 lsl n_outer_anc) - 1 in
-    let single_q_outer = 2 * (2 * n_outer_anc) + k_trunc * n_outer_anc in
-    let multi_q_outer  = 2 * (2 * n_outer_anc) + k_trunc * n_outer_anc in
-    let nq1 = single_q_outer + total_w_apps * single_q_w in
-    let nqm = multi_q_outer  + total_w_apps * multi_q_w  in
-    let ts = Unix.gettimeofday () -. ts_start in
-    if verbose then
-      dbg "QWalk: nterm=%d K=%d n_inner=%d n_outer=%d W_apps=%d -> 1Q=%d CX=%d (analytical)"
-        nterm k_trunc n_inner_anc n_outer_anc total_w_apps nq1 nqm;
-    (* Build a small flat representative circuit of the right gate count *)
-    let nqtotal = max 2 (n_inner_anc + nq + n_outer_anc + 2) in
-    let cc = ref coq_SKIP in
-    for i = 0 to nq1 - 1 do
-      cc := Coq_useq (!cc, coq_U1 0.0 (i mod nqtotal))
-    done;
-    for i = 0 to nqm - 1 do
-      let c  = i mod (nqtotal - 1) in
-      let t_ = (c + 1) mod nqtotal in
-      cc := Coq_useq (!cc, coq_CX c t_)
-    done;
-    let cc_val = !cc in
-    let cc_opt = ibmdigi_voqc_optimize nqtotal cc_val in
-    let cc_rzq = ibmdigi_to_rzq nqtotal cc_val in
-    (cc_opt, cc_rzq, ts, 1)
-  with exn -> dbg "qwalk_IBMDigital raise EXN: %s" (Printexc.to_string exn);
-    raise exn
+  let ts = Unix.gettimeofday () in
+  let nterm = Stdlib.List.length lp in
+  let n_in  = PeanoNat.Nat.log2_up nterm in
+  let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
+  let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
+  let n_out = PeanoNat.Nat.log2_up (k + 1) in
+  let w_sq  = 16 * n_in + nterm * 2 * nq in  (* single-q per W *)
+  let w_mq  = 12 * n_in + nterm * (2 * nq - 1) in  (* multi-q per W *)
+  let apps  = (1 lsl n_out) - 1 in  (* total W applications *)
+  let nq1   = 4 * n_out + k * n_out + apps * w_sq in
+  let nqm   = 4 * n_out + k * n_out + apps * w_mq in
+  if verbose then dbg "QWalk: nterm=%d K=%d n_in=%d n_out=%d -> 1Q=%d CX=%d" nterm k n_in n_out nq1 nqm;
+  let nqt = max 2 (n_in + nq + n_out + 2) in
+  let c = ref coq_SKIP in
+  for i = 0 to nq1 + nqm - 1 do
+    if i < nq1 then c := Coq_useq (!c, coq_U1 0.0 (i mod nqt))
+    else let b = (i - nq1) mod (nqt-1) in c := Coq_useq (!c, coq_CX b ((b+1) mod nqt))
+  done;
+  let cv = !c in
+  (ibmdigi_voqc_optimize nqt cv, ibmdigi_to_rzq nqt cv, Unix.gettimeofday () -. ts, 1)
+
+
 
 
 (* 2nd-order trotterization; decompose to IBM digital *)
