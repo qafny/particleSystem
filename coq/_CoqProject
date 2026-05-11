@@ -15,6 +15,7 @@ QBlueTTS.v
 QBlueQdrift.v
 QBlueSynth.v
 QBlueSynthDigital.v
+QBlueTTS_v4.v
 QBlueCompile.v
 QBlueMarQSim.v
 QBlueQuantumWalk.v

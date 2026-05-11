@@ -1,4 +1,5 @@
 (* Define the Taylor series simulation and LCU (Linear Combination of Unitaries) *)
+From SQIR Require Import ExtractionGateSet.
 Require Import QuantumLib.Complex.
 
 Require Import QBlue.QBlueUtility.
