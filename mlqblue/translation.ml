@@ -73,8 +73,8 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
-(* Quantum Walk -> IBMDigital: gate counts computed analytically to avoid
-   exponential memory blowup from n_copies(2^j, W) in the full circuit AST. *)
+(* Quantum Walk -> IBMDigital; gate counts derived analytically since
+   materialising n_copies(2^j, W) would overflow the heap. *)
 let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Quantum Walk -> IBMDigital circuits: ----";
   let ts = Unix.gettimeofday () in
@@ -83,9 +83,9 @@ let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t
   let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
   let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
   let n_out = PeanoNat.Nat.log2_up (k + 1) in
-  let w_sq  = 16 * n_in + nterm * 2 * nq in  (* single-q per W *)
-  let w_mq  = 12 * n_in + nterm * (2 * nq - 1) in  (* multi-q per W *)
-  let apps  = (1 lsl n_out) - 1 in  (* total W applications *)
+  let w_sq  = 16 * n_in + nterm * 2 * nq in  (* 1Q per W *)
+  let w_mq  = 12 * n_in + nterm * (2 * nq - 1) in  (* CX per W *)
+  let apps  = (1 lsl n_out) - 1 in  (* binary decomp: sum 2^j *)
   let nq1   = 4 * n_out + k * n_out + apps * w_sq in
   let nqm   = 4 * n_out + k * n_out + apps * w_mq in
   if verbose then dbg "QWalk: nterm=%d K=%d n_in=%d n_out=%d -> 1Q=%d CX=%d" nterm k n_in n_out nq1 nqm;
@@ -99,8 +99,7 @@ let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t
   (ibmdigi_voqc_optimize nqt cv, ibmdigi_to_rzq nqt cv, Unix.gettimeofday () -. ts, 1)
 
 
-(* Qubitization -> IBMDigital: QSP with d = 2K+1 direct W applications.
-   More efficient than QWalk (2^n_out - 1 W copies) when K is large. *)
+(* Qubitization -> IBMDigital; d = 2K+1 direct W applications via QSP. *)
 let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Qubitization -> IBMDigital circuits: ----";
   let ts    = Unix.gettimeofday () in
@@ -108,10 +107,10 @@ let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : fl
   let n_in  = PeanoNat.Nat.log2_up nterm in
   let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
   let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
-  let d     = 2 * k + 1 in  (* QSP degree: linear in K, not exponential *)
-  let w_sq  = 16 * n_in + nterm * 2 * nq in  (* single-q per W *)
-  let w_mq  = 12 * n_in + nterm * (2 * nq - 1) in  (* CX per W *)
-  (* Total: d+1 Rz phases + d W applications + PREP + PREP† *)
+  let d     = 2 * k + 1 in
+  let w_sq  = 16 * n_in + nterm * 2 * nq in
+  let w_mq  = 12 * n_in + nterm * (2 * nq - 1) in
+  (* d+1 phase gates + d W apps + PREP + PREP† *)
   let nq1   = (d + 1) + d * w_sq + 2 * (2 * n_in) in
   let nqm   = d * w_mq + 2 * (2 * n_in) in
   if verbose then dbg "Qubitization: nterm=%d K=%d d=%d -> 1Q=%d CX=%d" nterm k d nq1 nqm;
