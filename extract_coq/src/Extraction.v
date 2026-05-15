@@ -4,6 +4,7 @@ From QBlue Require Import QBlueUtility.
 From QBlue Require Import QBlueCompile.
 From QBlue Require Import QBlueSynthDigital.
 From QBlue Require Import QBlueQuantumWalk.
+From QBlue Require Import QBlueQubitization.
 From QBlue Require Import QBlueTTS_v4.
 
 Require Coq.extraction.Extraction.
@@ -200,6 +201,8 @@ Separate Extraction
   QBlueQuantumWalk.build_inner_prep
   QBlueQuantumWalk.build_outer_prep
   QBlueQuantumWalk.findK_qwalk
+  QBlueQubitization.findDegree_qsp
+  QBlueQubitization.build_qubitization_circuit
 
 (* gate decomposition pass *)
   ExtractionGateSet.decompose_to_voqc_gates

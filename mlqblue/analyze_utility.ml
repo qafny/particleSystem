@@ -82,6 +82,7 @@ let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t 
     | 5 -> trotterMarQSim_mix_IBMDigital ~verbose:verbose lp nq err t
     | 6 -> trotterMarQdrift_CNOT_IBMDigital ~verbose:verbose lp nq err t
     | 7 -> trotterMarQdrift_mix_IBMDigital ~verbose:verbose lp nq err t
+    | 9 -> qubitization_IBMDigital ~verbose:verbose lp nq err t
     | _ -> qwalk_IBMDigital ~verbose:verbose lp nq err t
   )
 

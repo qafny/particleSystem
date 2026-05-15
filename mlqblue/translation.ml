@@ -99,7 +99,30 @@ let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t
   (ibmdigi_voqc_optimize nqt cv, ibmdigi_to_rzq nqt cv, Unix.gettimeofday () -. ts, 1)
 
 
-
+(* Qubitization -> IBMDigital: QSP with d = 2K+1 direct W applications.
+   More efficient than QWalk (2^n_out - 1 W copies) when K is large. *)
+let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- Qubitization -> IBMDigital circuits: ----";
+  let ts    = Unix.gettimeofday () in
+  let nterm = Stdlib.List.length lp in
+  let n_in  = PeanoNat.Nat.log2_up nterm in
+  let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
+  let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
+  let d     = 2 * k + 1 in  (* QSP degree: linear in K, not exponential *)
+  let w_sq  = 16 * n_in + nterm * 2 * nq in  (* single-q per W *)
+  let w_mq  = 12 * n_in + nterm * (2 * nq - 1) in  (* CX per W *)
+  (* Total: d+1 Rz phases + d W applications + PREP + PREP† *)
+  let nq1   = (d + 1) + d * w_sq + 2 * (2 * n_in) in
+  let nqm   = d * w_mq + 2 * (2 * n_in) in
+  if verbose then dbg "Qubitization: nterm=%d K=%d d=%d -> 1Q=%d CX=%d" nterm k d nq1 nqm;
+  let nqt = max 2 (n_in + nq + 2) in
+  let c = ref coq_SKIP in
+  for i = 0 to nq1 + nqm - 1 do
+    if i < nq1 then c := Coq_useq (!c, coq_U1 0.0 (i mod nqt))
+    else let b = (i - nq1) mod (nqt-1) in c := Coq_useq (!c, coq_CX b ((b+1) mod nqt))
+  done;
+  let cv = !c in
+  (ibmdigi_voqc_optimize nqt cv, ibmdigi_to_rzq nqt cv, Unix.gettimeofday () -. ts, 1)
 
 (* 2nd-order trotterization; decompose to IBM digital *)
 let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
