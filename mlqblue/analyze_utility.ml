@@ -82,6 +82,7 @@ let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t 
     | 5 -> trotterMarQSim_mix_IBMDigital ~verbose:verbose lp nq err t
     | 6 -> trotterMarQdrift_CNOT_IBMDigital ~verbose:verbose lp nq err t
     | 7 -> trotterMarQdrift_mix_IBMDigital ~verbose:verbose lp nq err t
+    | 8 -> tts_IBMDigital ~verbose:verbose lp nq err t
     | _ -> qwalk_IBMDigital ~verbose:verbose lp nq err t
   )
 
@@ -94,6 +95,7 @@ let lowprog_to_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
     | 14 -> trotterMarQSim_CNOT_IndiAnalog ~verbose:verbose lp nq err t
     | 15 -> trotterMarQSim_mix_IndiAnalog ~verbose:verbose lp nq err t
     | 16 -> trotterMarQdrift_CNOT_IndiAnalog ~verbose:verbose lp nq err t
+    | 17 -> tts_IndiAnalog ~verbose:verbose lp nq err t
     | _ -> trotterMarQdrift_mix_IndiAnalog ~verbose:verbose lp nq err t
   )
 
@@ -106,6 +108,7 @@ let lowprog_to_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float
     | 24 -> trotterMarQSim_CNOT_IBMAnalog ~verbose:verbose lp nq err t
     | 25 -> trotterMarQSim_mix_IBMAnalog ~verbose:verbose lp nq err t
     | 26 -> trotterMarQdrift_CNOT_IBMAnalog ~verbose:verbose lp nq err t
+    | 27 -> tts_IBMAnalog ~verbose:verbose lp nq err t
     | _ -> trotterMarQdrift_mix_IBMAnalog ~verbose:verbose lp nq err t
 )
 

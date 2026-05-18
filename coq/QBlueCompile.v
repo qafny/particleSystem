@@ -16,7 +16,6 @@ Require Import QBlue.QBlueTrotter.
 Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueSynthDigital.
 Require Import QBlue.QBlueSynth.
-Require Import QBlue.QBlueTTS.
 Require Import QBlue.QBlueTTS_v4.
 Require Import QBlue.QBlueMarQSim.
 Require Import QBlue.QBlueQuantumWalk.
@@ -166,7 +165,7 @@ Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat)
   end.
 
 Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
-  TTS_LCU err t nbit lp.
+  TTS_LCU1 err t nbit lp.
 
 
 Definition translate_lowp2circ_qwalk (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
@@ -297,6 +296,11 @@ Definition translate_lowp2IndiAna_marqsim (err t : R) (lp : lowprog) (nbit : nat
     (translate_marqsim_indiAna prob_init f_mat) nch N ns []
   end.
 
+Definition translate_lowp2IndiAna_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let prog := tts_analog_lowprog err t nbit lp in
+  synth_analog_indiana R1 nbit prog.
+
+  
 (* Translate to IBM Analog *)
 Definition translate_lowp2IBMAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
   let lowp : lowprog := trotter err t lp in 
@@ -315,6 +319,9 @@ Definition translate_lowp2IBMAna_marqsim (err t : R) (lp : lowprog) (nbit : nat)
 let lowp : lowprog := trotter_marqsim err t lp nbit f_mat in 
   synth_analog_ibm t nbit lowp.
 
+Definition translate_lowp2IBMAna_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let prog := tts_analog_lowprog err t nbit lp in
+  synth_analog_ibm R1 nbit prog.
 
 
 (* The following optimization would be in ocaml
