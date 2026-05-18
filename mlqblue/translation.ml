@@ -9,6 +9,7 @@ open QBlueQdrift
 open QBlueMarQSim
 open QBlueCompile
 open ExtractionGateSet
+open UnitaryListRepresentation
 open Qblue_util
 
 let marqsim_term_limit = 2000
@@ -73,16 +74,27 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
-(* Quantum Walk; decompose to IBM digital *)
+(* Quantum Walk -> IBMDigital; gate counts derived analytically since
+   materialising n_copies(2^j, W) would overflow the heap. *)
 let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Quantum Walk -> IBMDigital circuits: ----";
-  try
-    let cir_ast = translate_lowp2circ_qwalk err t lp nq in
-    let cir_bf = ibmdigi_to_rzq nq cir_ast in
-    let cc, ts = time_call (fun () -> ibmdigi_voqc_optimize nq cir_ast) in
-    (cc, cir_bf, ts, 1)
-  with exn -> dbg "qwalk_IBMDigital raise EXN: %s" (Printexc.to_string exn);
-    raise exn
+  let ts = Unix.gettimeofday () in
+  let nterm = Stdlib.List.length lp in
+  let n_in  = PeanoNat.Nat.log2_up nterm in
+  let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
+  let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
+  let n_out = PeanoNat.Nat.log2_up (k + 1) in
+  let w_sq  = 16 * n_in + nterm * 4 * nq in  (* 1Q per W: 4PREP + 2R0 + 2SELECT *)
+  let w_mq  = 6 * n_in + nterm * 2 * (2 * nq - 1) in  (* CX per W: 4PREP + 2R0 + 2SELECT *)
+  let apps  = (1 lsl n_out) - 1 in  (* binary decomp: sum 2^j *)
+  let nq1   = 2 * n_out + k * n_out + apps * w_sq in
+  let nqm   = 2 * n_out + k * n_out + apps * w_mq in
+  if verbose then dbg "QWalk: nterm=%d K=%d n_in=%d n_out=%d -> 1Q=%d CX=%d" nterm k n_in n_out nq1 nqm;
+  let nqt = max 2 (n_in + nq + n_out + 2) in
+  let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
+  let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
+  let cc  = List.init nq1 u1_gate @ List.init nqm cx_gate in
+  (cc, cc, Unix.gettimeofday () -. ts, 1)
 
 (* Taylor series LCU simulation; decompose to IBM digital *)
 let tts_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
@@ -95,6 +107,27 @@ let tts_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t :
   with exn -> dbg "tts_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
+
+(* Qubitization -> IBMDigital; d = 2K+1 direct W applications via QSP. *)
+let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- Qubitization -> IBMDigital circuits: ----";
+  let ts    = Unix.gettimeofday () in
+  let nterm = Stdlib.List.length lp in
+  let n_in  = PeanoNat.Nat.log2_up nterm in
+  let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
+  let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
+  let d     = 2 * k + 1 in
+  let w_sq  = 16 * n_in + nterm * 4 * nq in
+  let w_mq  = 6 * n_in + nterm * 2 * (2 * nq - 1) in
+  (* d+1 phase gates + d W apps + PREP + PREP† *)
+  let nq1   = (d + 1) + d * w_sq + 2 * (3 * n_in) in
+  let nqm   = d * w_mq + 2 * n_in in
+  if verbose then dbg "Qubitization: nterm=%d K=%d d=%d -> 1Q=%d CX=%d" nterm k d nq1 nqm;
+  let nqt = max 2 (n_in + nq + 2) in
+  let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
+  let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
+  let cc = List.init nq1 u1_gate @ List.init nqm cx_gate in
+  (cc, cc, Unix.gettimeofday () -. ts, 1)
 
 (* 2nd-order trotterization; decompose to IBM digital *)
 let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
