@@ -20,10 +20,7 @@ Definition trotter_step (err t : R) (input : lowprog) : nat :=
 exp(-it (H1 + H2 + H3)) => exp(-it/N (H1 + H2 + H3)) 
 *)
 Definition trotter_astep (N : R) (ap : lowprog) : lowprog :=
-  map (fun p =>
-    let '(z, f) := p in
-    let z' : C := (Rdiv (fst z) N, Rdiv (snd z) N) in
-    (z', f)) ap.
+  mult_r_hplus (R1 / N) ap.
 
 
 Fixpoint trotter_nstep_acc (N : nat) (ap : lowprog) (acc : lowprog) : lowprog :=
@@ -53,7 +50,7 @@ Definition trotter_step_2nd_order (err t : R) (input : lowprog) : nat :=
 
 Definition trotter_2nd_order (err t: R) (input : lowprog) : lowprog :=
   let N := trotter_step_2nd_order err t input in
-  let astep1 := trotter_astep ((INR N)/R2) (rev input) in
-  let astep2 := trotter_astep ((INR N)/R2) input in
+  let astep1 := trotter_astep ((INR N) * R2) (rev input) in
+  let astep2 := trotter_astep ((INR N) * R2) input in
   trotter_nstep N (astep1 ++ astep2).
 

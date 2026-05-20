@@ -119,12 +119,15 @@ def main():
             row = {
                 "file_name": result.get("file_name"),
                 "error": result.get("error"),
-                "time": result.get("time"),
+                "time": result.get("time", result.get("simu_time")),
                 "path_flag": result.get("path_flag"),
 				"nqubit": result.get("nqubit"),
 				"npau": result.get("npau"),
+                "compilation_time": result.get("compilation_time"),
                 "single_qubit_gates": result.get("single_qubit_gates"),
                 "multi_qubit_gates": result.get("multi_qubit_gates"),
+                "single_qubit_gates_bfopt": result.get("single_qubit_gates_bfopt"),
+                "multi_qubit_gates_bfopt": result.get("multi_qubit_gates_bfopt"),
                 "status": "ok",
                 "message": ""
             }
@@ -137,8 +140,11 @@ def main():
                 "path_flag": path_flag,
                 "nqubit": "",
                 "npau": "",
+                "compilation_time": "",
                 "single_qubit_gates": "",
                 "multi_qubit_gates": "",
+                "single_qubit_gates_bfopt": "",
+                "multi_qubit_gates_bfopt": "",
                 "status": "error",
                 "message": str(e)
             }
@@ -151,7 +157,9 @@ def main():
             fieldnames=[
                 "file_name", "error", "time", "path_flag",
                 "nqubit", "npau",
+                "compilation_time",
    				"single_qubit_gates", "multi_qubit_gates",
+                "single_qubit_gates_bfopt", "multi_qubit_gates_bfopt",
                 "status", "message"
             ]
         )

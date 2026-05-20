@@ -1,9 +1,0 @@
-[submodule "benchmarks/Pulser"]
-	path = benchmarks/Pulser
-	url = https://github.com/pasqal-io/Pulser
-[submodule "benchmarks/SimuQ"]
-	path = benchmarks/SimuQ
-	url = https://github.com/PicksPeng/SimuQ
-[submodule "benchmarks/Bloqade"]
-	path = benchmarks/Bloqade
-	url = https://queracomputing.github.io/Bloqade.jl

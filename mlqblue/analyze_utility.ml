@@ -13,8 +13,9 @@ open Voqc.Qasm
 open Translation
 open Qblue_util
 
-let translation_timeout_seconds = 600
+let translation_timeout_seconds = 3600
 exception Compile_timeout of int
+
 
 let rec count_U1_ocaml (c : coq_U ucom) : int =
   match c with
@@ -71,11 +72,6 @@ let parse_pauli (input : string) : lowprog =
       in raise (Pauli_parse_error msg)
 
 
-let reset_benchmark_timing () = reset_timing_accumulators ()
-
-let get_benchmark_timing () = get_timing_accumulators ()
-
-
 (* 0.1 lowprog -> circ *)
 let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
   Qblue_util.with_timeout (fun s -> Compile_timeout s) translation_timeout_seconds (fun () ->
@@ -83,10 +79,13 @@ let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t 
     | 1 -> trotterStd_IBMDigital ~verbose:verbose lp nq err t
     | 2 -> trotter2nd_IBMDigital ~verbose:verbose lp nq err t
     | 3 -> trotterQDrift_IBMDigital ~verbose:verbose lp nq err t
-    | _ -> trotterMarQSim_IBMDigital ~verbose:verbose lp nq err t
+    | 4 -> trotterMarQSim_CNOT_IBMDigital ~verbose:verbose lp nq err t
+    | 5 -> trotterMarQSim_mix_IBMDigital ~verbose:verbose lp nq err t
+    | 6 -> trotterMarQdrift_CNOT_IBMDigital ~verbose:verbose lp nq err t
+    | _ -> trotterMarQdrift_mix_IBMDigital ~verbose:verbose lp nq err t
   )
 
-let lowprog_to_analog_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
+let lowprog_to_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
   Qblue_util.with_timeout (fun s -> Compile_timeout s) translation_timeout_seconds (fun () ->
     match flag_path with
     | 11 -> trotterStd_IndiAnalog ~verbose:verbose lp nq err t
@@ -95,6 +94,14 @@ let lowprog_to_analog_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : flo
     | _ -> trotterMarQSim_IndiAnalog ~verbose:verbose lp nq err t
   )
 
+let lowprog_to_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (flag_path : int) =
+  Qblue_util.with_timeout (fun s -> Compile_timeout s) translation_timeout_seconds (fun () ->
+    match flag_path with
+    | 21 -> trotterStd_IBMAnalog ~verbose:verbose lp nq err t
+    | 22 -> trotter2nd_IBMAnalog ~verbose:verbose lp nq err t
+    | 23 -> trotterQDrift_IBMAnalog ~verbose:verbose lp nq err t
+    | _ -> trotterMarQSim_IBMAnalog ~verbose:verbose lp nq err t
+)
 
 
 let rec get_dim_aux (u : coq_U ucom) (acc : int) : int =
@@ -193,10 +200,12 @@ let summarize_counts (cc : Main.circ) (nqbit : int) (r : int) : int * int =
 
 let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t : float) =
   let best_path = ref 100 in
+  let ts_tot = ref 0.0 in
   let best_score = ref max_int in 
-  for flag_path = 1 to 4 do
-    let (cc, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
+  for flag_path = 1 to 7 do
+    let (cc, _, ts, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
     let (nq1, score) = summarize_counts cc nqbit r in
+	ts_tot := !ts_tot +. ts;
 	dbg "Path flag: %d; # Single-bit gates: %d; # CNOT gates: %d.\n" flag_path nq1 score;
 	if score < !best_score then 
 	begin
@@ -204,9 +213,8 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
       best_path := flag_path;
     end
   done; 
-  let (cc, r) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
-  summarize_counts cc nqbit r
-
+  let (c1, c_bf, _, r) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
+  (c1, c_bf, !ts_tot, r)
 
 let summarize_analog_counts (cc : ugate list) (r : int) (npau : int) : int * int =
   let ntot = r * (List.length cc) in
@@ -214,13 +222,15 @@ let summarize_analog_counts (cc : ugate list) (r : int) (npau : int) : int * int
   (* # single-qubits, multiple-qubits  *)
   (nq1, npau)
 
-let translation_lowprog_analog (lp : lowprog) (nqbit : int) (err : float) (t : float) : (int * int) =
+let translation_lowprog_IndiAnalog (lp : lowprog) (nqbit : int) (err : float) (t : float) =
   let best_path = ref 100 in
+  let ts_tot = ref 0.0 in
   let best_score = ref max_int in
   for flag_path = 11 to 14 do
-    let (cc, r, npau) = lowprog_to_analog_circ ~verbose:true lp nqbit err t flag_path in
+    let (cc, ts, r, npau) = lowprog_to_IndiAnalog ~verbose:true lp nqbit err t flag_path in
 	(* currently use number of pauli strings *)
 	let (nq1, score) = summarize_analog_counts cc nqbit npau in
+    ts_tot := !ts_tot +. ts;
 	dbg "Path flag: %d; # Single-bit gates: %d; # multi-bit gates: %d.\n" flag_path nq1 score;
     if score < !best_score then
     begin
@@ -228,8 +238,27 @@ let translation_lowprog_analog (lp : lowprog) (nqbit : int) (err : float) (t : f
       best_path := flag_path;
     end
   done;
-  let (cc, r, npau) = lowprog_to_analog_circ ~verbose:false lp nqbit err t !best_path in
-  summarize_analog_counts cc r npau  
+  let (cc, _, r, npau) = lowprog_to_IndiAnalog ~verbose:false lp nqbit err t !best_path in
+  (cc, !ts_tot, r, npau)
+
+let translation_lowprog_IBMAnalog (lp : lowprog) (nqbit : int) (err : float) (t : float) =
+  let best_path = ref 100 in
+  let ts_tot = ref 0.0 in
+  let best_score = ref max_int in
+  for flag_path = 21 to 24 do
+    let (cc, ts, r, npau) = lowprog_to_IBMAnalog ~verbose:true lp nqbit err t flag_path in
+    (* currently use number of pauli strings *)
+    let (nq1, score) = summarize_analog_counts cc nqbit npau in
+    ts_tot := !ts_tot +. ts;
+    dbg "Path flag: %d; # Single-bit gates: %d; # multi-bit gates: %d.\n" flag_path nq1 score;
+    if score < !best_score then
+    begin
+      best_score := score;
+      best_path := flag_path;
+    end
+  done;
+  let (cc, _, r, npau) = lowprog_to_IBMAnalog ~verbose:false lp nqbit err t !best_path in
+  (cc, !ts_tot, r, npau)
 
 
 
@@ -273,7 +302,7 @@ let summarize_results dirname rst_file =
   try
     let lp = parse_pauli str_input in
     let nqbit = get_dim_pauli str_input in
-    let ham = lowprog_to_circ err t nqbit lp flag_path "none" in
+    let ham = lowprog_to_circ err t nqbit lp flag_path in
     write_qasm_file fout ham
 
   with

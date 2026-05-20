@@ -16,17 +16,13 @@ let with_timeout (exp_info : int -> exn) (seconds : int) (f : unit -> 'a) : 'a =
       ignore (Sys.signal Sys.sigalrm old_handler);
       raise exn
 
-let getenv_int (name : string) (default : int) : int =
-  match Sys.getenv_opt name with
-  | None -> default
-  | Some raw ->
-      let value = String.trim raw in
-      if value = "" then default
-      else
-        try int_of_string value with
-        | Failure _ ->
-            Printf.eprintf "[DBG] Ignoring invalid integer env %s=%S; using default %d\n%!" name raw default;
-            default
+
+let time_call f =
+  let t0 = Unix.gettimeofday () in
+  let result = f () in
+  let t1 = Unix.gettimeofday () in
+  (result, t1 -. t0)
+
 
 (* Maybe needed to check invalid lowprog in the future *)
 let is_finite x =
@@ -36,5 +32,8 @@ let is_finite x =
 
 let dbg fmt =
   Printf.kfprintf (fun oc -> output_char oc '\n'; flush oc) stderr ("[DBG] " ^^ fmt)
+
+
+
 
 

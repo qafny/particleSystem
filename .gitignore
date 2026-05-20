@@ -23,6 +23,9 @@ extract_coq/src/extracted
 scripts/__pycache__/
 thirdparty/
 results/
+*.idea/
+*__pycache__/
+
 
 # Ignore coq_makefile-generated files
 .coqdeps.d

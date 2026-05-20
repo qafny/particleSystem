@@ -9,10 +9,7 @@ EXTRACT_ML_DIR="$EXTRACT_DIR/ml"
 MLQBLUE_DIR="$ROOT/mlqblue"
 QBLUELIB_DIR="$MLQBLUE_DIR/qbluelib"
 OPAMROOT="$HOME/.opam"
-QBLUE_OPAM_SWITCH="${QBLUE_OPAM_SWITCH:-${OPAMSWITCH:-qblue-coq816}}"
-
-QBLUE_OPAM_SWITCH="qblue-coq816"
-QBLUE_PYTHON_MODULE="python/3.11.13"
+QBLUE_PYTHON_MODULE="${QBLUE_PYTHON_MODULE:-python/3.11.13}"
 
 log() {
   printf '[rebuild_after_merge] %s\n' "$*"
@@ -33,7 +30,9 @@ require_file() {
 
 require_opam_package() {
   local pkg="$1"
-  opam list --installed --short | grep -Fxq "$pkg" || die \
+  local installed
+  installed="$(opam list --installed --short --switch="$QBLUE_OPAM_SWITCH")"
+  grep -Fxq "$pkg" <<<"$installed" || die \
     "missing opam package in switch $QBLUE_OPAM_SWITCH: $pkg
 Install the Coq dependencies from coq/opam-switch.export or at least:
   coq
@@ -70,11 +69,40 @@ ensure_module_cmd() {
 }
 
 maybe_load_python_module() {
-  ensure_module_cmd || die \
-    "the environment-modules command is unavailable"
+  if ! ensure_module_cmd; then
+    log "Environment modules unavailable; using python3 from PATH"
+    return 0
+  fi
 
   log "Loading python module: $QBLUE_PYTHON_MODULE"
   module load "$QBLUE_PYTHON_MODULE"
+}
+
+select_opam_switch() {
+  if [[ -n "${QBLUE_OPAM_SWITCH:-}" ]]; then
+    printf '%s\n' "$QBLUE_OPAM_SWITCH"
+    return 0
+  fi
+
+  if [[ -n "${OPAMSWITCH:-}" ]]; then
+    printf '%s\n' "$OPAMSWITCH"
+    return 0
+  fi
+
+  local switches
+  switches="$(opam switch list --short)"
+
+  if grep -Fxq qblue <<<"$switches"; then
+    printf '%s\n' qblue
+    return 0
+  fi
+
+  if grep -Fxq qblue-coq816 <<<"$switches"; then
+    printf '%s\n' qblue-coq816
+    return 0
+  fi
+
+  opam switch show
 }
 
 clean_generated_artifacts() {
@@ -94,12 +122,14 @@ require_file "$COQ_DIR/_CoqProject"
 require_file "$EXTRACT_DIR/extract.sh"
 require_file "$MLQBLUE_DIR/dune-project"
 
+QBLUE_OPAM_SWITCH="$(select_opam_switch)"
+
 log "Repo root: $ROOT"
 log "Using opam switch: $QBLUE_OPAM_SWITCH"
 maybe_load_python_module
 require_cmd "$(python_bin)"
 log "Using python: $(python_bin)"
-eval "$(opam env --switch="$QBLUE_OPAM_SWITCH")"
+eval "$(opam env --switch="$QBLUE_OPAM_SWITCH" --set-switch)"
 
 require_opam_package coq
 require_opam_package coq-quantumlib

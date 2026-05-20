@@ -25,7 +25,34 @@
 
 - flag `-t`, followed by the input phase `t` in `exp(-itH)`. If not set, the default error is 0.01.
 
-- flag `-p`, followed by the path flag to control which algorithm to use for compilation. If not set, default is 0 (optimal CNOT gate counts path). Options include 0-4 (digital) and 10-14 (Indiana Analog).
+- flag `-p`, followed by the path flag to control which algorithm to use for compilation. If not set, default is 0.
+  1. Trotterization (1st-order) -> IBMDigital circuits
+  2. Trotterization (2nd-order) -> IBMDigital circuits
+  3. qdrift -> IBMDigital circuits 
+  4. MarQSim (CNOT for P_gc) -> IBMDigital circuits
+  5. MarQSim (CNOT+SingleQ for P_gc) -> IBMDigital circuits
+  6. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBMDigital circuits
+  7. MarQSim (CNOT+SingleQ for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBMDigital circuits
+  0. Optimal among 0-7
+  11. Trotterization (1st-order) -> Indiana Analog circuits
+  12. Trotterization (2nd-order) -> Indiana Analog circuits
+  13. qdrift -> Indiana Analog circuits
+  14. MarQSim (CNOT for P_gc) -> Indiana Analog circuits
+  15. MarQSim (CNOT+SingleQ for P_gc) -> Indiana Analog circuits
+  16. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> Indiana Analog circuits
+  17. MarQSim (CNOT+SingleQ for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> Indiana Analog circuits
+  10. Optimal among 10-17
+  21. Trotterization (1st-order) -> IBM Analog circuits
+  22. Trotterization (2nd-order) -> IBM Analog circuits
+  23. qdrift -> IBM Analog circuits
+  24. MarQSim (CNOT for P_gc) -> IBM Analog circuits
+  25. MarQSim (CNOT+SingleQ for P_gc) -> IBM Analog circuits
+  26. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBM Analog circuits
+  27. MarQSim (CNOT+SingleQ for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBM Analog circuits
+  20. Optimal among 20-27
+
+
+
 
 
 ## DataSet
