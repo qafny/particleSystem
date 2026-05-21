@@ -193,10 +193,12 @@ Separate Extraction
   QBlueCompile.translate_lowp2IndiAna_2ndTrotter
   QBlueCompile.translate_lowp2IndiAna_qdrift
   QBlueCompile.translate_lowp2IndiAna_marqsim
+  QBlueCompile.translate_lowp2IndiAna_TTS_LCU
   QBlueCompile.translate_lowp2IBMAna_stdTrotter
   QBlueCompile.translate_lowp2IBMAna_std_2ndTrotter
   QBlueCompile.translate_lowp2IBMAna_qdrift
   QBlueCompile.translate_lowp2IBMAna_marqsim
+  QBlueCompile.translate_lowp2IBMAna_TTS_LCU
   QBlueQuantumWalk.build_qwalk_lcu_circuit
   QBlueQuantumWalk.build_state_prep
   QBlueQuantumWalk.build_inner_prep
