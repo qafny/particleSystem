@@ -35,7 +35,8 @@ Common options:
 - `--errs 0.5 0.1`
 - `--ts 0.7853981633974483 0.19634954084936207` (`pi/4`, `pi/16`)
 - `--pipelines auto std std2 qdrift marqsim` (maps to `performance.exe -p 0..4`)
-- `--grouping none|qwc|fc` (passed to `performance.exe -g`; some pipelines may ignore it)
+- `--grouping none|qwc|fc` (recorded in the CSV)
+- `--pass-grouping` (also pass `--grouping` to `performance.exe -g`; leave unset for the Zenodo/current CLI)
 - `--timeout-s 1800`
 - `--perf-exe path/to/performance.exe` (if your build output path differs)
 
@@ -50,6 +51,7 @@ python3 scripts/qblue_bench.py --dataset all --out results_all.csv
 - `wall_s` remains the broader end-to-end timed span used by the script.
 - Baseline scripts also expose `ibm_basis_s` for the extra Qiskit/IBM-basis transpile/count pass.
 - `qblue_bench.py` also exposes `optimize_s`, parsed from internal `performance.exe` timing output.
+- `qblue_count_scope` records whether the QBlue gate counts are already full-circuit counts. For current JSON output this is `full_circuit`, so `plot_results.py` does not multiply those counts by `splitting_r` again.
 - `stdout_tail` falls back to stderr output when stdout is empty (most `performance.exe` debug logs go to stderr).
 - `gates_in_json` / `gates_opt_json` include the full gate-count dictionaries so new/unknown gate keys are not dropped.
 
@@ -173,49 +175,69 @@ python3 scripts/compare_bench_csv.py \
   --out results/qblue_vs_openfermion.csv
 ```
 
-## One-shot runner (QBlue → baselines → compare)
+## One-shot bucket runner
 
-`scripts/run.sh` runs datasets through QBlue, Phoenix, Paulihedral, Tetris, and OpenFermion, then generates the joined CSV(s).
+`scripts/run.sh` runs the bucket datasets through QBlue, Phoenix, and
+OpenFermion for the error bounds, times, and QBlue pipelines used by the paper
+plots. It regenerates CSV data only; it does not regenerate plots.
 
 ```bash
 scripts/run.sh
 ```
 
-Defaults / overrides (environment variables):
-- `DATASET=all` (`dataset1` | `dataset2` | `all`)
-- `TS="0.7853981633974483 0.19634954084936207"` (`pi/4 pi/16`; space-separated list; passed to all)
-- `QBLUE_ERRS="0.5 0.1"`
-- `QBLUE_PIPELINES="std"`
+By default, `scripts/run.sh` uses all detected cores inside one bucket/time job
+at a time. This is equivalent to:
+
+```bash
+RUN_PAIR_JOBS=1 scripts/run.sh
+```
+
+With `RUN_PAIR_JOBS=1`, `RUN_BUCKETS_JOBS` defaults to the machine's detected
+CPU count. To cap parallelism manually, use:
+
+```bash
+RUN_PAIR_JOBS=1 RUN_BUCKETS_JOBS=12 scripts/run.sh
+```
+
+Set `RUN_PAIR_JOBS>1` only if you intentionally want multiple bucket/time jobs
+running at once; avoid also setting `RUN_BUCKETS_JOBS` high unless you want to
+oversubscribe the machine.
+
+Default CSV outputs:
+- `results/qblue_bucket_*_t_pi16.csv`
+- `results/qblue_bucket_*_t_pi4.csv`
+- `results/phoenix_bucket_*_t_pi16.csv`
+- `results/phoenix_bucket_*_t_pi4.csv`
+- `results/openfermion_bucket_*_t_pi16.csv`
+- `results/openfermion_bucket_*_t_pi4.csv`
+
+Useful overrides (environment variables):
+- `RUN_PAIR_JOBS=1` (how many dataset/time bucket jobs to run at once)
+- `RUN_BUCKETS_JOBS=<cpu-count>` (parallelism inside each bucket job)
 - `QBLUE_GROUPING=none`
-- `QBLUE_TIMEOUT_S=1800`
 - `QBLUE_LIMIT=0` / `PHOENIX_LIMIT=0`
 - `PHOENIX_ORDER_METHOD=trivial`
 - `PHOENIX_MAX_TERMS=5000` (skip very large Hamiltonians by setting this > 0; set 0 to disable)
-- `PAULIHEDRAL_MAX_TERMS=5000` / `PAULIHEDRAL_LIMIT=0`
-- `TETRIS_MAX_TERMS=5000` / `TETRIS_LIMIT=0` / `TETRIS_SWAP_COEFFICIENT=3` / `TETRIS_K=10`
 - `OPENFERMION_MAX_TERMS=5000` / `OPENFERMION_LIMIT=0` / `OPENFERMION_TROTTER_NUMBER=1` / `OPENFERMION_TROTTER_ORDER=1`
-- `QBLUE_OUT=...` / `PHOENIX_OUT=...` / `PAULIHEDRAL_OUT=...` / `TETRIS_OUT=...` / `OPENFERMION_OUT=...`
-- `COMPARE_PHOENIX_OUT=...` / `COMPARE_PAULIHEDRAL_OUT=...` / `COMPARE_TETRIS_OUT=...` / `COMPARE_OPENFERMION_OUT=...`
+
+For custom datasets, error bounds, times, QBlue pipelines, or QBlue timeouts,
+call `scripts/run_buckets.sh` directly, or call the individual benchmark
+scripts.
 
 On SLURM, outputs default to `results/*_${SLURM_JOB_ID}.csv`.
 
-Cluster wrapper for the one-shot runner:
+## Regenerate plots
+
+After the CSVs exist in `results/`, regenerate all plots known to
+`scripts/plot_results.py` with:
 
 ```bash
-sbatch scripts/run_all_bench.sbatch
+MPLCONFIGDIR=/tmp/qblue-mpl python3 scripts/plot_results.py --out-dir results/plots
 ```
 
-This wrapper uses the current cluster defaults:
-- `python/3.11.13`
-- `qblue-coq816`
-- `DATASET=all`
-- `QBLUE_TIMEOUT_S=0`
-- `QBLUE_PARSE_TIMEOUT_S=0`
-- `QBLUE_TRANSLATION_TIMEOUT_S=0`
-- `PHOENIX_MAX_TERMS=0`
-- `PAULIHEDRAL_MAX_TERMS=0`
-- `TETRIS_MAX_TERMS=0`
-- `OPENFERMION_MAX_TERMS=0`
+This reads the existing QBlue, Phoenix, and OpenFermion bucket CSVs from
+`results/`, plus `results/result_0317.csv` when present, and overwrites the
+generated plots in `results/plots/`.
 
 ## Rebuild after merging `master`
 

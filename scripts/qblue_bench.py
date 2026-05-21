@@ -72,6 +72,7 @@ def _parse_kv_list(braced: str) -> dict[str, int]:
 class RunResult:
     ok: bool
     wall_s: float
+    count_scope: str = ""
     compile_s: Optional[float] = None
     optimize_s: Optional[float] = None
     algorithm: str = ""
@@ -173,6 +174,66 @@ def _parse_metrics(combined: str) -> dict[str, object]:
     }
 
 
+def _extract_json_object(text: str) -> Optional[dict[str, object]]:
+    """Return the first JSON object in text, if any."""
+    decoder = json.JSONDecoder()
+    for idx, ch in enumerate(text):
+        if ch != "{":
+            continue
+        try:
+            obj, _ = decoder.raw_decode(text[idx:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            return obj
+    return None
+
+
+def _json_int(obj: dict[str, object], key: str) -> Optional[int]:
+    value = obj.get(key)
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return None
+
+
+def _json_float(obj: dict[str, object], key: str) -> Optional[float]:
+    value = obj.get(key)
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _parse_json_metrics(stdout: str) -> Optional[dict[str, object]]:
+    data = _extract_json_object(stdout)
+    if data is None:
+        return None
+
+    pre_1q = _json_int(data, "single_qubit_gates_bfopt")
+    pre_mq = _json_int(data, "multi_qubit_gates_bfopt")
+    opt_1q = _json_int(data, "single_qubit_gates")
+    opt_mq = _json_int(data, "multi_qubit_gates")
+    if pre_1q is None or pre_mq is None or opt_1q is None or opt_mq is None:
+        return None
+
+    return {
+        "qubits": _json_int(data, "nqubit"),
+        # Zenodo's performance.ml calls this field npau, but it is the parsed
+        # Hamiltonian term count for the input program.
+        "n_terms": _json_int(data, "npau"),
+        "compile_s": _json_float(data, "compilation_time"),
+        "gates_in_total": pre_1q + pre_mq,
+        "gates_in": {"single_qubit": pre_1q, "CX": pre_mq},
+        "gates_opt_total": opt_1q + opt_mq,
+        "gates_opt": {"single_qubit": opt_1q, "CX": opt_mq},
+    }
+
+
 def run_one(
     perf_exe: Path,
     mlqblue_dir: Path,
@@ -181,6 +242,7 @@ def run_one(
     t: float,
     p: int,
     grouping: str,
+    pass_grouping: bool,
     timeout_s: int,
 ) -> RunResult:
     cmd = [
@@ -195,9 +257,9 @@ def run_one(
         str(t),
         "-p",
         str(p),
-        "-g",
-        grouping,
     ]
+    if pass_grouping:
+        cmd.extend(["-g", grouping])
     t0 = time.time()
     run_timeout = timeout_s if timeout_s > 0 else None
     try:
@@ -220,6 +282,7 @@ def run_one(
         return RunResult(
             ok=False,
             wall_s=wall,
+            count_scope="per_step",
             compile_s=metrics["compile_s"] if isinstance(metrics["compile_s"], float) else None,
             optimize_s=metrics["optimize_s"] if isinstance(metrics["optimize_s"], float) else None,
             algorithm=str(metrics.get("algorithm") or ""),
@@ -241,22 +304,38 @@ def run_one(
     out = _ensure_text(proc.stdout)
     errout = _ensure_text(proc.stderr)
     combined = out + ("\n" if out and errout else "") + errout
+    json_metrics = _parse_json_metrics(out)
     metrics = _parse_metrics(combined)
-    qubits = metrics["qubits"] if isinstance(metrics["qubits"], int) else None
-    gates_in_total = metrics["gates_in_total"] if isinstance(metrics["gates_in_total"], int) else None
-    gates_in = metrics["gates_in"] if isinstance(metrics["gates_in"], dict) else None
-    gates_opt_total = metrics["gates_opt_total"] if isinstance(metrics["gates_opt_total"], int) else None
-    gates_opt = metrics["gates_opt"] if isinstance(metrics["gates_opt"], dict) else None
+    if json_metrics is not None:
+        qubits = json_metrics["qubits"] if isinstance(json_metrics["qubits"], int) else None
+        gates_in_total = json_metrics["gates_in_total"] if isinstance(json_metrics["gates_in_total"], int) else None
+        gates_in = json_metrics["gates_in"] if isinstance(json_metrics["gates_in"], dict) else None
+        gates_opt_total = json_metrics["gates_opt_total"] if isinstance(json_metrics["gates_opt_total"], int) else None
+        gates_opt = json_metrics["gates_opt"] if isinstance(json_metrics["gates_opt"], dict) else None
+        count_scope = "full_circuit"
+    else:
+        qubits = metrics["qubits"] if isinstance(metrics["qubits"], int) else None
+        gates_in_total = metrics["gates_in_total"] if isinstance(metrics["gates_in_total"], int) else None
+        gates_in = metrics["gates_in"] if isinstance(metrics["gates_in"], dict) else None
+        gates_opt_total = metrics["gates_opt_total"] if isinstance(metrics["gates_opt_total"], int) else None
+        gates_opt = metrics["gates_opt"] if isinstance(metrics["gates_opt"], dict) else None
+        count_scope = "per_step"
 
     ok = proc.returncode == 0 and qubits is not None and gates_opt_total is not None
+    compile_s = metrics["compile_s"] if isinstance(metrics["compile_s"], float) else None
+    n_terms = metrics["n_terms"] if isinstance(metrics["n_terms"], int) else None
+    if json_metrics is not None:
+        compile_s = json_metrics["compile_s"] if isinstance(json_metrics["compile_s"], float) else compile_s
+        n_terms = json_metrics["n_terms"] if isinstance(json_metrics["n_terms"], int) else n_terms
     return RunResult(
         ok=ok,
         wall_s=wall,
-        compile_s=metrics["compile_s"] if isinstance(metrics["compile_s"], float) else None,
+        count_scope=count_scope,
+        compile_s=compile_s,
         optimize_s=metrics["optimize_s"] if isinstance(metrics["optimize_s"], float) else None,
         algorithm=str(metrics.get("algorithm") or ""),
         backend=str(metrics.get("backend") or ""),
-        n_terms=metrics["n_terms"] if isinstance(metrics["n_terms"], int) else None,
+        n_terms=n_terms,
         n_pauli_strings=metrics["n_pauli_strings"] if isinstance(metrics["n_pauli_strings"], int) else None,
         splitting_r=metrics["splitting_r"] if isinstance(metrics["splitting_r"], int) else None,
         lambda_val=metrics["lambda"] if isinstance(metrics["lambda"], float) else None,
@@ -347,7 +426,12 @@ def main() -> int:
         "--grouping",
         choices=["none", "qwc", "fc"],
         default="none",
-        help="Grouping mode passed to performance.exe -g (ab1/ab2 only; std/qdrift currently ignore it).",
+        help="Grouping mode recorded in the CSV. Use --pass-grouping to also pass it to performance.exe -g.",
+    )
+    ap.add_argument(
+        "--pass-grouping",
+        action="store_true",
+        help="Pass --grouping through to performance.exe with -g. Leave unset for the Zenodo/current CLI.",
     )
     ap.add_argument("--timeout-s", type=int, default=1800, help="Per-run timeout in seconds; 0 disables the Python wrapper timeout.")
     ap.add_argument("--limit", type=int, default=0, help="Limit number of input files (0 = no limit)")
@@ -425,6 +509,7 @@ def main() -> int:
                 "n_terms",
                 "n_pauli_strings",
                 "splitting_r",
+                "qblue_count_scope",
                 "lambda",
                 "relaxation_factor",
                 "ok",
@@ -507,6 +592,7 @@ def main() -> int:
                                 t,
                                 p,
                                 args.grouping,
+                                args.pass_grouping,
                                 args.timeout_s,
                             )
                             gates_in = rr.gates_in or {}
@@ -527,6 +613,7 @@ def main() -> int:
                                     "n_terms": rr.n_terms if rr.n_terms is not None else "",
                                     "n_pauli_strings": rr.n_pauli_strings if rr.n_pauli_strings is not None else "",
                                     "splitting_r": rr.splitting_r if rr.splitting_r is not None else "",
+                                    "qblue_count_scope": rr.count_scope,
                                     "lambda": rr.lambda_val if rr.lambda_val is not None else "",
                                     "relaxation_factor": rr.relaxation_factor if rr.relaxation_factor is not None else "",
                                     "ok": rr.ok,

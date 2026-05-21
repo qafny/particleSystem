@@ -8,6 +8,8 @@ Usage:
 This script compares QBlue `std` bucket results at `t = pi/16` against the
 single-step Phoenix and OpenFermion bucket results. Competitor gate counts are
 multiplied by QBlue's `splitting_r` so the comparison is on full-circuit cost.
+QBlue CSVs may contain either old per-step counts or Zenodo/current full-circuit
+counts; the optional `qblue_count_scope` column disambiguates them.
 """
 
 from __future__ import annotations
@@ -15,6 +17,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
@@ -76,8 +81,8 @@ def load_result_0317(path: Path) -> pd.DataFrame | None:
         L  ≥ 1200
 
     Pipeline mapping:
-        path_flag == 1  →  std    (full circuit = gates_total × trotter_step)
-        path_flag == 3  →  qdrift (trotter_step == 1, so full = gates_total)
+        path_flag == 1  →  std
+        path_flag == 3  →  qdrift
     """
     if not path.exists():
         print(f"  [skip] {path.name} not found")
@@ -90,8 +95,9 @@ def load_result_0317(path: Path) -> pd.DataFrame | None:
     df["input_name"] = df["file_name"].str.split("/").str[-1]
     df["err"] = df["error"]
     df["t"] = df["time"].round(6)
-    df["gates_total_step"] = df["single_qubit_gates_bfopt"] + df["multi_qubit_gates_bfopt"]
-    df["qblue_full_total"] = df["gates_total_step"] * df["trotter_step"]
+    # These files come from performance.ml, whose summarize_counts already
+    # multiplies by the Trotter step. Do not multiply by trotter_step again.
+    df["qblue_full_total"] = df["single_qubit_gates_bfopt"] + df["multi_qubit_gates_bfopt"]
     df["pipeline"] = df["path_flag"].map({1: "std", 3: "qdrift"})
 
     def _bucket(n):
@@ -119,18 +125,24 @@ def load_buckets(*patterns: str) -> pd.DataFrame | None:
     return pd.concat(frames, ignore_index=True) if frames else None
 
 
-def prepare_qblue(qb: pd.DataFrame, t_val: float = T_PI16) -> pd.DataFrame:
-    """Filter to a single t value and compute full-circuit gate columns (all pipelines).
+def _qblue_multiplier(qb: pd.DataFrame) -> pd.Series:
+    raw_r = qb["splitting_r"] if "splitting_r" in qb.columns else pd.Series(1.0, index=qb.index)
+    r = pd.to_numeric(raw_r, errors="coerce").fillna(1.0)
+    if "qblue_count_scope" not in qb.columns:
+        return r
 
-    For std/auto, gates_opt_* are per-step costs and must be multiplied by splitting_r.
-    For qdrift, splitting_r is NaN and gates_opt_* are already the full-circuit cost.
-    """
+    scope = qb["qblue_count_scope"].fillna("per_step").astype(str).str.lower()
+    return r.mask(scope == "full_circuit", 1.0)
+
+
+def prepare_qblue(qb: pd.DataFrame, t_val: float = T_PI16) -> pd.DataFrame:
+    """Filter to a single t value and compute full-circuit gate columns."""
     qb = qb[qb["t"].round(6) == t_val].copy()
     qb = qb.drop_duplicates(subset=["input_name", "dataset", "t", "err", "pipeline"])
-    r = qb["splitting_r"].fillna(1.0)
-    qb["qblue_pre_total"] = qb["gates_in_total"] * r
-    qb["qblue_full_CX"]   = qb["gates_opt_CX"]   * r
-    qb["qblue_full_total"] = qb["gates_opt_total"] * r
+    mult = _qblue_multiplier(qb)
+    qb["qblue_pre_total"] = pd.to_numeric(qb["gates_in_total"], errors="coerce") * mult
+    qb["qblue_full_CX"] = pd.to_numeric(qb["gates_opt_CX"], errors="coerce") * mult
+    qb["qblue_full_total"] = pd.to_numeric(qb["gates_opt_total"], errors="coerce") * mult
     return qb
 
 
@@ -154,9 +166,10 @@ def join_qblue_competitor(qb: pd.DataFrame, other: pd.DataFrame, name: str) -> p
     other_key = other[cols].copy()
     other_key = other_key.rename(columns={c: f"{c}_{name}" for c in cols if c not in {"input_name", "dataset", "t"}})
     merged = qb.merge(other_key, on=["input_name", "dataset", "t"], how="inner")
-    merged[f"{name}_fair_pre_total"] = merged[f"gates_total_{name}"] * merged["splitting_r"]
-    merged[f"{name}_fair_CX"] = merged[f"gates_opt_CX_{name}"] * merged["splitting_r"]
-    merged[f"{name}_fair_total"] = merged[f"gates_opt_total_{name}"] * merged["splitting_r"]
+    r = pd.to_numeric(merged["splitting_r"], errors="coerce").fillna(1.0)
+    merged[f"{name}_fair_pre_total"] = merged[f"gates_total_{name}"] * r
+    merged[f"{name}_fair_CX"] = merged[f"gates_opt_CX_{name}"] * r
+    merged[f"{name}_fair_total"] = merged[f"gates_opt_total_{name}"] * r
     return merged
 
 
@@ -319,9 +332,11 @@ def plot_gates_vs_err(qb: pd.DataFrame, out: Path, t_label: str = "") -> None:
         print(f"  [skip] gates_vs_err: need ≥2 error values, have {errs_present}")
         return
 
-    # QBlue gate counts are single-step; multiply by splitting_r for full circuit cost
     qb = qb.copy()
-    qb["gates_full_CX"] = qb["gates_opt_CX"] * qb["splitting_r"]
+    if "qblue_full_CX" in qb.columns:
+        qb["gates_full_CX"] = qb["qblue_full_CX"]
+    else:
+        qb["gates_full_CX"] = pd.to_numeric(qb["gates_opt_CX"], errors="coerce") * pd.to_numeric(qb["splitting_r"], errors="coerce").fillna(1.0)
 
     fig, axes = plt.subplots(1, len(DATASET_ORDER), figsize=(11, 4), sharey=True)
 
