@@ -96,6 +96,17 @@ let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t
   let cc  = List.init nq1 u1_gate @ List.init nqm cx_gate in
   (cc, cc, Unix.gettimeofday () -. ts, 1)
 
+(* Taylor series LCU simulation; decompose to IBM digital *)
+let tts_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- TTS LCU -> IBMDigital circuits: ----";
+  try
+    let cir_ast = translate_lowp2circ_TTS_LCU err t lp nq in
+    let cir_bf = ibmdigi_to_rzq nq cir_ast in
+    let cc, ts = time_call (fun () -> ibmdigi_voqc_optimize nq cir_ast) in
+    (cc, cir_bf, ts, 1)
+  with exn -> dbg "tts_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
 
 (* Qubitization -> IBMDigital; d = 2K+1 direct W applications via QSP. *)
 let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
@@ -324,6 +335,14 @@ let trotterStd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   with exn -> dbg "trotterStd_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
+(* Taylor series LCU simulation; decompose to Indiana Analog *)
+let tts_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- TTS LCU -> IndiAnalog circuits: ----";
+  try
+    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_TTS_LCU err t lp nq) in
+    (cc, ts, 1, 1)
+  with exn -> dbg "tts_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
 
 (* 2nd-order trotterization; decompose to Indiana Analog *)
 let trotter2nd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
@@ -459,6 +478,18 @@ let trotterStd_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float
     else
       failwith "IBM analog synthesis requires 2-local input terms"
   with exn -> dbg "trotterStd_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+(* Taylor series LCU simulation; decompose to IBM Analog *)
+let tts_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- TTS LCU -> IBMAnalog circuits: ----";
+  try
+    if check_2local nq lp then
+      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_TTS_LCU err t lp nq) in
+      (cc, ts, 1, 1)
+    else
+      failwith "IBM analog synthesis requires 2-local input terms"
+  with exn -> dbg "tts_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
 (* 2nd-order trotterization; decompose to IBM Analog *)

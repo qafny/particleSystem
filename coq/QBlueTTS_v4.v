@@ -27,7 +27,7 @@ Fixpoint findK_upto (fuel : nat) (bound aux : R) (k : nat) : nat :=
   match fuel with
   | O => k
   | S fuel' =>
-      if Rltb aux bound then k
+      if Rltb aux bound || Reqb aux bound then k
       else findK_upto fuel' bound (aux * (ln 2) / INR (k + 2)) (S k)
   end.
 
@@ -35,7 +35,25 @@ Fixpoint findK_upto (fuel : nat) (bound aux : R) (k : nat) : nat :=
    since e^{lambda*tau} <= e^{ln2} = 2, giving factor of 4 in denominator *)
 Definition findK_tau (err : R) (r : nat) : nat :=
   let bound := (err / (4 * INR r))%R in
-  findK_upto 20 bound (ln 2) 0.
+  findK_upto 64 bound (ln 2) 0.
+
+(* Split (a + ib) * P into a*P + b*(i*P) with real coefficients for digital synth.
+   Ci * (0, im) = (-im, 0) so the imaginary part becomes a real amplitude. *)
+Definition realify_lowprog_term (ten : lowprog_ten) : lowprog :=
+  let (c, f) := ten in
+  let re := fst c in
+  let im := snd c in
+  let real_part :=
+    if Reqb re R0 then nil else [(RtoC re, f)] in
+  let imag_part :=
+    if Reqb im R0 then nil else [(Cmult Ci (R0, im), f)] in
+  real_part ++ imag_part.
+
+Fixpoint realify_lowprog (lp : lowprog) : lowprog :=
+  match lp with
+  | [] => []
+  | t :: tl => realify_lowprog_term t ++ realify_lowprog tl
+  end.
 
 
 (* H^0 = I, H^k = H * H^{k-1} via plus_app_plus *)
@@ -88,16 +106,29 @@ Definition build_cntlV (lp : lowprog) (nqcn nqv idx : nat) : ucom ExtractionGate
       let control := cntl2pauli_helper nl in
       let vm1     := vi :: (Copp C1, fun _ => paulii) :: nil in
       let t2      := plus_ten_plus nqcn nqv control vm1 in
-      LCU_digital_ibm (nqcn + nqv) ((C1, fun _ => paulii) :: t2)
+      LCU_digital_ibm (nqcn + nqv)
+        (realify_lowprog ((C1, fun _ => paulii) :: t2))
   end.
+
+(* Per-segment Taylor lowprog (time step tau, truncation K). *)
+Definition tts_segment_taylor (err t : R) (nbit : nat) (input : lowprog) : lowprog :=
+  let nseg := get_nseg t input in
+  let tau := (t / INR nseg)%R in
+  let K := findK_tau err nseg in
+  taylor_exp tau nbit K input.
+
+(* Taylor lowprog for analog synthesis (coefficients already include tau). *)
+Definition tts_analog_lowprog (err t : R) (nbit : nat) (input : lowprog) : lowprog :=
+  realify_lowprog (tts_segment_taylor err t nbit input).
 
 (* One LCU segment: H^{(x)m} . SELECT . H^{(x)m}
    m = log2(#terms) control qubits; SELECT applies each controlled-V_j *)
 Definition build_circuit_seg (nqv : nat) (input : lowprog) : ucom ExtractionGateSet.U :=
-  let nterm    := length input in
+  let input' := realify_lowprog input in
+  let nterm    := length input' in
   let nqcn     := Nat.log2_up nterm in
   let select   := fold_left ExtractionGateSet.useq
-                    (map (build_cntlV input nqcn nqv) (seq 0 nterm))
+                    (map (build_cntlV input' nqcn nqv) (seq 0 nterm))
                     ExtractionGateSet.SKIP in
   let hadamard := fold_left
                     (fun acc i => ExtractionGateSet.useq acc (ExtractionGateSet.H i))
