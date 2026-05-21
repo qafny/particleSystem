@@ -20,6 +20,7 @@ QBlueCompile.v
 QBlueMarQSim.v
 QBlueQuantumWalk.v
 QBlueQubitization.v
+QBlueQSVT.v
 
 MarQsim/NetworkX.v
 MarQsim/Marqsim.v

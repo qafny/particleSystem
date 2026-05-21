@@ -20,6 +20,7 @@ Require Import QBlue.QBlueTTS.
 Require Import QBlue.QBlueTTS_v4.
 Require Import QBlue.QBlueMarQSim.
 Require Import QBlue.QBlueQuantumWalk.
+Require Import QBlue.QBlueQSVT.
 
 
 Module EG := ExtractionGateSet.
@@ -190,6 +191,22 @@ Definition translate_lowp2circ_qwalk (err t : R) (lp : lowprog) (nbit : nat) : E
   let outer_PREP   := QBlueQuantumWalk.build_outer_prep tau K outer_base n_outer_anc in
   QBlueQuantumWalk.build_qwalk_lcu_circuit
     inner_PREP SELECT outer_PREP tau n_inner_anc aux K outer_base n_outer_anc.
+
+
+Definition translate_lowp2circ_qsvt (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
+  let nterm        := length lp in
+  let n_inner_anc  := Nat.log2_up nterm in
+  (* Compute |alpha_j| and lambda = sum |alpha_j| *)
+  let coeffs       := map (fun term => Rabs (fst (fst term))) lp in
+  let lam          := fold_left Rplus coeffs R0 in
+  let tau          := (lam * t)%R in
+  let aux          := n_inner_anc + nbit in
+  (* coefficient-weighted inner PREP *)
+  let inner_PREP   := QBlueQuantumWalk.build_inner_prep coeffs lam n_inner_anc in
+  (* SELECT oracle *)
+  let circ_list    := map (build_cntlV lp n_inner_anc nbit) (seq 0 nterm) in
+  let SELECT       := fold_left EG.useq circ_list EG.SKIP in
+  QBlueQSVT.build_qsvt_circuit inner_PREP SELECT tau err n_inner_anc aux.
 
 
 (* Translate to Indiana Analog by chunks *)

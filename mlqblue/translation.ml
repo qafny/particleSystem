@@ -118,6 +118,36 @@ let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : fl
   let cc = List.init nq1 u1_gate @ List.init nqm cx_gate in
   (cc, cc, Unix.gettimeofday () -. ts, 1)
 
+
+(* QSVT -> IBMDigital; d = 2K+1 direct block-encoding applications. *)
+let qsvt_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- QSVT -> IBMDigital circuits: ----";
+  let ts    = Unix.gettimeofday () in
+  let nterm = Stdlib.List.length lp in
+  let n_in  = PeanoNat.Nat.log2_up nterm in
+  let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
+  let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
+  let d     = 2 * k + 1 in
+  (* SELECT oracle cost *)
+  let sel_sq  = nterm * 2 * nq in
+  let sel_mq  = nterm * (2 * nq - 1) in
+  (* reflect_ancilla_phase cost *)
+  let ref_sq  = 2 * n_in + 3 in
+  let ref_mq  = 2 * n_in in
+  (* PREP + PREP† cost *)
+  let prep_sq = 2 * (3 * n_in) in
+  let prep_mq = 2 * n_in in
+  
+  (* Total gates: prep + d * SELECT + (d + 1) * reflect *)
+  let nq1   = prep_sq + d * sel_sq + (d + 1) * ref_sq in
+  let nqm   = prep_mq + d * sel_mq + (d + 1) * ref_mq in
+  if verbose then dbg "QSVT: nterm=%d K=%d d=%d -> 1Q=%d CX=%d" nterm k d nq1 nqm;
+  let nqt = max 2 (n_in + nq + 2) in
+  let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
+  let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
+  let cc = List.init nq1 u1_gate @ List.init nqm cx_gate in
+  (cc, cc, Unix.gettimeofday () -. ts, 1)
+
 (* 2nd-order trotterization; decompose to IBM digital *)
 let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
   if verbose then dbg "---- Trotterization (2nd-order) -> IBMDigital circuits: ----";

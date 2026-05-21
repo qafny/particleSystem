@@ -33,7 +33,9 @@
   5. MarQSim (CNOT+SingleQ for P_gc) -> IBMDigital circuits
   6. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBMDigital circuits
   7. MarQSim (CNOT+SingleQ for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBMDigital circuits
-  0. Optimal among 0-7
+  8. QSVT -> IBMDigital circuits
+  9. Qubitization -> IBMDigital circuits
+  0. Optimal among 1-9
   11. Trotterization (1st-order) -> Indiana Analog circuits
   12. Trotterization (2nd-order) -> Indiana Analog circuits
   13. qdrift -> Indiana Analog circuits
