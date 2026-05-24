@@ -3,20 +3,18 @@ open Lexer
 open Revert_to_lowprog
 
 let () =
-  let input =
-    if Array.length Sys.argv >= 2 then Sys.argv.(1)
-    else "+1.0*X+2.0*Y"
+  let input = open_in "JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt"
   in
-  let lexbuf = Lexing.from_string input in
-  try
-    let prog = Parser.program Lexer.token lexbuf in
+  try 
+    while true do
+      let line = input_line input in
+      let lexbuf = Lexing.from_string line in
+      try
+       let prog = Parser.program Lexer.token lexbuf in
     (* Print exactly for this case: 1 pauli per term *)
-    Printf.printf "Parsed as: %s\n" (Revert_to_lowprog.string_of_lowprog ~n:100 prog;
-    );
-  with
-  | Parser.Error ->
-      Printf.eprintf "Parser error near offset %d (lexeme=%S)\n"
-        (Lexing.lexeme_start lexbuf) (Lexing.lexeme lexbuf)
-
-
-
+       ()
+       with
+      | Parser.Error ->
+          close_in input; Printf.eprintf "Parser error near offset\n"
+         done
+   with End_of_file -> close_in input; Printf.printf "good\n"
