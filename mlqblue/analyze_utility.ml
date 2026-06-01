@@ -82,6 +82,8 @@ let lowprog_to_circ ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t 
     | 5 -> trotterMarQSim_mix_IBMDigital ~verbose:verbose lp nq err t
     | 6 -> trotterMarQdrift_CNOT_IBMDigital ~verbose:verbose lp nq err t
     | 7 -> trotterMarQdrift_mix_IBMDigital ~verbose:verbose lp nq err t
+    | 8 -> qsvt_IBMDigital ~verbose:verbose lp nq err t
+    | 9 -> qubitization_IBMDigital ~verbose:verbose lp nq err t
     | _ -> qwalk_IBMDigital ~verbose:verbose lp nq err t
   )
 
@@ -210,7 +212,7 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
   let best_path = ref 100 in
   let ts_tot = ref 0.0 in
   let best_score = ref max_int in 
-  for flag_path = 1 to 8 do
+  for flag_path = 1 to 9 do
     let (cc, _, ts, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
     let (nq1, score) = summarize_counts cc nqbit r in
 	ts_tot := !ts_tot +. ts;

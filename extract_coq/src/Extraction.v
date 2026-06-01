@@ -5,6 +5,7 @@ From QBlue Require Import QBlueCompile.
 From QBlue Require Import QBlueSynthDigital.
 From QBlue Require Import QBlueQuantumWalk.
 From QBlue Require Import QBlueQubitization.
+From QBlue Require Import QBlueQSVT.
 From QBlue Require Import QBlueTTS_v4.
 
 Require Coq.extraction.Extraction.
@@ -192,10 +193,12 @@ Separate Extraction
   QBlueCompile.translate_lowp2IndiAna_2ndTrotter
   QBlueCompile.translate_lowp2IndiAna_qdrift
   QBlueCompile.translate_lowp2IndiAna_marqsim
+  QBlueCompile.translate_lowp2IndiAna_TTS_LCU
   QBlueCompile.translate_lowp2IBMAna_stdTrotter
   QBlueCompile.translate_lowp2IBMAna_std_2ndTrotter
   QBlueCompile.translate_lowp2IBMAna_qdrift
   QBlueCompile.translate_lowp2IBMAna_marqsim
+  QBlueCompile.translate_lowp2IBMAna_TTS_LCU
   QBlueQuantumWalk.build_qwalk_lcu_circuit
   QBlueQuantumWalk.build_state_prep
   QBlueQuantumWalk.build_inner_prep
@@ -203,6 +206,9 @@ Separate Extraction
   QBlueQuantumWalk.findK_qwalk
   QBlueQubitization.findDegree_qsp
   QBlueQubitization.build_qubitization_circuit
+  QBlueQSVT.findDegree_qsvt
+  QBlueQSVT.build_qsvt_circuit
+  QBlueCompile.translate_lowp2circ_qsvt
 
 (* gate decomposition pass *)
   ExtractionGateSet.decompose_to_voqc_gates

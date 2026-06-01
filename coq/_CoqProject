@@ -25,6 +25,7 @@ QBluePEA.v
 QBlueTTS_opt.v
 QBlueQuantumWalk_opt.v
 QBlueQubitization_opt.v
+QBlueQSVT.v
 
 MarQsim/NetworkX.v
 MarQsim/Marqsim.v
