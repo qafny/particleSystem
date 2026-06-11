@@ -12,7 +12,7 @@ open ExtractionGateSet
 open Translation
 open Qblue_util
 
-let translation_timeout_seconds = 3600
+let translation_timeout_seconds = 7200
 exception Compile_timeout of int
 
 
@@ -213,7 +213,7 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
   let ts_tot = ref 0.0 in
   let best_score = ref max_int in 
   for flag_path = 1 to 9 do
-    let (cc, _, ts, r) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
+    let (cc, _, ts, r, _) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in 
     let (nq1, score) = summarize_counts cc nqbit r in
 	ts_tot := !ts_tot +. ts;
 	dbg "Path flag: %d; # Single-bit gates: %d; # CNOT gates: %d.\n" flag_path nq1 score;
@@ -223,8 +223,8 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
       best_path := flag_path;
     end
   done; 
-  let (c1, c_bf, _, r) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
-  (c1, c_bf, !ts_tot, r)
+  let (c1, c_bf, _, r, npau) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
+  (c1, c_bf, !ts_tot, r, npau)
 
 let summarize_analog_counts (cc : ugate list) (r : int) (npau : int) : int * int =
   let ntot = r * (List.length cc) in

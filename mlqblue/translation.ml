@@ -70,7 +70,7 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
     let cir_bf = translate_lowp2circ_stdTrotter err t lp nq (ibmdigi_to_rzq nq) in
 
     let cc, ts = time_call (fun () -> translate_lowp2circ_stdTrotter err t lp nq (ibmdigi_voqc_optimize nq)) in
-	(cc, cir_bf, ts, r)
+	(cc, cir_bf, ts, r, npau)
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -94,7 +94,8 @@ let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t
   let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
   let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
   let cc  = List.init nq1 u1_gate @ List.init nqm cx_gate in
-  (cc, cc, Unix.gettimeofday () -. ts, 1)
+  let npau = 0 in (* TBD: placehold to remember the number of pauli strings *)
+  (cc, cc, Unix.gettimeofday () -. ts, 1, npau)
 
 (* Taylor series LCU simulation; decompose to IBM digital *)
 let tts_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
@@ -126,8 +127,9 @@ let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : fl
   let nqt = max 2 (n_in + nq + 2) in
   let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
   let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
+  let npau = 0 in (* TBD: placehold to remember the number of pauli strings *)
   let cc = List.init nq1 u1_gate @ List.init nqm cx_gate in
-  (cc, cc, Unix.gettimeofday () -. ts, 1)
+  (cc, cc, Unix.gettimeofday () -. ts, 1, npau)
 
 
 (* QSVT -> IBMDigital; d = 2K+1 direct block-encoding applications. *)
@@ -157,7 +159,8 @@ let qsvt_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t 
   let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
   let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
   let cc = List.init nq1 u1_gate @ List.init nqm cx_gate in
-  (cc, cc, Unix.gettimeofday () -. ts, 1)
+  let npau = 0 in (* TBD: placehold to remember the number of pauli strings *)
+  (cc, cc, Unix.gettimeofday () -. ts, 1, npau)
 
 (* 2nd-order trotterization; decompose to IBM digital *)
 let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
@@ -181,7 +184,7 @@ let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
 
     let cir_bf = translate_lowp2circ_2ndTrotter err t lp nq (ibmdigi_to_rzq nq) in
     let cc, ts = time_call (fun () -> translate_lowp2circ_2ndTrotter err t lp nq (ibmdigi_voqc_optimize nq))
-    in (cc, cir_bf, ts, r) 
+    in (cc, cir_bf, ts, r, npau) 
   
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
@@ -224,7 +227,7 @@ let trotterQDrift_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : f
     let cc, ts =
       time_call (fun () -> translate_lowp2circ_qdrift err t lp nq (ibmdigi_voqc_optimize nq))
     in
-    (cc, cir_bf, ts, 1)
+    (cc, cir_bf, ts, 1, npau)
   with exn -> dbg "trotterQDrift_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -245,7 +248,7 @@ let trotterMarQSim_CNOT_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (e
     let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
     let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
     let ts = ts1 +. ts2 in
-    (cc, cir_bf, ts, 1)
+    (cc, cir_bf, ts, 1, npau)
   with exn -> dbg "trotterMarQSim_CNOT_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -267,7 +270,7 @@ let trotterMarQSim_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (er
     let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
     let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
     let ts = ts1 +. ts2 in
-    (cc, cir_bf, ts, 1)
+    (cc, cir_bf, ts, 1, npau)
   with exn -> dbg "trotterMarQSim_mix_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -290,7 +293,7 @@ let trotterMarQdrift_CNOT_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) 
 	let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
     let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
     let ts = ts1 +. ts2 +. ts3 in
-    (cc, cir_bf, ts, 1)
+    (cc, cir_bf, ts, 1, npau)
   with exn -> dbg "trotterMarQdrift_CNOT_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -313,7 +316,7 @@ let trotterMarQdrift_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (
     let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
     let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
     let ts = ts1 +. ts2 +. ts3 in
-    (cc, cir_bf, ts, 1)
+    (cc, cir_bf, ts, 1, npau)
   with exn -> dbg "trotterMarQdrift_mix_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
