@@ -4,6 +4,7 @@ Require Import QuantumLib.Matrix.
 Require Import QBlue.QBlueProofUtility.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
+Require Import QBlue.QBlueParTransJwtProof.
 Require Import QBlue.QBlueTrotter.
 
 (**** Approximate central value using 1st-order std Trotter
@@ -21,23 +22,32 @@ k: first k pauli strings go to Approx *)
 Definition approx_mult_exp (t : R) (k d : nat) (hlist : lowprog) : Square (2^d) :=
   mult_exp_list t d (firstn k hlist).
 
+Axiom WF_expH : forall (n : nat) (t : R) (M : Square n),
+  WF_Matrix M -> WF_Matrix (expH n t M).
+
+Lemma WF_mult_exp_list : forall (t : R) (d : nat) (l : lowprog),
+  WF_Matrix (mult_exp_list t d l).
+Proof.
+  intros t d l. induction l as [| a l IH]; simpl.
+  - apply WF_I.
+  - apply WF_mult.
+    + apply IH.
+    + apply WF_expH.
+      destruct a as (amp, f). simpl.
+      apply (wf_lowprog2mat [(amp, f)] d).
+Qed.
+
 
 Lemma mult_exp_list_app : forall t d (l1 l2 : lowprog),
   mult_exp_list t d (l1 ++ l2)
   = Mmult (mult_exp_list t d l2) (mult_exp_list t d l1).
 Proof.
-  intros t d l2.
-  induction l2 as [| a l2 IH].
-  intro l1.
-  - cbn. (* [] ++ l1 *)
-    (* X * I = X *)
-    rewrite Mmult_1_r. reflexivity. admit.
-  - cbn. (* (a::l1) ++ l2 *)
-    (* rewrite IH .
-    (* exp1 a * (A * B) = (exp1 a * A) * B *)
-    rewrite Mmult_assoc.
-    reflexivity. *)
-Admitted.
+  intros t d l1 l2.
+  revert l2.
+  induction l1 as [| a l1 IH]; intros l2; simpl.
+  - symmetry. apply Mmult_1_r, WF_mult_exp_list.
+  - rewrite IH. rewrite Mmult_assoc. reflexivity.
+Qed.
 
 
 (* exp(-it * lp) *)
