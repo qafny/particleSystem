@@ -1,25 +1,26 @@
-(* QBlueQubitization_opt.v — qubitization via QSP for Hamiltonian simulation.
-   Reuses walk_operator from QBlueQuantumWalk. *)
-
+(* QBlueQubitization_opt.v — Qubitization via QSP with PRX optimisations only *)
+(* Babbush et al. PRX 8, 041015 (2018), Sections II B, III A, III C/D *)
 Require Import Coq.Lists.List.
 Require Import Coq.Reals.Reals.
-Require Import Coq.Reals.Rtrigo_def.
 From SQIR Require Import ExtractionGateSet.
 Import ListNotations.
-Require Import QBlue.QBlueQuantumWalk.
 
 Open Scope R_scope.
 Open Scope nat_scope.
 
-Section QubitizationCircuit.
+Require Import QBlue.QBlueUtility.
+Require Import QBlue.QBlueSyntax.
+Require Import QBlue.QBlueQROM.
+Require Import QBlue.QBluePEA.
+Require Import QBlue.QBlueQuantumWalk_opt.
 
-(* QSP needs d = 2K+1 steps to achieve error err at time tau. *)
+
+(* QSP degree d = 2K+1 to achieve error err at time tau *)
 Definition findDegree_qsp (tau err : R) : nat :=
-  let K := findK_qwalk tau err in
-  2 * K + 1.
+  2 * findK_qwalk tau err + 1.
 
-(* Rz(0) · W · Rz(0) · W · ... d times.
-   Phase values are placeholders; exact angles computed at extraction. *)
+(* QSP sequence: alternates U1 phase gates and walk operator W.
+   Phase values are placeholders (R0); exact angles computed at extraction. *)
 Fixpoint qsp_sequence (d : nat) (W : ucom ExtractionGateSet.U) (signal : nat)
     : ucom ExtractionGateSet.U :=
   match d with
@@ -27,41 +28,19 @@ Fixpoint qsp_sequence (d : nat) (W : ucom ExtractionGateSet.U) (signal : nat)
   | S d' => useq (U1 R0 signal) (useq W (qsp_sequence d' W signal))
   end.
 
-(* Full circuit: PREP . QSP(W, d) . PREP† *)
-Definition build_qubitization_circuit
-    (inner_prep select : ucom ExtractionGateSet.U)
-    (tau err : R) (n_anc aux : nat)
-    : ucom ExtractionGateSet.U :=
-  let W       := walk_operator inner_prep select n_anc aux in
-  let d       := findDegree_qsp tau err in
-  let sig     := aux + 1 in
-  let prep_dag := invert inner_prep in
-  useq inner_prep (useq (qsp_sequence d W sig) prep_dag).
 
-End QubitizationCircuit.
-
-
-(* ------------------------------------------------------------------ *)
-(* ADDED: optimisations from Babbush et al. PRX 8, 041015 (2018).     *)
-(* Requires QBlue.QBlueQROM and QBlue.QBluePEA to be compiled first. *)
-(* ------------------------------------------------------------------ *)
-Require Import QBlue.QBlueQROM.
-Require Import QBlue.QBluePEA.
-Require Import QBlue.QBlueQuantumWalk_opt.
-Require Import QBlue.QBlueSyntax.
-
-(* ADDED: optimised qubitization circuit.
-   Replaces build_qubitization_circuit using:
-     PREPARE = build_inner_prep_qrom (O(L) T, Babbush et al. Sec. III C/D)
-     SELECT  = build_inner_select_unary (O(L) T, Babbush et al. Sec. III A)
-   QSP sequence and walk_operator structure are unchanged.
+(* Optimised qubitization circuit (Babbush et al. PRX 2018):
+     PREPARE = build_inner_prep_qrom  O(L) T gates  (Sec. III C/D)
+     SELECT  = build_inner_select_unary O(L) T gates (Sec. III A)
+     QSP sequence and walk_operator structure unchanged.
+   Self-contained: does not call the original build_qubitization_circuit.
    coeffs    : list of |alpha_j| Hamiltonian coefficients
    lp        : Hamiltonian lowprog (L Pauli terms)
    tau       : rescaled time parameter
    err       : target approximation error
    n_anc     : LCU ancilla register size = ceil(log2 L)
    aux       : scratch qubit for reflect_ancilla
-   amp_m     : amplitude precision in bits for QROM
+   amp_m     : amplitude precision in bits
    qrom_out  : first QROM output qubit
    qrom_root : QROM root indicator ancilla
    qrom_pancs: n_anc QROM path ancilla qubits
@@ -72,22 +51,24 @@ Definition build_qubitization_circuit_opt
     (tau err : R) (n_anc aux amp_m qrom_out qrom_root sel_root : nat)
     (qrom_pancs sel_pancs : list nat)
     : ucom ExtractionGateSet.U :=
-  let lam  := fold_left Rplus coeffs 0%R in
-  let PREP := build_inner_prep_qrom coeffs lam n_anc amp_m
-                qrom_out qrom_root qrom_pancs in
-  let SEL  := build_inner_select_unary lp n_anc (length lp)
-                sel_root sel_pancs in
-  build_qubitization_circuit PREP SEL tau err n_anc aux.
+  let lam      := fold_left Rplus coeffs 0%R in
+  let PREP     := build_inner_prep_qrom coeffs lam n_anc amp_m
+                    qrom_out qrom_root qrom_pancs in
+  let SEL      := build_inner_select_unary lp n_anc (length lp)
+                    sel_root sel_pancs in
+  let W        := walk_operator PREP SEL n_anc aux in
+  let d        := findDegree_qsp tau err in
+  let prep_dag := invert PREP in
+  useq PREP (useq (qsp_sequence d W (aux + 1)) prep_dag).
 
-(* ADDED: Heisenberg-limited PEA for qubitization (Babbush et al. Sec. II B).
-   Replaces qsp_sequence with heis_pea, achieving Heisenberg-limit query
-   complexity O(lambda/epsilon) vs O((lambda/epsilon) log(1/epsilon)) for QSP.
-   Uses QROM PREPARE and unary iteration SELECT.
-   The walk operator W is built from the optimised PREP and SELECT.
-   m         : number of PEA control qubits; 2^m total W applications
-   pea_base  : first PEA control qubit
-   pea_anc   : ancilla qubit for prepare_chi
-   All other parameters identical to build_qubitization_circuit_opt. *)
+
+(* Heisenberg-limited PEA for qubitization (Babbush et al. Sec. II B).
+   Replaces qsp_sequence with QPE on W, achieving O(lambda/epsilon) queries
+   vs O((lambda/epsilon) log(1/epsilon)) for QSP.
+   m        : number of PEA control qubits; 2^m total W applications
+   pea_base : first PEA control qubit
+   pea_anc  : ancilla qubit for prepare_chi
+   All other parameters same as build_qubitization_circuit_opt. *)
 Definition build_qubitization_heis_pea
     (coeffs : list R) (lp : lowprog)
     (n_anc aux m pea_base pea_anc amp_m qrom_out qrom_root sel_root : nat)
