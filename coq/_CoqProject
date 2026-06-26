@@ -28,12 +28,4 @@ QBlueQubitization_opt.v
 QBlueQSVT.v
 QBlueQSVT_opt.v
 
-MarQsim/NetworkX.v
-MarQsim/Marqsim.v
-MarQsim/Overall.v
-MarQsim/Varying.v
-MarQsim/Spectra.v
-MarQsim/CompileTime.v
-MarQsim/Exp.v
-
 Main.v
