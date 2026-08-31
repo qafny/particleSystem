@@ -4,6 +4,7 @@ Require Import QuantumLib.Matrix.
 Require Import QBlue.QBlueProofUtility.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
+Require Import QBlue.QBlueParTransJwtProof.
 Require Import QBlue.QBlueTrotter.
 
 (**** Approximate central value using 1st-order std Trotter
