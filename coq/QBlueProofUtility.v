@@ -14,6 +14,20 @@ Parameter expH : forall n : nat, R -> Square n -> Square n.
 Axiom WF_expH : forall (n : nat) (t : R) (M : Square n), WF_Matrix (expH n t M).
 Global Hint Resolve WF_expH : wf_db.
 
+(* expH is meant to model exp(-itM), the simulation of a Hamiltonian -- and the
+   whole premise of Hamiltonian simulation is that this is always unitary
+   (Section 1 of the paper: "exponentiated Hamiltonians yield unitary
+   operators"). Since expH is an abstract Parameter with no concrete
+   definition, this foundational property has to be axiomatized rather than
+   proved, same as WF_expH above. NOTE: this is stated unconditionally on M
+   (not "M Hermitian implies ..."), because lowprog_ten's amplitude is typed
+   as an unrestricted C rather than being statically constrained to be real
+   -- so a Hermitian-conditioned version would need that extra invariant
+   threaded through every caller. If that invariant ever gets added to the
+   syntax/type system, this axiom should be tightened to require it. *)
+Axiom expH_unitary : forall (n : nat) (t : R) (M : Square n),
+  Mmult (expH n t M) ((expH n t M) †) = I n.
+
 (*********** Transform lowprog into Matrix. Needed for proving Hermitian **************)
 Definition pauli2mat (p : paulimat) : Square 2 :=
   match p with

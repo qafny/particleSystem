@@ -38,6 +38,42 @@ Proof.
 Qed.
 Global Hint Resolve wf_approx_mult_exp : wf_db.
 
+(* A product of two unitary matrices is unitary. Generic helper for the
+   unitarity chain below. *)
+Lemma unitary_compose : forall n (X Y : Square n),
+  WF_Matrix X ->
+  Mmult X (X †) = I n -> Mmult Y (Y †) = I n ->
+  Mmult (Mmult X Y) ((Mmult X Y) †) = I n.
+Proof.
+  intros n X Y HWFX HX HY.
+  rewrite Mmult_adjoint.
+  rewrite Mmult_assoc.
+  rewrite <- (Mmult_assoc Y (Y †) (X †)).
+  rewrite HY.
+  rewrite Mmult_1_l; auto with wf_db.
+Qed.
+
+(* mult_exp_list is a product of single-Pauli-string expH factors, each
+   unitary by expH_unitary; composing unitaries via unitary_compose gives
+   unitarity of the whole product. *)
+Lemma unitary_mult_exp_list : forall t d l,
+  Mmult (mult_exp_list t d l) ((mult_exp_list t d l) †) = I (2^d).
+Proof.
+  intros t d l.
+  induction l as [| aten tl IH].
+  - simpl. rewrite id_adjoint_eq. apply Mmult_1_l. apply WF_I.
+  - simpl. apply unitary_compose.
+    + auto with wf_db.
+    + exact IH.
+    + apply expH_unitary.
+Qed.
+
+Lemma unitary_approx_mult_exp : forall t k d hlist,
+  Mmult (approx_mult_exp t k d hlist) ((approx_mult_exp t k d hlist) †) = I (2^d).
+Proof.
+  intros t k d hlist. unfold approx_mult_exp. apply unitary_mult_exp_list.
+Qed.
+
 Lemma mult_exp_list_app : forall t d (l1 l2 : lowprog),
   mult_exp_list t d (l1 ++ l2)
   = Mmult (mult_exp_list t d l2) (mult_exp_list t d l1).
@@ -293,8 +329,14 @@ Proof.
 Qed.
 Global Hint Resolve wf_expand_1st_trotter_error : wf_db.
 
-Axiom approx_mult_exp_norm_one : forall t k d hlist,
+(* Was an Axiom (assumed directly) -- now genuinely derived: approx_mult_exp
+   is unitary (unitary_approx_mult_exp above), and any unitary matrix has
+   norm 1 (unitarymat_norm_eqone). *)
+Lemma approx_mult_exp_norm_one : forall t k d hlist,
   norm (2^d) (approx_mult_exp t k d hlist) = 1.
+Proof.
+  intros. apply unitarymat_norm_eqone. apply unitary_approx_mult_exp.
+Qed.
 
 (* sublemma for proving 1st trotter:
 norm(exp(-it* (sum_{k+1}^N Hi) x exp(-itH_{k} x ... x exp(-itH_{1})) 
