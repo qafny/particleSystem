@@ -603,12 +603,133 @@ Definition cal_2nd_trotter_error_bound (t : R) (d : nat) (hlist : lowprog) : R :
   | _ => suzuki_error_bound_helper d t hlist
   end.
 
+(* norm(XY - EE) <= norm(X-E)*norm(Y) + norm(E)*norm(Y-E), the standard
+   two-term telescoping split for a product against a repeated reference
+   factor: XY - EE = (X-E)Y + E(Y-E). *)
+Lemma product_two_split_bound : forall n (X Y E : Square n),
+  norm n (Mminus (Mmult X Y) (Mmult E E))
+  <= norm n (Mminus X E) * norm n Y + norm n E * norm n (Mminus Y E).
+Proof.
+  intros n X Y E.
+  assert (Heq: Mminus (Mmult X Y) (Mmult E E)
+    = Mplus (Mmult (Mminus X E) Y) (Mmult E (Mminus Y E))).
+  { unfold Mminus, Mopp.
+    rewrite Mmult_plus_distr_r.
+    rewrite Mmult_plus_distr_l.
+    rewrite Mscale_mult_dist_l.
+    rewrite Mscale_mult_dist_r.
+    lma.
+  }
+  rewrite Heq.
+  eapply Rle_trans.
+  - apply matnorm_sum_triangle_ineq.
+  - apply Rplus_le_compat; apply matnorm_mult_triangle_ineq.
+Qed.
+
+(* cal_1st_trotter_error, unfolded to its natural "Trotter product minus
+   exact exponential" shape -- useful as a black box for reusing
+   first_trotter_error_bound against a concrete pair of matrices instead of
+   the approx_transit_exp_aterm machinery it's stated with. *)
+Lemma cal_1st_trotter_error_simplify : forall t d lp,
+  cal_1st_trotter_error t d lp
+  = norm (2^d) (Mminus (mult_exp_list t d lp) (expH (2^d) t (lowprog2mat lp d))).
+Proof.
+  intros t d lp.
+  destruct lp as [| a lp'].
+  - simpl.
+    rewrite zero_expH_isI.
+    unfold Mminus.
+    rewrite Mplus_opp_0.
+    symmetry. apply zero_norm_eqzero.
+  - unfold cal_1st_trotter_error, approx_transit_exp_aterm, approx_mult_exp, exp_sum.
+    remember (a :: lp') as lp eqn:Hlp.
+    assert (Hlen: skipn (length lp) lp = []).
+    { apply skipn_all2. lia. }
+    assert (Hfull: firstn (length lp) lp = lp).
+    { apply firstn_all. }
+    rewrite Hlen, Hfull.
+    simpl.
+    rewrite zero_expH_isI.
+    rewrite Mmult_1_l, Mmult_1_r; auto with wf_db.
+Qed.
+
+(* A genuine, but LOOSER, second-order error bound: applying
+   first_trotter_error_bound to `hlist` and to `rev hlist` at half the time
+   step each, then combining via product_two_split_bound. This is real,
+   fully proved (Print Assumptions: only legitimate abstract-primitive
+   axioms, nothing invented) -- but it bounds cal_2nd_trotter_error by TWO
+   applications of the FIRST-order bound at t/2 (an O(t^2) bound), not by
+   suzuki_error_bound_helper's tighter O(t^3) double-commutator terms that
+   second_trotter_error_bound below still needs. Concretely:
+   approx_trotter_exp_2nd t hlist d = mult_exp_list (t/2) (rev hlist)
+                                       x mult_exp_list (t/2) hlist
+   is literally two independent first-order Trotter products (one over the
+   reversed list) at half the time step, not an interleaved Strang-style
+   splitting -- so its natural error bound really is this O(t^2) one; getting
+   down to the O(t^3) bound that suzuki_error_bound_helper claims requires
+   the double-commutator cancellation argument that first-order splitting
+   alone doesn't give you. Left as a separate theorem rather than used to
+   close second_trotter_error_bound, since it does not establish the
+   statement that theorem makes (a tighter bound isn't implied by a looser
+   one holding). *)
+Theorem second_trotter_error_bound_loose : forall (d : nat) (lp : lowprog) (t : R),
+  cal_2nd_trotter_error t d lp <=
+    cal_1st_trotter_error_bound (t/2) d (rev lp) + cal_1st_trotter_error_bound (t/2) d lp.
+Proof.
+  intros d lp t.
+  destruct lp as [| a lp'].
+  - simpl. lra.
+  - unfold cal_2nd_trotter_error, approx_trotter_exp_2nd.
+    set (lp := a :: lp').
+    assert (Hmin: Mplus (Mmult (mult_exp_list (t/2) d (rev lp)) (mult_exp_list (t/2) d lp))
+                    (scale (-R1) (expH (2^d) t (lowprog2mat lp d)))
+      = Mminus (Mmult (mult_exp_list (t/2) d (rev lp)) (mult_exp_list (t/2) d lp))
+               (expH (2^d) t (lowprog2mat lp d))).
+    { unfold Mminus, Mopp. lma. }
+    rewrite Hmin.
+    replace (expH (2^d) t (lowprog2mat lp d))
+      with (Mmult (expH (2^d) (t/2) (lowprog2mat (rev lp) d)) (expH (2^d) (t/2) (lowprog2mat (rev lp) d)))
+      by (rewrite lowprog2mat_rev; rewrite expH_add; f_equal; lra).
+    eapply Rle_trans.
+    + apply (product_two_split_bound (2^d)
+        (mult_exp_list (t/2) d (rev lp))
+        (mult_exp_list (t/2) d lp)
+        (expH (2^d) (t/2) (lowprog2mat (rev lp) d))).
+    + assert (Hnorm_rev: norm (2^d) (mult_exp_list (t/2) d (rev lp)) = 1).
+      { apply unitarymat_norm_eqone. apply unitary_mult_exp_list. }
+      assert (Hnorm_fwd: norm (2^d) (mult_exp_list (t/2) d lp) = 1).
+      { apply unitarymat_norm_eqone. apply unitary_mult_exp_list. }
+      assert (Hnorm_E: norm (2^d) (expH (2^d) (t/2) (lowprog2mat (rev lp) d)) = 1).
+      { apply unitarymat_norm_eqone. apply expH_unitary. }
+      rewrite Hnorm_fwd, Hnorm_E, Rmult_1_r, Rmult_1_l.
+      assert (Hbound_rev: norm (2^d) (Mminus (mult_exp_list (t/2) d (rev lp))
+                                        (expH (2^d) (t/2) (lowprog2mat (rev lp) d)))
+                           <= cal_1st_trotter_error_bound (t/2) d (rev lp)).
+      { rewrite <- cal_1st_trotter_error_simplify.
+        apply (first_trotter_error_bound d (rev lp) (t/2)
+                (cal_1st_trotter_error (t/2) d (rev lp))
+                (cal_1st_trotter_error_bound (t/2) d (rev lp))); reflexivity. }
+      assert (Hbound_fwd: norm (2^d) (Mminus (mult_exp_list (t/2) d lp)
+                                        (expH (2^d) (t/2) (lowprog2mat (rev lp) d)))
+                           <= cal_1st_trotter_error_bound (t/2) d lp).
+      { rewrite (lowprog2mat_rev lp d).
+        rewrite <- cal_1st_trotter_error_simplify.
+        apply (first_trotter_error_bound d lp (t/2)
+                (cal_1st_trotter_error (t/2) d lp)
+                (cal_1st_trotter_error_bound (t/2) d lp)); reflexivity. }
+      apply Rplus_le_compat; assumption.
+Qed.
+
 (* NOT YET PROVED. A prior pass closed this by asserting the nonempty-list
    case as a brand-new Axiom whose statement was just this theorem's own
    conclusion (see git history) -- that made `second_trotter_error_bound`
    end in `Qed` without any of its mathematical content being established,
    which is materially the same as leaving it `Admitted`.
-   To prove this for real, mirror the first-order architecture above:
+   second_trotter_error_bound_loose above proves a genuine but weaker bound
+   (O(t^2), from two first-order applications) -- it does NOT establish this
+   theorem's tighter O(t^3) claim against suzuki_error_bound_helper. To prove
+   THIS for real, mirror the first-order architecture above but for the
+   actual Suzuki double-commutator cancellation:
      1. Build prefix-indexed partial-approximation objects for the
         *symmetric* product (analogous to expand_1st_trotter_error_helper /
         approx_transit_exp_aterm, but accounting for the `rev hlist` half of

@@ -28,6 +28,18 @@ Global Hint Resolve WF_expH : wf_db.
 Axiom expH_unitary : forall (n : nat) (t : R) (M : Square n),
   Mmult (expH n t M) ((expH n t M) †) = I n.
 
+(* expH models exp(-itM); simulating for t1 then t2 (same generator) is the
+   same as simulating for t1+t2 -- the semigroup property of time evolution.
+   Foundational property of the abstract primitive, same status as
+   WF_expH/expH_unitary. *)
+Axiom expH_add : forall (n : nat) (t1 t2 : R) (M : Square n),
+  Mmult (expH n t1 M) (expH n t2 M) = expH n (t1 + t2) M.
+
+Lemma expH_double : forall n t M, Mmult (expH n t M) (expH n t M) = expH n (2*t) M.
+Proof.
+  intros. rewrite expH_add. f_equal. ring.
+Qed.
+
 (*********** Transform lowprog into Matrix. Needed for proving Hermitian **************)
 Definition pauli2mat (p : paulimat) : Square 2 :=
   match p with
@@ -85,6 +97,26 @@ Proof.
     apply WF_plus; auto with wf_db.
 Qed.
 Global Hint Resolve wf_lowprog2mat : wf_db.
+
+(* lowprog2mat folds the term list via matrix sum (Mplus), which is
+   commutative/associative -- so it's invariant under list order, in
+   particular under reversal. *)
+Lemma lowprog2mat_app : forall l1 l2 d,
+  lowprog2mat (l1 ++ l2) d = Mplus (lowprog2mat l1 d) (lowprog2mat l2 d).
+Proof.
+  induction l1 as [| [[amp k] f] l1' IH]; intros l2 d.
+  - simpl. rewrite Mplus_0_l; auto with wf_db.
+  - simpl. rewrite IH. rewrite Mplus_assoc. reflexivity.
+Qed.
+
+Lemma lowprog2mat_rev : forall l d, lowprog2mat (rev l) d = lowprog2mat l d.
+Proof.
+  induction l as [| [[amp k] f] l' IH]; intros d.
+  - reflexivity.
+  - simpl. rewrite lowprog2mat_app. simpl.
+    rewrite Mplus_0_r; auto with wf_db.
+    rewrite IH. apply Mplus_comm.
+Qed.
 
 Definition is_hermitian_mat {n : nat} (M : Matrix n n) : Prop :=
   M † = M.
