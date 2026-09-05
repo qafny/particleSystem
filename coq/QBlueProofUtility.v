@@ -40,6 +40,37 @@ Proof.
   intros. rewrite expH_add. f_equal. ring.
 Qed.
 
+(* Every axiom above is a generic property true of ANY valid simulation
+   operator -- these four are different in kind: they pin down expH's actual
+   value on specific generators, straight from the paper's own Figure 8
+   (itself citing Nielsen & Chuang's standard single-qubit rotation-gate
+   formulas). This is the first place expH gets a concrete value rather than
+   a structural property, and it's unavoidable -- without an anchor point
+   like this, nothing connects the abstract expH to any real circuit matrix,
+   so no digital/analog synthesis correctness lemma (4.3/4.4) can be proved
+   at all. *)
+Axiom expH_I : forall (n : nat) (t : R), expH n t (I n) = Cexp (-t) .* I n.
+
+Axiom expH_X : forall (t : R),
+  expH 2 t σx = fun x y => match x, y with
+    | 0, 0 => cos t          | 0, 1 => -Ci * sin t
+    | 1, 0 => -Ci * sin t    | 1, 1 => cos t
+    | _, _ => C0
+    end.
+
+Axiom expH_Y : forall (t : R),
+  expH 2 t σy = fun x y => match x, y with
+    | 0, 0 => cos t          | 0, 1 => -(sin t)
+    | 1, 0 => sin t          | 1, 1 => cos t
+    | _, _ => C0
+    end.
+
+Axiom expH_Z : forall (t : R),
+  expH 2 t σz = fun x y => match x, y with
+    | 0, 0 => Cexp (-t)     | 1, 1 => Cexp t
+    | _, _ => C0
+    end.
+
 (*********** Transform lowprog into Matrix. Needed for proving Hermitian **************)
 Definition pauli2mat (p : paulimat) : Square 2 :=
   match p with
