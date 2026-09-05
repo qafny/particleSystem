@@ -55,9 +55,15 @@ NOTE: CNOT gates have the bit 0 as target *)
 Definition synth_digital_ibm_apauli (amp : R) (n : nat) (f: nat -> paulimat) :=
   match find_last_abit n f with
      None => EG.SKIP
-   | Some m => 
+   | Some m =>
      let mid := EG.U1 (R2 * amp) m in
-     let half := EG.useq (cvt_all m f) (abit_cx_all m m f) in
+     (* BUGFIX: cvt_all must cover the anchor bit m itself (hence `S m`, not
+        `m`), not just the bits strictly below it -- otherwise the anchor's
+        own X/Y-ness never gets basis-converted to Z before the U1 rotation
+        is applied there, and the circuit for a lone X or Y Pauli ends up
+        identical to the circuit for Z (verified: they literally were,
+        before this fix, via `Eval compute` on single-qubit X/Y/Z cases). *)
+     let half := EG.useq (cvt_all (S m) f) (abit_cx_all m m f) in
      EG.useq (EG.useq half mid) (EG.invert half)
   end.
 
