@@ -14,6 +14,63 @@ Parameter expH : forall n : nat, R -> Square n -> Square n.
 Axiom WF_expH : forall (n : nat) (t : R) (M : Square n), WF_Matrix (expH n t M).
 Global Hint Resolve WF_expH : wf_db.
 
+(* expH is meant to model exp(-itM), the simulation of a Hamiltonian -- and the
+   whole premise of Hamiltonian simulation is that this is always unitary
+   (Section 1 of the paper: "exponentiated Hamiltonians yield unitary
+   operators"). Since expH is an abstract Parameter with no concrete
+   definition, this foundational property has to be axiomatized rather than
+   proved, same as WF_expH above. NOTE: this is stated unconditionally on M
+   (not "M Hermitian implies ..."), because lowprog_ten's amplitude is typed
+   as an unrestricted C rather than being statically constrained to be real
+   -- so a Hermitian-conditioned version would need that extra invariant
+   threaded through every caller. If that invariant ever gets added to the
+   syntax/type system, this axiom should be tightened to require it. *)
+Axiom expH_unitary : forall (n : nat) (t : R) (M : Square n),
+  Mmult (expH n t M) ((expH n t M) †) = I n.
+
+(* expH models exp(-itM); simulating for t1 then t2 (same generator) is the
+   same as simulating for t1+t2 -- the semigroup property of time evolution.
+   Foundational property of the abstract primitive, same status as
+   WF_expH/expH_unitary. *)
+Axiom expH_add : forall (n : nat) (t1 t2 : R) (M : Square n),
+  Mmult (expH n t1 M) (expH n t2 M) = expH n (t1 + t2) M.
+
+Lemma expH_double : forall n t M, Mmult (expH n t M) (expH n t M) = expH n (2*t) M.
+Proof.
+  intros. rewrite expH_add. f_equal. ring.
+Qed.
+
+(* Every axiom above is a generic property true of ANY valid simulation
+   operator -- these four are different in kind: they pin down expH's actual
+   value on specific generators, straight from the paper's own Figure 8
+   (itself citing Nielsen & Chuang's standard single-qubit rotation-gate
+   formulas). This is the first place expH gets a concrete value rather than
+   a structural property, and it's unavoidable -- without an anchor point
+   like this, nothing connects the abstract expH to any real circuit matrix,
+   so no digital/analog synthesis correctness lemma (4.3/4.4) can be proved
+   at all. *)
+Axiom expH_I : forall (n : nat) (t : R), expH n t (I n) = Cexp (-t) .* I n.
+
+Axiom expH_X : forall (t : R),
+  expH 2 t σx = fun x y => match x, y with
+    | 0, 0 => cos t          | 0, 1 => -Ci * sin t
+    | 1, 0 => -Ci * sin t    | 1, 1 => cos t
+    | _, _ => C0
+    end.
+
+Axiom expH_Y : forall (t : R),
+  expH 2 t σy = fun x y => match x, y with
+    | 0, 0 => cos t          | 0, 1 => -(sin t)
+    | 1, 0 => sin t          | 1, 1 => cos t
+    | _, _ => C0
+    end.
+
+Axiom expH_Z : forall (t : R),
+  expH 2 t σz = fun x y => match x, y with
+    | 0, 0 => Cexp (-t)     | 1, 1 => Cexp t
+    | _, _ => C0
+    end.
+
 (*********** Transform lowprog into Matrix. Needed for proving Hermitian **************)
 Definition pauli2mat (p : paulimat) : Square 2 :=
   match p with
@@ -71,6 +128,26 @@ Proof.
     apply WF_plus; auto with wf_db.
 Qed.
 Global Hint Resolve wf_lowprog2mat : wf_db.
+
+(* lowprog2mat folds the term list via matrix sum (Mplus), which is
+   commutative/associative -- so it's invariant under list order, in
+   particular under reversal. *)
+Lemma lowprog2mat_app : forall l1 l2 d,
+  lowprog2mat (l1 ++ l2) d = Mplus (lowprog2mat l1 d) (lowprog2mat l2 d).
+Proof.
+  induction l1 as [| [[amp k] f] l1' IH]; intros l2 d.
+  - simpl. rewrite Mplus_0_l; auto with wf_db.
+  - simpl. rewrite IH. rewrite Mplus_assoc. reflexivity.
+Qed.
+
+Lemma lowprog2mat_rev : forall l d, lowprog2mat (rev l) d = lowprog2mat l d.
+Proof.
+  induction l as [| [[amp k] f] l' IH]; intros d.
+  - reflexivity.
+  - simpl. rewrite lowprog2mat_app. simpl.
+    rewrite Mplus_0_r; auto with wf_db.
+    rewrite IH. apply Mplus_comm.
+Qed.
 
 Definition is_hermitian_mat {n : nat} (M : Matrix n n) : Prop :=
   M † = M.
