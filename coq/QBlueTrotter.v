@@ -53,4 +53,3 @@ Definition trotter_2nd_order (err t: R) (input : lowprog) : lowprog :=
   let astep1 := trotter_astep ((INR N) * R2) (rev input) in
   let astep2 := trotter_astep ((INR N) * R2) input in
   trotter_nstep N (astep1 ++ astep2).
-

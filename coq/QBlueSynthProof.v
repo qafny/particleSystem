@@ -141,6 +141,20 @@ Proof.
   replace (Rplus (PI / IZR 2) (- (PI / IZR 2))) with (IZR 0) by lra.
   replace (Rplus (- (PI / IZR 2)) (PI / IZR 2)) with (IZR 0) by lra.
   easy.
+  bdestruct (0 + 1 <=? 1); try lia.
+  replace R0 with (IZR Z0); try (easy; simpl in *).
+  repeat rewrite phase_shift_rotation.
+  repeat rewrite <- phase_adjoint.
+  repeat rewrite <- phase_shift_rotation.
+  rewrite I_rotation. simpl in *.
+  gridify.
+  bdestruct (0 + 1 <=? 1); try lia.
+  replace R0 with (IZR Z0); try (easy; simpl in *).
+  repeat rewrite phase_shift_rotation.
+  repeat rewrite <- phase_adjoint.
+  repeat rewrite <- phase_shift_rotation.
+  rewrite I_rotation. simpl in *.
+  gridify.
 Admitted.
 
 
