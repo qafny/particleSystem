@@ -130,4 +130,8 @@ Qed.
       the ladder correctly implements the multi-qubit tensor-product
       Pauli exponential, not just the single-qubit rotation. This is the
       genuinely new content Algorithm 1 adds over the single-qubit case, and
+<<<<<<< HEAD
       hasn't been attempted yet. *)
+=======
+      hasn't been attempted yet. *)
+>>>>>>> 4b25c35 (updarte.)
