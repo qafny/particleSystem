@@ -37,8 +37,8 @@ Fixpoint add_front (n:nat) (f: nat -> paulimat) :=
    | 0 => I 1
    | S m => match (f m) with
               | paulix => add_front m f ⊗ hadamard
-              | pauliy => add_front m f ⊗ ((phase_shift (PI / (IZR 2))) × hadamard)
-              | _ => I 2
+              | pauliy => add_front m f ⊗ (hadamard × (phase_shift (PI / (IZR 2))))
+              | _ => add_front m f ⊗ I 2
             end
   end.
 
@@ -48,7 +48,7 @@ Fixpoint add_end (n:nat) (f:nat -> paulimat) :=
    | S m => match (f m) with
               | paulix => add_end m f ⊗ hadamard
               | pauliy => add_end m f ⊗ (hadamard × (phase_shift (- (PI / (IZR 2)))))
-              | _ => I 2
+              | _ => add_front m f ⊗ I 2
             end
   end.
 
@@ -91,10 +91,142 @@ Fixpoint mid_paulis (n:nat) (amp:R) f j :=
             else (mid_paulis_aux m amp f m (Nat.sub j 1))
   end.
 
+
 Definition synth_digital_ibm_apauli (n:nat) (t:R) (f: nat -> paulimat) :=
  EG.useq (front_half n f) (EG.useq (mid_paulis n t f (count_paulis n f)) (EG.invert (front_half n f))).
 
 Open Scope nat_scope.
+
+Lemma change_dim_unfold: forall (u: EG.ucom EG.U) m n,
+  UnitarySem.uc_eval (EG.to_base_ucom m u) 
+   = UnitarySem.uc_eval (UnitaryOps.cast ((EG.to_base_ucom n u)) m).
+Proof.
+  intros u m n.
+  rewrite <- change_dim.
+  unfold EG.uc_eval. easy.
+Qed. 
+
+Lemma front_has_WF: forall n f, well_formed (front_half n f).
+Proof.
+  intros. induction n. simpl in *.
+  apply WF_uapp. easy.
+  simpl in *.
+  destruct (f n). apply WF_useq. apply IHn.
+  apply WF_uapp. easy.
+  apply WF_useq. apply IHn.
+  apply WF_useq. apply WF_uapp. easy. apply WF_uapp. easy.
+  apply IHn. apply IHn.
+Qed.
+
+Lemma front_half_WF : forall n f, 0 < n -> uc_well_typed (to_base_ucom n (front_half n f)).
+Proof.
+  intros.
+  induction n; simpl in *. inv H.
+  destruct n. destruct (f 0); simpl in *.
+  replace R0 with (IZR Z0); try (easy; simpl in *).
+  apply SQIR.WT_seq. apply SQIR.WT_app1. lia.
+  apply uc_well_typed_H. lia.
+  apply SQIR.WT_seq. apply SQIR.WT_app1. lia.
+  apply SQIR.WT_seq. apply SQIR.WT_app1. lia.
+  apply uc_well_typed_H. lia.
+  apply SQIR.WT_app1. lia.
+  apply SQIR.WT_app1. lia.
+  remember (S n) as a.
+  destruct (f a); simpl in *.
+  apply SQIR.WT_seq.
+  apply change_dim_WT with (m := a); try lia.
+  apply front_has_WF. apply IHn.
+  lia.
+  apply uc_well_typed_H.
+  lia.
+  apply SQIR.WT_seq.
+  apply change_dim_WT with (m := a); try lia.
+  apply front_has_WF. apply IHn. lia.
+  apply SQIR.WT_seq. apply SQIR.WT_app1. lia.
+  apply uc_well_typed_H. lia.
+  apply change_dim_WT with (m := a); try lia.
+  apply front_has_WF. apply IHn. lia.
+  apply change_dim_WT with (m := a); try lia.
+  apply front_has_WF. apply IHn. lia.
+Qed.
+
+Lemma synth_front_correctness: forall n f, 0 < n -> add_front n f = EG.uc_eval n (front_half n f).
+Proof.
+  intros.
+  induction n; simpl in *. inv H.
+  destruct n; simpl in *.
+  unfold EG.uc_eval. 
+  destruct (f 0); simpl in *.
+  replace R0 with (IZR Z0); try (easy; simpl in *).
+  rewrite eval_H. autorewrite with eval_db.
+  bdestruct (0 + 1 <=? 1).
+  rewrite I_rotation. gridify. inv H0.
+  replace R0 with (IZR Z0); try (easy; simpl in *).
+  autorewrite with eval_db.
+  bdestruct (0 + 1 <=? 1).
+  rewrite I_rotation. rewrite phase_shift_rotation.
+  gridify. inv H0.
+  replace R0 with (IZR Z0); try (easy; simpl in *).
+  rewrite I_rotation. autorewrite with eval_db.
+  bdestruct (0 + 1 <=? 1). gridify. inv H0.
+  replace R0 with (IZR Z0); try (easy; simpl in *).
+  rewrite I_rotation. autorewrite with eval_db.
+  bdestruct (0 + 1 <=? 1). gridify. inv H0.
+  rewrite IHn; try lia.
+  destruct (f (S n)); simpl in *.
+  unfold EG.uc_eval. 
+  simpl in *.
+  rewrite denote_H.
+  rewrite change_dim_unfold with (m := S (S n)) (n := S n).
+  replace (S (S n)) with (S n + 1) by lia.
+  rewrite <- pad_dims_r.
+  repeat rewrite kron_1_r.
+  repeat rewrite kron_1_l; try auto_wf.
+  autorewrite with eval_db.
+  replace (S n + 1) with (S (S n)) by lia.
+  bdestruct (S (S n) <=? S (S n)).
+  assert ((S (S n) - S (S n)) = 0) by lia.
+  rewrite H1. gridify. easy. lia.
+  assert (uc_well_typed (to_base_ucom (S n) (front_half (S n) f))) as WF.
+  apply front_half_WF. lia.
+  simpl in *. apply WF.
+  unfold EG.uc_eval. 
+  simpl in *.
+  rewrite denote_H.
+  rewrite change_dim_unfold with (m := S (S n)) (n := S n).
+  replace (S (S n)) with (S n + 1) by lia.
+  rewrite <- pad_dims_r.
+  repeat rewrite kron_1_r.
+  repeat rewrite kron_1_l; try auto_wf.
+  autorewrite with eval_db.
+  replace (S n + 1) with (S (S n)) by lia.
+  bdestruct (S (S n) <=? S (S n)).
+  assert ((S (S n) - S (S n)) = 0) by lia.
+  rewrite H1. simpl in *. rewrite phase_shift_rotation. gridify. easy.
+  assert (x = S n) by lia. subst.
+  restore_dims.
+  apply WF_uc_eval. lia.
+  assert (uc_well_typed (to_base_ucom (S n) (front_half (S n) f))) as WF.
+  apply front_half_WF. lia.
+  simpl in *. apply WF. simpl in *.
+  unfold EG.uc_eval. 
+  simpl in *.
+  rewrite change_dim_unfold with (m := S (S n)) (n := S n).
+  replace (S (S n)) with (S n + 1) by lia.
+  rewrite <- pad_dims_r. easy.
+  assert (uc_well_typed (to_base_ucom (S n) (front_half (S n) f))) as WF.
+  apply front_half_WF. lia.
+  simpl in *. apply WF.
+  unfold EG.uc_eval. 
+  simpl in *.
+  rewrite change_dim_unfold with (m := S (S n)) (n := S n).
+  replace (S (S n)) with (S n + 1) by lia.
+  rewrite <- pad_dims_r. easy.
+  assert (uc_well_typed (to_base_ucom (S n) (front_half (S n) f))) as WF.
+  apply front_half_WF. lia.
+  simpl in *. apply WF.
+Qed.
+
 
 Theorem synth_digital_ibm_pauli_correctness: forall (n : nat) (t : R) (f : nat->paulimat), 0 < n ->
   exp_paulis n t f = EG.uc_eval n (synth_digital_ibm_apauli n t f).
@@ -140,21 +272,6 @@ Proof.
   R_field_simplify.
   replace (Rplus (PI / IZR 2) (- (PI / IZR 2))) with (IZR 0) by lra.
   replace (Rplus (- (PI / IZR 2)) (PI / IZR 2)) with (IZR 0) by lra.
-  easy.
-  bdestruct (0 + 1 <=? 1); try lia.
-  replace R0 with (IZR Z0); try (easy; simpl in *).
-  repeat rewrite phase_shift_rotation.
-  repeat rewrite <- phase_adjoint.
-  repeat rewrite <- phase_shift_rotation.
-  rewrite I_rotation. simpl in *.
-  gridify.
-  bdestruct (0 + 1 <=? 1); try lia.
-  replace R0 with (IZR Z0); try (easy; simpl in *).
-  repeat rewrite phase_shift_rotation.
-  repeat rewrite <- phase_adjoint.
-  repeat rewrite <- phase_shift_rotation.
-  rewrite I_rotation. simpl in *.
-  gridify.
 Admitted.
 
 
