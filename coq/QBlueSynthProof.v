@@ -13,49 +13,7 @@ From VOQC Require Import Main.
 Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
-
-(* Define long z interaction as the basis for exp of a pauli-string matrix. *)
-Fixpoint count_paulis (n:nat) (f:nat -> paulimat) : nat :=
-  match n with
-   | 0 => 0
-   | S m => if is_i (f m) then S (count_paulis m f) else count_paulis m f
-  end.
-
-
-Fixpoint long_z' (n:nat) (f: nat -> paulimat) (j:nat) :=
-  match n with
-   | 0 => (fun (_:R) => I 1)
-   | S m => if is_i (f m) || (j =? 0)
-            then (fun (t:R) => (long_z' m f j t) ⊗ (I 2))
-            else if j =? 1
-                 then fun (t:R) => long_z' m f 0 t ⊗ (phase_shift t)
-                 else fun (t:R) => (long_z' m f (j-1) t ⊗ ∣0⟩⟨0∣) .+ (long_z' m f (j-1) (Ropp t) ⊗ ∣1⟩⟨1∣)
-  end.
-
-Fixpoint add_front (n:nat) (f: nat -> paulimat) :=
-  match n with
-   | 0 => I 1
-   | S m => match (f m) with
-              | paulix => add_front m f ⊗ hadamard
-              | pauliy => add_front m f ⊗ (hadamard × (phase_shift (PI / (IZR 2))))
-              | _ => add_front m f ⊗ I 2
-            end
-  end.
-
-Fixpoint add_end (n:nat) (f:nat -> paulimat) :=
-  match n with
-   | 0 => I 1
-   | S m => match (f m) with
-              | paulix => add_end m f ⊗ hadamard
-              | pauliy => add_end m f ⊗ (hadamard × (phase_shift (- (PI / (IZR 2)))))
-              | _ => add_front m f ⊗ I 2
-            end
-  end.
-
-
-Definition exp_paulis (n:nat) (t:R) (f: nat -> paulimat) :=
-  (add_front n f) × (long_z' n f (count_paulis n f) t) × (add_end n f).
-
+Require Import QBlue.QBlueProofUtility.
 
 
 Module EG := ExtractionGateSet.
@@ -71,29 +29,20 @@ Fixpoint front_half (n:nat) (f: nat -> paulimat) :=
             end
   end.
 
-Fixpoint mid_paulis_aux (n:nat) (amp:R) f v j :=
+Fixpoint mid_paulis (n:nat) (amp:R) f :=
   match n with
-   | 0 => EG.SKIP
-   | S m => if is_i (f m) || (j =? 0)
-            then mid_paulis_aux m amp f v j
-            else if j =? 1
-                 then EG.useq ((EG.CX v m)) (EG.useq (EG.U1 ((IZR 2) * amp) m) ((EG.CX v m)))
-                 else EG.useq ((EG.CX v m)) (EG.useq (mid_paulis_aux m amp f m (Nat.sub j 1)) (EG.CX v m))
-  end.
-
-Fixpoint mid_paulis (n:nat) (amp:R) f j :=
-  match n with
-   | 0 => EG.SKIP
+   | 0 => (EG.SKIP,None)
    | S m => if is_i (f m)
-            then mid_paulis m amp f j
-            else if j =? 0 then EG.SKIP
-            else if j =? 1 then EG.U1 ((IZR 2) * amp) m
-            else (mid_paulis_aux m amp f m (Nat.sub j 1))
+            then mid_paulis m amp f
+            else let (c,b') := mid_paulis m amp f in
+                 match b' with None => (EG.U1 amp m, Some m)
+                            | Some v => (EG.useq (EG.CX m v) (EG.useq c (EG.CX m v)), Some m)
+                 end
   end.
 
 
 Definition synth_digital_ibm_apauli (n:nat) (t:R) (f: nat -> paulimat) :=
- EG.useq (front_half n f) (EG.useq (mid_paulis n t f (count_paulis n f)) (EG.invert (front_half n f))).
+ let (c,b') := (mid_paulis n t f) in EG.useq (front_half n f) (EG.useq c (EG.invert (front_half n f))).
 
 Open Scope nat_scope.
 
@@ -227,52 +176,178 @@ Proof.
   simpl in *. apply WF.
 Qed.
 
+Lemma mid_paulis_WF: forall a amp f, uc_well_typed (EG.to_base_ucom a (fst (mid_paulis a amp f))).
+Proof.
+Admitted.
+
+Lemma long_z_WF: forall n f r, WF_Matrix (fst (long_z n f r)).
+Proof.
+Admitted.
+
+Definition good_b (v: option nat) (b:bool) := match v with None => b = false | Some a => b = true end.
+
+Lemma synth_digital_mid_same: forall n dim amp f, n <= dim -> 0 < dim ->
+                    EG.uc_eval dim (fst (mid_paulis n amp f)) = (fst (long_z n f amp)) ⊗ I (2^(dim - n))
+                            /\ good_b (snd (mid_paulis n amp f)) (snd (long_z n f amp)).
+Proof.
+  intros.
+  induction n; simpl in *; try lia.
+  split.
+  unfold EG.uc_eval.
+  autorewrite with eval_db; try lia. gridify. easy. easy.
+  destruct (is_i (f n)); unfold EG.uc_eval in *; simpl in *.
+  destruct (long_z n f amp) eqn:eq1.
+  destruct (mid_paulis n amp f) eqn:eq2.
+  simpl in *.
+  destruct IHn;try lia.
+  split. rewrite H1. restore_dims.
+  rewrite kron_assoc. rewrite id_kron.
+  assert (2 ^ (dim - n) = 2 ^ 1 * 2 ^ (dim - S n)).
+  rewrite <- Nat.pow_add_r.
+  replace (1 + (dim - S n)) with (dim - n) by lia. easy.
+  rewrite H3. simpl in *. easy.
+  replace m with (fst (long_z n f amp)).
+  apply long_z_WF. rewrite eq1. easy.
+  auto_wf. auto_wf.
+  easy.
+  destruct (mid_paulis n amp f) eqn:eq1.
+  destruct (long_z n f amp) eqn:eq2.
+  simpl in *.
+  destruct IHn. lia. split.
+  unfold good_b in *. destruct o. subst. simpl in *.
+  rewrite H1.
+  rewrite denote_cnot.
+  rewrite unfold_ueval_cnot.
+  bdestruct (n <? n0).
+  autorewrite with eval_db; try lia.
+  bdestruct (n + (1 + (n0 - n - 1) + 1) <=? dim). simpl in *.
+  replace ((dim - (n + S (n0 - n - 1 + 1)))) with (dim - S n0) by lia.
+  simpl in *. 
+Admitted.
+
+(*
+
+  gridify.
+  prep_matrix_equality.
+  rewrite kron_plus_distr_l.
+  rewrite Mmult_assoc; try auto_wf.
+  rewrite kron_plus_distr_r.
+  Set Printing All.
+  rewrite kron_id_dist_l.
+  bdestruct (0 + 1 <=? 1); try lia.
+  replace R0 with (IZR Z0); try (easy; simpl in.
+  split.
+  rewrite I_rotation. gridify. easy.
+  rewrite phase_shift_rotation. split.
+  autorewrite with eval_db.
+  bdestruct (0 + 1 <=? 1);try lia.
+  gridify. easy.
+  remember (S n) as a.
+  destruct (is_i (f a)).
+  destruct (long_z a f amp). simpl in *.
+  assert (0 < a) by lia. apply IHn in H0. destruct H0.
+  rewrite <- H0; try lia. split.
+  unfold EG.uc_eval.
+  rewrite change_dim_unfold with (m := S a) (n := a).
+  replace (S a) with (a + 1) by lia.
+  rewrite <- pad_dims_r. easy.
+  apply mid_paulis_WF. easy.
+  destruct (mid_paulis a amp f) eqn:eq1; simpl in *.
+  destruct (long_z a f amp) eqn:eq2. simpl in *.
+  destruct o. simpl in *. destruct IHn;subst;simpl in *. lia.
+
+
+Lemma mid_paulis_WF : forall n amp f b j, well_formed ((mid_paulis n amp f b j)).
+Proof.
+  induction n; intros; simpl in *.
+  apply WF_uapp. easy.
+  destruct (is_i (f n) || (j =? 0)). apply IHn.
+  bdestruct (j =? 1).
+  destruct b.
+  apply WF_useq.
+  apply WF_uapp. easy.
+  apply WF_useq.
+  apply WF_uapp. easy.
+  apply WF_uapp. easy.
+  apply WF_uapp. easy.
+  destruct b.
+  apply WF_useq.
+  apply WF_uapp. easy.
+  apply WF_useq. apply IHn.
+  apply WF_uapp. easy.
+  apply IHn.
+Qed.
+
+
+
+Lemma mid_paulis_aux_EG_WF : forall n dim amp f b j, n <= dim -> 0 < dim -> good_b n dim b ->
+                   uc_well_typed (to_base_ucom dim (mid_paulis n amp f b j)).
+Proof.
+  induction n; intros; simpl in *. apply SQIR.WT_app1. easy.
+  destruct (is_i (f n) || (j =? 0)); simpl in *.
+  apply IHn; try lia.
+  unfold good_b in *. destruct b; try easy. split. lia. lia.
+  bdestruct (j =? 1). simpl.
+  destruct b. simpl.
+  apply SQIR.WT_seq. apply uc_well_typed_CNOT. unfold good_b in *.
+  split. lia. split. lia. lia.
+  apply SQIR.WT_seq.
+  apply SQIR.WT_app1. lia.
+  apply uc_well_typed_CNOT.
+  unfold good_b in *. split. lia.
+  split. lia. lia.
+  simpl.
+  apply SQIR.WT_app1. lia.
+  unfold good_b in *. destruct b.
+  simpl. constructor.
+  apply uc_well_typed_CNOT.
+  split. lia. split. lia. lia.
+  simpl. constructor.
+  apply IHn; try lia.
+  apply uc_well_typed_CNOT.
+  split. lia. split. lia. lia.
+  apply IHn. lia. lia. split. lia. easy.
+Qed.
+
+
+Lemma long_z_wf: forall n f j amp, WF_Matrix (long_z n f j amp).
+Proof.
+  induction n; intros; try auto_wf. simpl.
+  destruct (is_i (f n) || (j =? 0)). simpl. apply WF_kron; try lia. apply IHn.
+  auto_wf.
+  bdestruct (j =? 1). apply WF_kron; try lia. apply IHn. auto_wf.
+  restore_dims.
+  apply WF_plus.
+  apply WF_kron; try lia. apply IHn. auto_wf.
+  apply WF_kron; try lia. apply IHn. auto_wf.  
+Qed.
+ *)
+
 
 Theorem synth_digital_ibm_pauli_correctness: forall (n : nat) (t : R) (f : nat->paulimat), 0 < n ->
   exp_paulis n t f = EG.uc_eval n (synth_digital_ibm_apauli n t f).
 Proof.
   intros.
-  unfold exp_paulis,synth_digital_ibm_apauli,EG.uc_eval.
-  induction n; simpl in *. inv H.
-  destruct n; simpl in *.
-  destruct (f 0); simpl in *; unfold pad_u,pad.
-  bdestruct (0 + 1 <=? 1); try lia.
-  rewrite eval_H.
-  replace R0 with (IZR Z0); try (easy; simpl in *).
-  rewrite I_rotation.
-  rewrite phase_shift_rotation.
-  rewrite <- phase_adjoint.
-  rewrite <- phase_shift_rotation.
-  rewrite I_rotation.
+  unfold exp_paulis,synth_digital_ibm_apauli.
+  destruct (long_z n f t ) eqn:eq1.
+  destruct (mid_paulis n t f) eqn:eq2.
+  rewrite synth_front_correctness; try lia.
+  specialize (synth_digital_mid_same n n t f) as H1.
+  destruct H1; try lia; simpl in *.
+  assert (fst (long_z n f t) ⊗ I (2 ^ (n - n)) = fst (long_z n f t)).
+  replace (n-n) with 0 by lia. simpl in *.
+  rewrite kron_1_r. easy. rewrite H2 in H0.
+  rewrite eq1 in H0; simpl in *. rewrite <- H0.
+  rewrite eq2.
+  unfold EG.uc_eval; simpl in *.
+  specialize (invert_same n (front_half n f)) as H3.
+  unfold EG.uc_eval in H3.
+  rewrite H3.
   simpl in *.
-  gridify.
-  bdestruct (0 + 1 <=? 1); try lia.
-  rewrite eval_H.
-  replace R0 with (IZR Z0); try (easy; simpl in *).
-  repeat rewrite phase_shift_rotation.
-  repeat rewrite <- phase_adjoint.
-  repeat rewrite <- phase_shift_rotation.
-  rewrite I_rotation. simpl in *.
-  repeat rewrite kron_1_r.
-  repeat rewrite kron_1_l; try auto_wf.
-  rewrite id_adjoint_eq.
-  rewrite Mmult_1_l; try auto_wf.
-  repeat rewrite Mmult_1_r; try auto_wf.
-  rewrite phase_shift_rotation.
-  rewrite phase_adjoint.
-  rewrite Mmult_assoc.
-  rewrite Mmult_assoc.
-  replace ((hadamard × (hadamard × phase_shift (- (PI / 2)))))
-          with (((hadamard × hadamard) × phase_shift (- (PI / 2)))); try (rewrite Mmult_assoc; easy).
-  replace ((hadamard × (hadamard × phase_shift ((PI / 2))))) 
-          with (((hadamard × hadamard) × phase_shift ((PI / 2)))); try (rewrite Mmult_assoc; easy).
-  replace (hadamard × hadamard) with (I 2) by (rewrite MmultHH; easy).
-  gridify.
-  repeat rewrite phase_mul.
-  R_field_simplify.
-  replace (Rplus (PI / IZR 2) (- (PI / IZR 2))) with (IZR 0) by lra.
-  replace (Rplus (- (PI / IZR 2)) (PI / IZR 2)) with (IZR 0) by lra.
-Admitted.
+  rewrite <- invert_correct.
+  easy.
+  apply front_has_WF. 
+Qed.
 
 
 

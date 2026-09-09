@@ -161,6 +161,42 @@ Proof.
 Qed.
 Global Hint Resolve WF_opp : wf_db.
 
+
+(* Define long z interaction as the basis for exp of a pauli-string matrix. *)
+Fixpoint count_paulis (n:nat) (f:nat -> paulimat) : nat :=
+  match n with
+   | 0 => 0
+   | S m => if is_i (f m) then S (count_paulis m f) else count_paulis m f
+  end.
+
+
+Fixpoint long_z (n:nat) (f: nat -> paulimat) t : Square (2^n) * bool :=
+  match n with
+   | 0 => (I 1, false)
+   | S m => if is_i (f m)
+            then let (c,b') := (long_z m f t) in (c ⊗ (I 2), b')
+            else let (c,b') := long_z m f t in
+                               if negb b' then (c ⊗ (phase_shift t), true)
+                                          else ((c ⊗ ∣0⟩⟨0∣) .+ ((σx × c × σx) ⊗ ∣1⟩⟨1∣),true)
+  end.
+
+Fixpoint add_front (n:nat) (f: nat -> paulimat) : Square (2^n) :=
+  match n with
+   | 0 => I 1
+   | S m => match (f m) with
+              | paulix => add_front m f ⊗ hadamard
+              | pauliy => add_front m f ⊗ (hadamard × (phase_shift (PI / (IZR 2))))
+              | _ => add_front m f ⊗ I 2
+            end
+  end.
+
+
+Definition exp_paulis (n:nat) (t:R) (f: nat -> paulimat) : Square (2^n) :=
+  let (c,b) := long_z n f t in 
+  (adjoint (add_front n f)) × c × (add_front n f).
+
+
+
 (*********** Transform lowprog into Matrix. **************)
 
 Axiom expH_conj_eq_conj_expH: forall (t : R) (k : nat) (U P : Square k),
