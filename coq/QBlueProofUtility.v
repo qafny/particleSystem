@@ -155,6 +155,115 @@ Definition is_hermitian_mat {n : nat} (M : Matrix n n) : Prop :=
 Definition is_hermitian_lowprog (H : lowprog) (n : nat) : Prop :=
   is_hermitian_mat (lowprog2mat H n).
 
+(*********** norm_prog: the real-amplitude Pauli-string representation.
+   lowprog's amplitude is an unrestricted C, which is more general than any
+   actual Hamiltonian coefficient needs to be -- at the Pauli-string level
+   every term's amplitude is real (Definition 3.1 in the paper: "rj is a
+   real number"). Working with norm_prog (R amplitude) instead of lowprog
+   (C amplitude) throughout the Trotter proofs lets Hermiticity of the
+   generator be PROVED rather than assumed away, which is what several
+   expH axioms above had to route around (e.g. expH_unitary is stated
+   unconditionally on M rather than "M Hermitian implies..." specifically
+   because lowprog_ten's C amplitude gave no way to prove Hermiticity). **************)
+
+Definition normten2mat (amp : R) (n : nat) (f : nat -> paulimat) : Matrix (2^n) (2^n) :=
+  lowprogten2mat (RtoC amp) n f.
+
+Lemma wf_normten2mat : forall (amp : R) (n : nat) (f : nat -> paulimat),
+  WF_Matrix (normten2mat amp n f).
+Proof. intros. unfold normten2mat. auto with wf_db. Qed.
+Global Hint Resolve wf_normten2mat : wf_db.
+
+Fixpoint norm_prog2mat (np : norm_prog) (n : nat) : Matrix (2^n) (2^n) :=
+  match np with
+  | [] => Zero
+  | (amp, f) :: nx => Mplus (normten2mat amp n f) (norm_prog2mat nx n)
+  end.
+
+Lemma wf_norm_prog2mat : forall (np : norm_prog) (n : nat), WF_Matrix (norm_prog2mat np n).
+Proof.
+  induction np as [| [amp f] nx IH]; intros n.
+  - simpl. apply WF_Zero.
+  - simpl. apply WF_plus; auto with wf_db.
+Qed.
+Global Hint Resolve wf_norm_prog2mat : wf_db.
+
+(* norm_prog2mat analogs of lowprog2mat_app/lowprog2mat_rev above -- same
+   proofs, same reason (Mplus is commutative/associative). *)
+Lemma norm_prog2mat_app : forall l1 l2 d,
+  norm_prog2mat (l1 ++ l2) d = Mplus (norm_prog2mat l1 d) (norm_prog2mat l2 d).
+Proof.
+  induction l1 as [| [amp f] l1' IH]; intros l2 d.
+  - simpl. rewrite Mplus_0_l; auto with wf_db.
+  - simpl. rewrite IH. rewrite Mplus_assoc. reflexivity.
+Qed.
+
+Lemma norm_prog2mat_rev : forall l d, norm_prog2mat (rev l) d = norm_prog2mat l d.
+Proof.
+  induction l as [| [amp f] l' IH]; intros d.
+  - reflexivity.
+  - simpl. rewrite norm_prog2mat_app. simpl.
+    rewrite Mplus_0_r; auto with wf_db.
+    rewrite IH. apply Mplus_comm.
+Qed.
+
+Definition is_hermitian_norm_prog (np : norm_prog) (n : nat) : Prop :=
+  is_hermitian_mat (norm_prog2mat np n).
+
+Lemma Cconj_RtoC : forall r : R, Cconj (RtoC r) = RtoC r.
+Proof. intros r. lca. Qed.
+
+Lemma scale_adjoint : forall {m n} (c : C) (A : Matrix m n),
+  (scale c A) † = scale (Cconj c) (A †).
+Proof.
+  intros m n c A.
+  unfold adjoint, scale.
+  prep_matrix_equality.
+  apply Cconj_mult_distr.
+Qed.
+
+Lemma hermitian_pauli2mat : forall p, is_hermitian_mat (pauli2mat p).
+Proof.
+  intros p. unfold is_hermitian_mat. destruct p; simpl.
+  - exact σx_hermitian.
+  - exact σy_hermitian.
+  - exact σz_hermitian.
+  - exact I_hermitian.
+Qed.
+
+(* The key payoff: a norm_prog-embedded Hamiltonian is ALWAYS Hermitian,
+   unconditionally, provably -- not axiomatized, not assumed. Pauli matrices
+   are Hermitian, tensoring preserves that, scaling by a REAL amplitude
+   preserves that (unlike a general complex one), and summing preserves it. *)
+Lemma hermitian_normten : forall amp n f, is_hermitian_mat (normten2mat amp n f).
+Proof.
+  intros amp n f.
+  unfold normten2mat, is_hermitian_mat.
+  induction n as [| n' IH].
+  - simpl. rewrite scale_adjoint.
+    rewrite Cconj_RtoC.
+    rewrite id_adjoint_eq.
+    reflexivity.
+  - cbn [lowprogten2mat].
+    (* NOTE: a bare `rewrite kron_adjoint` fails to find this subterm despite
+       being present (a rewrite-vs-apply matching quirk with kron's implicit
+       dimension arguments) -- transitivity + apply is the robust workaround. *)
+    transitivity (kron ((pauli2mat (f n')) †) ((lowprogten2mat amp n' f) †)).
+    + apply kron_adjoint.
+    + rewrite IH. rewrite (hermitian_pauli2mat (f n')). reflexivity.
+Qed.
+
+Lemma hermitian_norm_prog2mat : forall np n, is_hermitian_mat (norm_prog2mat np n).
+Proof.
+  induction np as [| [amp f] nx IH]; intros n.
+  - unfold is_hermitian_mat. simpl. apply zero_adjoint_eq.
+  - unfold is_hermitian_mat in *. simpl.
+    rewrite Mplus_adjoint.
+    rewrite (hermitian_normten amp n f).
+    rewrite IH.
+    reflexivity.
+Qed.
+
 Lemma WF_opp : forall {m n} (A : Matrix m n), WF_Matrix A -> WF_Matrix (Mopp A).
 Proof.
   intros m n A H. unfold Mopp. auto with wf_db.
