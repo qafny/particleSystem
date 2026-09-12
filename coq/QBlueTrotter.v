@@ -1,4 +1,8 @@
-(* Define the trotterization step, Lie-Trotter fomular, Qdrift *)
+(* Define the trotterization step, Lie-Trotter fomular, Qdrift.
+   Operates on norm_prog (real amplitude) rather than lowprog (complex
+   amplitude) -- at the Pauli-string level every Hamiltonian term's
+   coefficient is real (paper's Definition 3.1), so this is the natural
+   representation and avoids unnecessary complex-number bookkeeping. *)
 Require Import QuantumLib.Complex.
 
 Require Import QBlue.QBlueUtility.
@@ -9,31 +13,30 @@ Require Import QBlue.QBlueSyntax.
 Proposition F.3: err = (L Lamda t)^2 / r exp(L Lamda t / r) *)
 (* Lamda = largest norm of Hi, it is 1 for pauli tensors *)
 (* r = N/L; L: number of terms *)
-(* TODO: need prove z = fst z *)
-Definition trotter_step (err t : R) (input : lowprog) : nat := 
+Definition trotter_step (err t : R) (input : norm_prog) : nat :=
   let L := INR (length input) in
   let n1 := (L * L * t * t / err)%R in
-  ceilR_N (n1 * (exp (t * L / n1))). 
+  ceilR_N (n1 * (exp (t * L / n1))).
 
 
-(* split input into small steps by standard trotterization 
-exp(-it (H1 + H2 + H3)) => exp(-it/N (H1 + H2 + H3)) 
+(* split input into small steps by standard trotterization
+exp(-it (H1 + H2 + H3)) => exp(-it/N (H1 + H2 + H3))
 *)
-Definition trotter_astep (N : R) (ap : lowprog) : lowprog :=
-  mult_r_hplus (R1 / N) ap.
+Definition trotter_astep (N : R) (ap : norm_prog) : norm_prog :=
+  mult_r_normprog (R1 / N) ap.
 
 
-Fixpoint trotter_nstep_acc (N : nat) (ap : lowprog) (acc : lowprog) : lowprog :=
+Fixpoint trotter_nstep_acc (N : nat) (ap : norm_prog) (acc : norm_prog) : norm_prog :=
   match N with
   | 0 => rev acc
   | S n => trotter_nstep_acc n ap (rev_append ap acc)
   end.
 
-Definition trotter_nstep (N : nat) (ap : lowprog) : lowprog :=
+Definition trotter_nstep (N : nat) (ap : norm_prog) : norm_prog :=
   trotter_nstep_acc N ap [].
 
 (* Low-level Hamiltonian after being trottered into more steps. *)
-Definition trotter (err t: R) (input : lowprog) : lowprog :=
+Definition trotter (err t: R) (input : norm_prog) : norm_prog :=
   let N := trotter_step err t input in
   let astep := trotter_astep (INR N) input in
   trotter_nstep N astep.
@@ -43,12 +46,12 @@ Definition trotter (err t: R) (input : lowprog) : lowprog :=
 Proposition F.4: err = (2L Lamda t)^3 / 3r^2 * exp(2L Lamda t / r) *)
 (* Lamda = largest norm of Hi, it is 1 for pauli tensors *)
 (* r = N/L; L: number of terms *)
-Definition trotter_step_2nd_order (err t : R) (input : lowprog) : nat := 
+Definition trotter_step_2nd_order (err t : R) (input : norm_prog) : nat :=
   let L := INR (length input) in
   let n1 := sqrt ((pow (R2 * L * Rabs t) 3%nat) / ((R2 + R1) * err)) in
-  ceilR_N (n1 * (exp (R2 * t * L / n1))). 
+  ceilR_N (n1 * (exp (R2 * t * L / n1))).
 
-Definition trotter_2nd_order (err t: R) (input : lowprog) : lowprog :=
+Definition trotter_2nd_order (err t: R) (input : norm_prog) : norm_prog :=
   let N := trotter_step_2nd_order err t input in
   let astep1 := trotter_astep ((INR N) * R2) (rev input) in
   let astep2 := trotter_astep ((INR N) * R2) input in

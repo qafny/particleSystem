@@ -15,8 +15,28 @@ Definition paulimat_eqb (a b : paulimat) : bool :=
   end.
 
 Definition mult_r_hplus (r : R) (lp : lowprog) : lowprog :=
-  map (fun p => let '(x, f) := p in 
+  map (fun p => let '(x, f) := p in
   let z : C := ((r * (fst x)) %R, (r * (snd x)) %R) in (z, f)) lp.
+
+(* norm_prog analog of mult_r_hplus: scaling a real-amplitude Hamiltonian by
+   a real scalar is just real multiplication, no complex-pair bookkeeping. *)
+Definition mult_r_normprog (r : R) (np : norm_prog) : norm_prog :=
+  map (fun p => let '(amp, f) := p in ((r * amp)%R, f)) np.
+
+(* Bridging conversions between lowprog (C amplitude) and norm_prog (R
+   amplitude) -- needed at the boundary where norm_prog-based code (e.g.
+   QBlueTrotter.v) is wired into lowprog-based code (e.g. the particle
+   transformation output / QBlueSynth's input) in QBlueCompile.v.
+   lowprog2norm_prog takes the real part of each amplitude; every Hamiltonian
+   this project actually constructs has real coefficients (paper's
+   Definition 3.1), so this is exact in practice, not an approximation --
+   but it's not statically enforced by lowprog's type, so this conversion
+   silently drops any imaginary part a malformed lowprog might have. *)
+Definition lowprog2norm_prog (lp : lowprog) : norm_prog :=
+  map (fun p => let '(z, f) := p in (fst z, f)) lp.
+
+Definition norm_prog2lowprog (np : norm_prog) : lowprog :=
+  map (fun p => let '(amp, f) := p in (RtoC amp, f)) np.
 
 
 Definition R2 : R := R1 + R1.

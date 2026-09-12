@@ -33,18 +33,22 @@ err: tolerance; t: time;
 exp: high-level hamiltonian;
 it: high-level hamiltonian type;
 nbit: number of qubits for exp, length of it *)
+(* trotter/trotter_2nd_order now operate on norm_prog (real amplitude); bridge
+   at this boundary with lowprog2norm_prog/norm_prog2lowprog since the
+   surrounding pipeline (particle transformation, synthesis) is still
+   lowprog-based. See QBlueUtility.v for why. *)
 Definition translate_highp2circ (err t : R) (exp : blueExp) (it : iota) (nbit : nat) : EG.ucom EG.U :=
   let lowp1 : lowprog := bexp_to_lowprog exp it in
-  let lowp : lowprog := trotter err t lowp1 in
+  let lowp : lowprog := norm_prog2lowprog (trotter err t (lowprog2norm_prog lowp1)) in
   synth_digital_ibm t nbit lowp.
 
 
-Definition translate_lowp2circ_std (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
-  let lowp : lowprog := trotter err t lp in 
+Definition translate_lowp2circ_std (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
+  let lowp : lowprog := norm_prog2lowprog (trotter err t (lowprog2norm_prog lp)) in
   synth_digital_ibm t nbit lowp.
 
-Definition translate_lowp2circ_std_2nd_order (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
-  let lowp : lowprog := trotter_2nd_order err t lp in 
+Definition translate_lowp2circ_std_2nd_order (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
+  let lowp : lowprog := norm_prog2lowprog (trotter_2nd_order err t (lowprog2norm_prog lp)) in
   synth_digital_ibm t nbit lowp.
 
 Definition ngates_per_term (t : R) (lp : lowprog) (nbit : nat) (totw : R) : nat :=
@@ -92,7 +96,7 @@ Definition translate_stdTrotter_ibmdigi (lp : lowprog) (ist nbit : nat)
 
 Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat)
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
-  let r := trotter_step err t lp in
+  let r := trotter_step err t (lowprog2norm_prog lp) in
   let nt := length lp in
   let totw := sum_w lp nt in
   let scale := (R1 / INR r) % R in
@@ -106,7 +110,7 @@ Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat
 
 Definition translate_lowp2circ_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) 
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
-  let r := trotter_step_2nd_order err t lp in
+  let r := trotter_step_2nd_order err t (lowprog2norm_prog lp) in
   let nt := length lp in
   let totw := sum_w lp nt in
   let scale := (R1 / R2 / INR r) % R in
@@ -244,7 +248,7 @@ Definition translate_stdTrotter_indiAna (lp : lowprog) (ist nbit : nat)
 
 
 Definition translate_lowp2IndiAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let r := trotter_step err t lp in
+  let r := trotter_step err t (lowprog2norm_prog lp) in
   let nt := length lp in
   let totw := sum_w lp nt in
   let scale := (R1 / INR r) % R in
@@ -257,7 +261,7 @@ Definition translate_lowp2IndiAna_stdTrotter (err t : R) (lp : lowprog) (nbit : 
   end.
 
 Definition translate_lowp2IndiAna_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let r := trotter_step_2nd_order err t lp in
+  let r := trotter_step_2nd_order err t (lowprog2norm_prog lp) in
   let nt := length lp in
   let totw := sum_w lp nt in
   let scale := (R1 / R2 / INR r) % R in
@@ -319,12 +323,12 @@ Definition translate_lowp2IndiAna_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat
 
   
 (* Translate to IBM Analog *)
-Definition translate_lowp2IBMAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
-  let lowp : lowprog := trotter err t lp in 
+Definition translate_lowp2IBMAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let lowp : lowprog := norm_prog2lowprog (trotter err t (lowprog2norm_prog lp)) in
   synth_analog_ibm t nbit lowp.
 
-Definition translate_lowp2IBMAna_std_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
-  let lowp : lowprog := trotter_2nd_order err t lp in 
+Definition translate_lowp2IBMAna_std_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let lowp : lowprog := norm_prog2lowprog (trotter_2nd_order err t (lowprog2norm_prog lp)) in
   synth_analog_ibm t nbit lowp.
 
 Definition translate_lowp2IBMAna_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
