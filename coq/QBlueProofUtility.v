@@ -278,6 +278,8 @@ Fixpoint count_paulis (n:nat) (f:nat -> paulimat) : nat :=
    | S m => if is_i (f m) then S (count_paulis m f) else count_paulis m f
   end.
 
+Definition first_pad (n:nat) : Square (2^n) := if n <? 2 then σx else σx ⊗ I (2^(n-1)).
+
 
 Fixpoint long_z (n:nat) (f: nat -> paulimat) t : Square (2^n) * bool :=
   match n with
@@ -286,7 +288,7 @@ Fixpoint long_z (n:nat) (f: nat -> paulimat) t : Square (2^n) * bool :=
             then let (c,b') := (long_z m f t) in (c ⊗ (I 2), b')
             else let (c,b') := long_z m f t in
                                if negb b' then (c ⊗ (phase_shift t), true)
-                                          else ((c ⊗ ∣0⟩⟨0∣) .+ ((σx × c × σx) ⊗ ∣1⟩⟨1∣),true)
+                                          else ((c ⊗ ∣0⟩⟨0∣) .+ (( first_pad m × c × first_pad m) ⊗ ∣1⟩⟨1∣),true)
   end.
 
 Fixpoint add_front (n:nat) (f: nat -> paulimat) : Square (2^n) :=
@@ -301,8 +303,7 @@ Fixpoint add_front (n:nat) (f: nat -> paulimat) : Square (2^n) :=
 
 
 Definition exp_paulis (n:nat) (t:R) (f: nat -> paulimat) : Square (2^n) :=
-  let (c,b) := long_z n f t in 
-  (adjoint (add_front n f)) × c × (add_front n f).
+  (adjoint (add_front n f)) × (fst (long_z n f t)) × (add_front n f).
 
 
 

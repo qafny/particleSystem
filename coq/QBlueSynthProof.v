@@ -370,13 +370,99 @@ Fixpoint add_front_in (n:nat) (f: nat -> paulimat) : Square (2^n) :=
             end
   end.
 
+Lemma phase_rotation_join : forall a a' b c, phase_shift a × rotation a' b c = rotation a' (b+a) c.
+Proof.
+  intros. solve_matrix. 
+  all: autorewrite with R_db C_db Cexp_db trig_db.
+  lca. lca.
+Qed.
+
+Lemma rotation_phase_join : forall a a' b c, rotation a' b c × phase_shift a = rotation a' b (a+c).
+Proof.
+  intros. solve_matrix. 
+  all: autorewrite with R_db C_db Cexp_db trig_db.
+  lca. lca.
+Qed.
+
 Definition inter_in_synth (n:nat) (f: nat -> paulimat) t :=
-  (adjoint (add_front_in n f)) × add_h n f × long_x_inter n f t × add_h n f × (add_front_in n f).
+  (adjoint (add_front_in n f)) × long_x_inter n f t × (add_front_in n f).
+
+Lemma add_front_eq: forall n f, add_h n f × add_front_in n f = add_front n f.
+Proof.
+  intros. induction n; simpl in *.
+  gridify.
+  destruct (f n); simpl in *.
+  restore_dims.
+  rewrite kron_mixed_product.
+  rewrite IHn. gridify.
+  restore_dims.
+  rewrite kron_mixed_product.
+  rewrite IHn. easy.
+  restore_dims.
+  rewrite kron_mixed_product.
+  rewrite IHn.
+  assert ((hadamard
+   × (phase_shift (PI / 2) × x_rotation (PI / 2)
+      × phase_shift (PI / 2))) = I 2).
+  rewrite <- Rx_rotation.
+  rewrite phase_rotation_join.
+  rewrite rotation_phase_join.
+  rewrite <- hadamard_rotation.
+  replace (3 * PI / 2 + PI / 2)%R with (2 *PI)%R by lra.
+  replace (PI / 2 + PI / 2)%R with (PI)%R by lra.
+  solve_matrix.
+  1-4: autorewrite with R_db C_db Cexp_db trig_db.
+  unfold Copp,Cmult,Cplus; simpl in *.
+  autorewrite with R_db C_db Cexp_db trig_db.
+  repeat rewrite Ropp_mult_distr_l.
+  replace (- (-1))%R with 1%R by lra.
+  autorewrite with R_db C_db Cexp_db trig_db.
+  specialize (sin2_cos2 ((PI * / 2 * / 2))) as H.
+  unfold Rsqr in H. rewrite Rplus_comm. rewrite H. lca.
+  lca. lca.
+  unfold Copp,Cmult,Cplus; simpl in *.
+  autorewrite with R_db C_db Cexp_db trig_db.
+  rewrite Ropp_mult_distr_r.
+  repeat rewrite Ropp_mult_distr_l.
+  replace (- (-1))%R with 1%R by lra.
+  autorewrite with R_db C_db Cexp_db trig_db.
+  specialize (sin2_cos2 ((PI * / 2 * / 2))) as H.
+  unfold Rsqr in H. rewrite H. lca.
+  rewrite H.
+  easy.
+  gridify.
+  rewrite IHn. easy.
+Qed.
+
+Lemma add_h_inv_same : forall n f, (add_h n f) † =  add_h n f.
+Proof.
+  intros. induction n.
+  gridify.
+  simpl in *.
+  destruct (is_i (f n)).
+  autorewrite with eval_db.
+  restore_dims.
+  rewrite kron_adjoint.
+  gridify. rewrite IHn. easy.
+  restore_dims.
+  rewrite kron_adjoint.
+  rewrite IHn. autorewrite with eval_db.
+  assert ((hadamard) † = hadamard).
+  solve_matrix_fast. rewrite H. easy.
+Qed.
 
 Lemma synth_in_machine_same: forall n amp f,
-                    inter_in_synth n f amp = (fst (long_z n f amp)).
+                    inter_in_synth n f amp = exp_paulis n amp f.
 Proof.
-Admitted.
+ unfold inter_in_synth,long_x_inter,exp_paulis.
+ intros.
+ repeat rewrite Mmult_assoc.
+ rewrite add_front_eq.
+ rewrite <- Mmult_assoc.
+ rewrite <- add_h_inv_same.
+ rewrite <- Mmult_adjoint.
+ rewrite add_front_eq. easy.
+Qed.
 
 
 
