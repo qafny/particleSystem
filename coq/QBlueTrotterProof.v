@@ -298,6 +298,9 @@ Axiom expmat_commnute_ineq: forall (n : nat) (m1 m2 : Square n) (t : R),
 Axiom matnorm_sum_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
   norm n (Mplus m1 m2) <= (norm n m1) + (norm n m2).
 
+Axiom matnorm_scale : forall (n : nat) (c : R) (A : Square n),
+  norm n (scale c A) = (Rabs c * norm n A)%R.
+
 Axiom zero_norm_eqzero: forall (d: nat),
   norm d Zero = 0.
 

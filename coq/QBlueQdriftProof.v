@@ -6,7 +6,14 @@ Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueType.
 Require Import QBlue.QBlueCompile.
 Require Import QBlue.QBlueParTransJwt.
+Require Import QuantumLib.Matrix.
+Require Import QBlue.QBlueProofUtility.
+Require Import QBlue.QBlueSyntax.
+Require Import QBlue.QBlueQdrift.
+Require Import QBlue.QBlueTrotterProof.
+Require Import QuantumLib.VecSet.
 Local Open Scope R_scope.
+
 
 Require Import List.
 Import ListNotations.
@@ -15,263 +22,297 @@ Local Open Scope list_scope.
 From SQIR Require Import SQIR. 
 
 Local Open Scope matrix_scope.
+(* The "no randomness" version: evolve rho by the full combined Hamiltonian,
+   for the per-round time step s (= t/N -- the ordinary, un-boosted step). *)
+Definition qdrift_round_ideal (d : nat) (s : R) (hlist : norm_prog) (rho : Square (2^d)) : Square (2^d) :=
+  let U := expH (2^d) s (norm_prog2mat hlist d) in
+  Mmult U (Mmult rho (U †)).
 
-
-(* expH: matrix exponential of a Hamiltonian H (dimension nd). *)
-(* Truncated Taylor series for exp(- itH) as a matrix: I + (-it)H + (-itH)^2/2! + ... *)
-Fixpoint expH (nd : nat) (t : R) (Ham : Square nd) (n : nat) : Square nd :=
-  match n with
-  | 0 => I nd
-  | S n' =>
-      let tau := (-Ci * t)%C in
-      let term := scale (Cpow tau n / INR (fact n)) (Mmult_n n Ham) in
-      Mplus (expH nd t Ham n') term
+(* The actual QDrift round, averaged over its own randomness: pick term i with
+   probability |amp_i|/lam, evolve rho by conjugating with exp(-i tau sign(amp_i) H_i). *)
+Fixpoint qdrift_round (d : nat) (tau lam : R) (hlist : norm_prog) (rho : Square (2^d)) : Square (2^d) :=
+  match hlist with
+  | [] => Zero
+  | (amp, f) :: rem =>
+    let sgn := if Rltb amp R0 then (- R1)%R else R1 in
+    let U := expH (2^d) tau (normten2mat sgn d f) in
+    Mplus (scale (Rabs amp / lam)%R (Mmult U (Mmult rho (U †))))
+          (qdrift_round d tau lam rem rho)
   end.
 
-
-(* Liouville commutator on nd×nd density matrices. *)
-Definition liouville_comm (nd : nat) (H rho : Square nd) : Square nd :=
-  Ci .* (Mminus (Mmult H rho) (Mmult rho H)).
-
-Definition Lfun (nd : nat) (H : Square nd) : Square nd -> Square nd :=
-  fun rho => liouville_comm nd H rho.
-
-(* L^n: n-fold application of a superoperator L to a density matrix. *)
-Fixpoint Lfun_power_helper (nd : nat) (L : Square nd -> Square nd) (n : nat) (rho : Square nd) : Square nd :=
-  match n with
-  | 0 => rho
-  | S n' => L (Lfun_power_helper nd L n' rho)
-  end.
-
-Definition Lfun_power (nd : nat) (L : Square nd -> Square nd) (n : nat) : Square nd -> Square nd :=
-  fun rho => Lfun_power_helper nd L n rho.
-
-(* Truncated Taylor series for exp(t L) as a matrix: I + tL + (tL)^2/2! + ... *)
-Fixpoint exp_expansion_L (nd : nat) (t : R) (L : Square nd -> Square nd) (n : nat) (rho : Square nd) 
-: Square nd :=
-  match n with
-  | 0 => I nd
-  | S n' =>
-      let term := scale ((t ^ n) / INR (fact n)) (Lfun_power nd L n rho) in
-      Mplus (exp_expansion_L nd t L n' rho) term
-  end.
+(* One QDrift round vs. the ideal evolution it stands in for. Campbell,
+   "A random compiler for fast Hamiltonian simulation" (arXiv:1811.08017),
+   App. B, Eq. (B10)-(B12): with tau = lam*t/N and lam = sum |h_j|, the
+   diamond distance d = (1/2)||.|| of one round is at most
+   2 tau^2 e^(2 tau) (his (2 lam^2 t^2 / N^2) e^(2 lam t / N)); we state the
+   un-halved norm, hence the 4. Needs lam to really be the total weight, so
+   the probabilities |amp|/lam sum to 1 -- without that the statement is false. *)
+Axiom qdrift_round_bound : forall (d : nat) (tau lam : R) (hlist : norm_prog) (rho : Square (2^d)),
+  lam > 0 ->
+  lam = sum_w hlist (length hlist) ->
+  WF_Matrix rho ->
+  norm (2^d) rho <= 1 ->
+  norm (2^d) (Mminus (qdrift_round d tau lam hlist rho)
+                      (qdrift_round_ideal d (tau/lam) hlist rho))
+  <= 4 * tau * tau * exp (2 * tau).
 
 
-(* expL: matrix exponential of a superoperator L (dimension nd). *)
-Definition expL (nd : nat) (t : R) (L : Square nd -> Square nd) (k : nat) : Square nd :=
-  exp_expansion_L nd t L k (I nd).
 
-
-(*********** QDrift channel error (arXiv:1711.10980, Eq. 15-16) ***************)
-(* gold = exp^{t L},  L = sum_j h_j L_j
-   approx = (sum_j (h_j / lambda) exp^{lambda t / N L_j})^N *)
-
-Fixpoint sum_weighted_gens (nd : nat) (weights : list R) (gens : list (Square nd)) : Square nd :=
-  match weights, gens with
-  | [], _ => Zero
-  | _, [] => Zero
-  | w :: wl, g :: gl => Mplus (scale w g) (sum_weighted_gens nd wl gl)
-  end.
-
-Fixpoint weighted_exp_channel_sum
-  (nd : nat) (exp1 : R -> Square nd -> Square nd)
-  (lam t : R) (N : nat) (weights : list R) (gens : list (Square nd)) : Square nd :=
-  match weights, gens with
-  | [], _ => Zero
-  | _, [] => Zero
-  | w :: wl, g :: gl =>
-    Mplus (scale (w / lam) (exp1 (lam * t / INR N) g))
-          (weighted_exp_channel_sum nd exp1 lam t N wl gl)
-  end.
-
-Definition expected_qdrift_step
-  (nd : nat) (exp1 : R -> Square nd -> Square nd)
-  (lam t : R) (N : nat) (weights : list R) (gens : list (Square nd)) : Square nd :=
-  weighted_exp_channel_sum nd exp1 lam t N weights gens.
-
-Definition expected_qdrift_channel_N
-  (nd : nat) (exp1 : R -> Square nd -> Square nd)
-  (lam t : R) (N : nat) (weights : list R) (gens : list (Square nd)) : Square nd :=
-  Mmult_n N (expected_qdrift_step nd exp1 lam t N weights gens).
-
-Definition qdrift_gold_channel
-  (nd : nat) (exp1 : R -> Square nd -> Square nd) (t : R)
-  (weights : list R) (gens : list (Square nd)) : Square nd :=
-  exp1 t (sum_weighted_gens nd weights gens).
-
-Definition qdrift_channel_error
-  (nd : nat) (dnorm : Square nd -> R) (exp1 : R -> Square nd -> Square nd)
-  (lam t : R) (N : nat) (weights : list R) (gens : list (Square nd)) : R :=
-  dnorm (Mplus (qdrift_gold_channel nd exp1 t weights gens)
-              (Mopp (expected_qdrift_channel_N nd exp1 lam t N weights gens))).
-
-Definition qdrift_channel_error_bound (lam t : R) (N : nat) : R :=
-  4 * lam * lam * t * t / (INR N * INR N).
-
-Theorem qdrift_channel_error_bounded :
-  forall (nd : nat) (dnorm : Square nd -> R) (exp1 : R -> Square nd -> Square nd)
-         (lam t : R) (N : nat) (weights : list R) (gens : list (Square nd)),
-    qdrift_channel_error nd dnorm exp1 lam t N weights gens
-    <= qdrift_channel_error_bound lam t N.
-Proof. Admitted.
-
-
-(*********** Qdrift setup ***************)
-(* L(rho) = i(H rho - rho H) = i[H, rho] on nd×nd matrices.
-   TransL = Matrix nd nd for Liouville generators Lj (see L_Lori). *)
-Variable nd : nat.
-Definition TransL := Matrix nd nd.
-
-Parameter L_h : list R. (* hj: Hamiltonian term weights *)
-Parameter L_Lori : list TransL. (* Lj: Liouville generators as nd×nd matrices *)
-Parameter L_sampledID : list nat. (* sampled term indices *)
-
-Parameter norm_diamond : TransL -> R.
-Parameter expH1 : R -> TransL -> TransL.
-
-Axiom length_match :
-  length L_sampledID = length L_h.
-
-Definition lambda : R := fold_right Rplus 0%R L_h.
-
-Definition qdrift_N : nat := length L_sampledID.
-
-Definition qdrift_channel_error_inst (t : R) : R :=
-  qdrift_channel_error nd norm_diamond expH1 lambda t qdrift_N L_h L_Lori.
-
-Definition qdrift_channel_error_bound_inst (t : R) : R :=
-  qdrift_channel_error_bound lambda t qdrift_N.
-
-Theorem qdrift_channel_error_bounded_inst :
-  forall (t : R),
-  qdrift_channel_error_inst t <= qdrift_channel_error_bound_inst t.
+(* U x U† = I implies U† x U = I too, for a square matrix -- a one-sided
+   inverse is automatically two-sided. QuantumLib's Minv_flip does the real
+   work; this just packages it for expH specifically. *)
+Lemma expH_adjoint_unitary : forall (n : nat) (t : R) (M : Square n),
+  Mmult ((expH n t M) †) (expH n t M) = I n.
 Proof.
-  intros t.
-  unfold qdrift_channel_error_inst, qdrift_channel_error_bound_inst.
-  apply qdrift_channel_error_bounded.
+  intros n t M.
+  apply Minv_flip.
+  - auto with wf_db.
+  - auto with wf_db.
+  - apply expH_unitary.
+Qed.
+
+Lemma Mscale_minus_distr : forall n (p : R) (X Y : Square n), Mminus (scale p X) (scale p Y) = scale p (Mminus X Y).
+Proof. intros. lma. Qed.
+
+Lemma qdrift_term_contract : forall (d : nat) (tau p : R) (M rho1 rho2 : Square (2^d)),
+  norm (2^d) (Mminus (scale p (Mmult (expH (2^d) tau M) (Mmult rho1 ((expH (2^d) tau M) †))))
+                      (scale p (Mmult (expH (2^d) tau M) (Mmult rho2 ((expH (2^d) tau M) †)))))
+  <= Rabs p * norm (2^d) (Mminus rho1 rho2).
+Proof.
+  intros d tau p M rho1 rho2.
+  rewrite Mscale_minus_distr.
+  rewrite matnorm_scale.
+  apply Rmult_le_compat_l.
+  - apply Rabs_pos.
+  - apply sandwich_diff_bound.
+    + auto with wf_db.
+    + auto with wf_db.
+    + apply expH_unitary.
+    + rewrite adjoint_involutive. apply expH_adjoint_unitary.
+Qed.
+
+Lemma qdrift_round_contract : forall (d : nat) (tau lam : R) (hlist : norm_prog) (rho1 rho2 : Square (2^d)),
+  lam > 0 ->
+  norm (2^d) (Mminus (qdrift_round d tau lam hlist rho1) (qdrift_round d tau lam hlist rho2))
+  <= (sum_w hlist (length hlist) / lam) * norm (2^d) (Mminus rho1 rho2).
+Proof.
+  intros d tau lam hlist.
+  induction hlist as [| [amp f] rem IH]; intros rho1 rho2 Hlam.
+  - simpl.
+    unfold Mminus. rewrite Mplus_opp_0.
+    rewrite zero_norm_eqzero.
+    right. unfold Rdiv. ring.
+  - simpl.
+    assert (Hsplit: forall (U : Square (2^d)),
+      Mminus (Mplus (scale (Rabs amp / lam)%R (Mmult U (Mmult rho1 (U †)))) (qdrift_round d tau lam rem rho1))
+             (Mplus (scale (Rabs amp / lam)%R (Mmult U (Mmult rho2 (U †)))) (qdrift_round d tau lam rem rho2))
+    = Mplus (Mminus (scale (Rabs amp / lam)%R (Mmult U (Mmult rho1 (U †)))) (scale (Rabs amp / lam)%R (Mmult U (Mmult rho2 (U †)))))
+            (Mminus (qdrift_round d tau lam rem rho1) (qdrift_round d tau lam rem rho2))).
+    { intros U. unfold Mminus, Mopp. lma. }
+    rewrite Hsplit.
+    assert (Hb1: norm (2^d) (Mminus (scale (Rabs amp / lam)%R (Mmult (expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) (Mmult rho1 ((expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) †))))
+                                    (scale (Rabs amp / lam)%R (Mmult (expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) (Mmult rho2 ((expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) †)))))
+      <= Rabs (Rabs amp / lam) * norm (2^d) (Mminus rho1 rho2)).
+    { apply qdrift_term_contract. }
+    assert (Hb2: norm (2^d) (Mminus (qdrift_round d tau lam rem rho1) (qdrift_round d tau lam rem rho2))
+      <= (sum_w rem (length rem) / lam) * norm (2^d) (Mminus rho1 rho2)).
+    { apply IH. exact Hlam. }
+    eapply Rle_trans.
+    + apply matnorm_sum_triangle_ineq.
+    + eapply Rle_trans.
+      * apply Rplus_le_compat; [exact Hb1 | exact Hb2].
+      * rewrite Rabs_right by (unfold Rdiv; apply Rle_ge; apply Rmult_le_pos; [apply Rabs_pos | left; apply Rinv_0_lt_compat; exact Hlam]).
+        right. unfold Rdiv. field. lra.
+Qed.
+
+Lemma expH_conj_norm_le : forall (n : nat) (t : R) (M rho : Square n),
+  norm n (Mmult (expH n t M) (Mmult rho ((expH n t M) †))) <= norm n rho.
+Proof.
+  intros n t M rho.
+  assert (HU: norm n (expH n t M) = 1).
+  { apply unitarymat_norm_eqone. apply expH_unitary. }
+  assert (HUd: norm n ((expH n t M) †) = 1).
+  { apply unitarymat_norm_eqone. rewrite adjoint_involutive. apply expH_adjoint_unitary. }
+  eapply Rle_trans.
+  - apply matnorm_mult_triangle_ineq.
+  - rewrite HU, Rmult_1_l.
+    eapply Rle_trans.
+    + apply matnorm_mult_triangle_ineq.
+    + rewrite HUd, Rmult_1_r. apply Rle_refl.
+Qed.
+
+Lemma qdrift_round_ideal_norm_le : forall (d : nat) (s : R) (hlist : norm_prog) (rho : Square (2^d)),
+  norm (2^d) (qdrift_round_ideal d s hlist rho) <= norm (2^d) rho.
+Proof.
+  intros d s hlist rho.
+  unfold qdrift_round_ideal.
+  apply expH_conj_norm_le.
 Qed.
 
 
-Fixpoint sum_L (prob : list R) (ll : list TransL) : TransL :=
-  match prob, ll with
-  | [], _ => Zero
-  | _, [] => Zero
-  | p :: pl, m :: ml => Mplus (scale p m) (sum_L pl ml)
-  end.
 
-Definition tau (t : R) : R := lambda * t / (INR (length L_sampledID)).
-
-Fixpoint sum_sampled_exp (t : R) (idl : list nat) : TransL :=
-  match idl with
-  | [] => Zero
-  | id :: ax =>
-    match (nth_error L_Lori id, nth_error L_h id) with
-    | (None, _) => Zero
-    | (_, None) => Zero
-    | (Some Lj, Some hj) =>
-      Mplus (scale (hj / lambda) (expH1 (tau t) Lj)) (sum_sampled_exp t ax)
-    end
-  end.
-
-Definition qdrift_error (t : R) : R :=
-  let N : R := INR (length L_sampledID) in
-  let gold := expH1 (t / N) (sum_L L_h L_Lori) in
-  let approx := sum_sampled_exp t L_sampledID in
-  0.5 * (norm_diamond (Mplus gold (-1 .* approx))).
-
-
-(*********** Qdrift ***************)
-Theorem qdrift_error_boundary : 
-  forall (t : R),
-  let N : R := INR (length L_sampledID) in
-  let boundary : R := 4 * lambda^2 * t^2 / N^2 in 
-  qdrift_error t <= boundary.
+Lemma qdrift_round_norm_le : forall (d : nat) (tau lam : R) (hlist : norm_prog) (rho : Square (2^d)),
+  lam > 0 ->
+  norm (2^d) (qdrift_round d tau lam hlist rho) <= (sum_w hlist (length hlist) / lam) * norm (2^d) rho.
 Proof.
-Admitted.
+  intros d tau lam hlist rho.
+  induction hlist as [| [amp f] rem IH]; intros Hlam.
+  - simpl.
+    rewrite zero_norm_eqzero.
+    assert (H0: (R0 / lam * norm (2^d) rho)%R = 0%R) by (unfold Rdiv; ring).
+    rewrite H0. apply Rle_refl.
 
+  - simpl.
+     assert (Hb1: norm (2^d) (scale (Rabs amp / lam)%R (Mmult (expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) (Mmult rho ((expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) †))))
+                <= Rabs (Rabs amp / lam) * norm (2^d) rho).
+    { rewrite matnorm_scale.
+      apply Rmult_le_compat_l.
+      - apply Rabs_pos.
+      - apply expH_conj_norm_le. }
+        assert (Hb2: norm (2^d) (qdrift_round d tau lam rem rho)
+                <= (sum_w rem (length rem) / lam) * norm (2^d) rho).
+    { apply IH. exact Hlam. }
+        eapply Rle_trans.
+    + apply matnorm_sum_triangle_ineq.
+    + eapply Rle_trans.
+      * apply Rplus_le_compat; [exact Hb1 | exact Hb2].
+      * rewrite Rabs_right by (unfold Rdiv; apply Rle_ge; apply Rmult_le_pos; [apply Rabs_pos | left; apply Rinv_0_lt_compat; exact Hlam]).
+        right. unfold Rdiv. field. lra.
+Qed.
 
-(* Lemmas for proving qdrift error bound. *)
-(* count the # of occur of x in ll. *)
-Fixpoint count_occurrences (x : nat) (ll : list nat) : nat :=
-  match ll with
-  | [] => 0
-  | y :: ys =>
-      if x =? y then 1 + count_occurrences x ys
-      else count_occurrences x ys
+Fixpoint qdrift_iter (d : nat) (tau lam : R) (hlist : norm_prog) (N : nat) (rho : Square (2^d)) : Square (2^d) :=
+  match N with
+  | 0 => rho
+  | S N' => qdrift_round d tau lam hlist (qdrift_iter d tau lam hlist N' rho)
   end.
 
-Definition cal_frequency (x : nat) (ll : list nat) : R :=
-  let count := count_occurrences x ll in
-  let total := length ll in
-  if Nat.eqb total 0 then 0
-  else (INR count) / (INR total).
-
-(* 1. sampling Lj based on the strength of hj *)
-Definition get_prob (id : nat) : R :=
-  match (nth_error L_h id) with
-    | Some hj => hj / lambda
-    | None => 0%R
-    end.
-
-Axiom randome_sampling :
-  forall (id : nat),
-    In id L_sampledID ->
-    cal_frequency id L_sampledID = get_prob id.
-
-(* 2. |Lj|_dianorm <= 2, because the largest singular value of Hj is 1. *)
-Axiom Lj_norm_bound :
-  forall (x : TransL), 
-  In x L_Lori -> norm_diamond x <=2.
-
-(* 3. exponential expansion of real number x and matrix *)
-(* Exponential expansion of e^{x} = 1 + x + x^2/2! + ... + x^k/k! *)
-Fixpoint exp_expansion (x : R) (k : nat) : R :=
-  match k with
-  | 0 => 1
-  | S k' =>
-      let term := (x ^ k) / (INR (fact k)) in (exp_expansion x k') + term
+Fixpoint qdrift_ideal_iter (d : nat) (s : R) (hlist : norm_prog) (N : nat) (rho : Square (2^d)) : Square (2^d) :=
+  match N with
+  | 0 => rho
+  | S N' => qdrift_round_ideal d s hlist (qdrift_ideal_iter d s hlist N' rho)
   end.
 
-(* exp_expansion_m is defined above with expL. *)
-
-(* https://arxiv.org/pdf/1711.10980, Lemma F.2 *)
-(* used in Appendix B11, "A random compiler for fast Hamiltonian simulation" *)
-(* 4. sum_k^∞ x^k/k! <= x^(k+1)/(k+1)! e^x *)
-Lemma exp_tail_bound :
-  forall {x : R} {k : nat}, exp_expansion x k - (1+x) <= x^2/2 * (exp x).
-Proof. Admitted.
-
-(* 5. dianorm >= 0 *)
-Axiom dianorm_nonneg :
-  forall (A : TransL), 0 <= norm_diamond A.
-
-(* 6. dianorm inequality *)
-(* |A + B| < |A| + |B|, |.| is norm_diamond   *)
-Axiom dianorm_triangle :
-  forall (A B : TransL),
-    norm_diamond (Mplus A B) <= norm_diamond A + norm_diamond B.
-
-(* |AB| < |A| * |B| *)
-Axiom dianorm_submultiplicative :
-  forall (A B : TransL),
-    norm_diamond (@Mmult nd nd nd A B) <= norm_diamond A * norm_diamond B.
-
-(* |A^k| <= |A|^k for square matrices *)
-Lemma dianorm_pow_le :
-  forall (A : TransL) (k : nat),
-    norm_diamond (Mmult_n k A) <= (norm_diamond A) ^ k.
-
+Lemma qdrift_ideal_iter_norm_le : forall (d : nat) (s : R) (hlist : norm_prog) (N : nat) (rho : Square (2^d)),
+  norm (2^d) (qdrift_ideal_iter d s hlist N rho) <= norm (2^d) rho.
 Proof.
-  intros A k.
-  induction k as [|k' IH].
-  - simpl. (* Assuming norm(I) = 1 *)
-    admit. (* Need identity matrix and norm_diamond I = 1 *)
-  - simpl. apply Rle_trans with (r2 := norm_diamond A * norm_diamond (Mmult_n k' A)).
-    + apply dianorm_submultiplicative.
-    + apply Rmult_le_compat_l.
-      * apply Rle_trans with (r2 := 0). apply Rle_refl. apply dianorm_nonneg.
-      * apply IH.
-Admitted.
+  intros d s hlist N rho.
+  induction N as [| N' IH].
+  - simpl. apply Rle_refl.
+  - simpl.
+    eapply Rle_trans.
+    + apply qdrift_round_ideal_norm_le.
+    + exact IH.
+Qed.
+
+Lemma qdrift_ideal_iter_wf : forall (d : nat) (s : R) (hlist : norm_prog) (N : nat) (rho : Square (2^d)),
+  WF_Matrix rho -> WF_Matrix (qdrift_ideal_iter d s hlist N rho).
+Proof.
+  intros d s hlist N rho Hwf.
+  induction N as [| N' IH].
+  - simpl. exact Hwf.
+  - simpl. unfold qdrift_round_ideal. auto with wf_db.
+Qed.
+
+Lemma qdrift_iter_bound : forall (d : nat) (tau lam : R) (hlist : norm_prog) (N : nat) (rho : Square (2^d)),
+  lam > 0 ->
+  lam = sum_w hlist (length hlist) ->
+  WF_Matrix rho ->
+  norm (2^d) rho <= 1 ->
+  norm (2^d) (Mminus (qdrift_iter d tau lam hlist N rho)
+                      (qdrift_ideal_iter d (tau / lam) hlist N rho))
+  <= INR N * (4 * tau * tau * exp (2 * tau)).
+Proof.
+  intros d tau lam hlist N rho Hlam Hsum Hwf Hn1.
+  induction N as [| N' IH].
+  - simpl.
+    unfold Mminus. rewrite Mplus_opp_0.
+    rewrite zero_norm_eqzero.
+    rewrite Rmult_0_l. apply Rle_refl.
+  - cbn [qdrift_iter qdrift_ideal_iter].
+    rewrite S_INR.
+    rewrite (Mminus_split (2^d) _
+      (qdrift_round d tau lam hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho)) _).
+    eapply Rle_trans.
+    + apply matnorm_sum_triangle_ineq.
+    + assert (Hc: norm (2^d) (Mminus (qdrift_round d tau lam hlist (qdrift_iter d tau lam hlist N' rho))
+                                      (qdrift_round d tau lam hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho)))
+                  <= norm (2^d) (Mminus (qdrift_iter d tau lam hlist N' rho)
+                                         (qdrift_ideal_iter d (tau / lam) hlist N' rho))).
+      { eapply Rle_trans.
+        - apply qdrift_round_contract. exact Hlam.
+        - rewrite <- Hsum. unfold Rdiv. rewrite Rinv_r by lra.
+          rewrite Rmult_1_l. apply Rle_refl. }
+      assert (Hb: norm (2^d) (Mminus (qdrift_round d tau lam hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho))
+                                      (qdrift_round_ideal d (tau / lam) hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho)))
+                  <= 4 * tau * tau * exp (2 * tau)).
+      { apply qdrift_round_bound.
+        - exact Hlam.
+        - exact Hsum.
+        - apply qdrift_ideal_iter_wf. exact Hwf.
+        - eapply Rle_trans.
+          + apply qdrift_ideal_iter_norm_le.
+          + exact Hn1. }
+      eapply Rle_trans.
+      * apply Rplus_le_compat; [exact Hc | exact Hb].
+      * nra.
+Qed.
+
+Lemma qdrift_round_ideal_add : forall (d : nat) (s1 s2 : R) (hlist : norm_prog) (rho : Square (2^d)),
+  WF_Matrix rho ->
+  qdrift_round_ideal d s1 hlist (qdrift_round_ideal d s2 hlist rho)
+  = qdrift_round_ideal d (s1 + s2) hlist rho.
+Proof.
+  intros d s1 s2 hlist rho Hwf.
+  unfold qdrift_round_ideal.
+  rewrite <- expH_add.
+  rewrite Mmult_adjoint.
+  repeat rewrite Mmult_assoc.
+  reflexivity.
+Qed.
+
+Lemma qdrift_ideal_iter_full : forall (d : nat) (s : R) (hlist : norm_prog) (N : nat) (rho : Square (2^d)),
+  WF_Matrix rho ->
+  qdrift_ideal_iter d s hlist (S N) rho = qdrift_round_ideal d (INR (S N) * s) hlist rho.
+Proof.
+  intros d s hlist N rho Hwf.
+  induction N as [| N' IH].
+  - cbn [qdrift_ideal_iter].
+    replace (INR 1 * s) with s by (simpl; ring).
+    reflexivity.
+  - assert (Hstep: qdrift_ideal_iter d s hlist (S (S N')) rho
+                  = qdrift_round_ideal d s hlist (qdrift_ideal_iter d s hlist (S N') rho))
+      by reflexivity.
+    rewrite Hstep, IH.
+    rewrite qdrift_round_ideal_add by exact Hwf.
+    f_equal.
+    rewrite (S_INR (S N')).
+    ring.
+Qed.
+
+Theorem qdrift_error_bound : forall (d : nat) (tau lam t : R) (hlist : norm_prog) (N : nat) (rho : Square (2^d)),
+  lam > 0 ->
+  lam = sum_w hlist (length hlist) ->
+  INR (S N) * (tau / lam) = t ->
+  WF_Matrix rho ->
+  norm (2^d) rho <= 1 ->
+  norm (2^d) (Mminus (qdrift_iter d tau lam hlist (S N) rho)
+                      (qdrift_round_ideal d t hlist rho))
+  <= INR (S N) * (4 * tau * tau * exp (2 * tau)).
+Proof.
+  intros d tau lam t hlist N rho Hlam Hsum Ht Hwf Hn1.
+  rewrite <- Ht.
+  rewrite <- qdrift_ideal_iter_full by exact Hwf.
+  apply qdrift_iter_bound; assumption.
+Qed.
+
+
+
+
+
+
+
+
+
 
 
 

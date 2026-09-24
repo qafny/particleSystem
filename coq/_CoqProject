@@ -13,6 +13,7 @@ QBlueTrotter.v
 QBlueTrotterProof.v
 QBlueTTS.v
 QBlueQdrift.v
+QBlueQdriftProof.v
 QBlueSynth.v
 QBlueSynthDigital.v
 QBlueSynthDigitalProof.v

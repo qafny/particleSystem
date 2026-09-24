@@ -90,7 +90,7 @@ Definition mix_rows (r : R) (l1 l2 : list R) : list R :=
 
 Definition get_trans_MarQdrift (lp : lowprog) (r : R) (f_gc : nat -> list R) : (nat -> list R) :=
   let coef0 := get_coef lp in
-  let totw := sum_w lp (length lp) in
+  let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let coef := map (fun x => Rdiv (Rabs x) totw) coef0 in
   fun x => mix_rows r (f_gc x) coef.
 
@@ -129,10 +129,10 @@ Definition gen_lowprog_markov (lp : lowprog) (Nsample : nat)
 
 Definition trotter_marqsim (err t : R) (lp : lowprog) (nq : nat) 
 (f_mat : nat -> list R) : lowprog :=
-  let N := qdrift_step err t lp in
+  let N := qdrift_step err t (lowprog2norm_prog lp) in
   let prob_init := get_coef lp in
-  let trans_matrix := get_trans_CNOT lp nq in 
-  let totw := sum_w lp (length lp) in
+  let trans_matrix := get_trans_CNOT lp nq in
+  let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   mult_r_hplus (totw / (INR N)) (gen_lowprog_markov lp N prob_init trans_matrix).
 
 
