@@ -52,7 +52,7 @@ Definition translate_lowp2circ_std_2nd_order (err t : R) (lp : lowprog) (nbit : 
   synth_digital_ibm t nbit lowp.
 
 Definition ngates_per_term (t : R) (lp : lowprog) (nbit : nat) (totw : R) : nat :=
-  let lowp_sample := sample lp nsampe_gatesize_est totw in
+  let lowp_sample := norm_prog2lowprog (sample (lowprog2norm_prog lp) nsampe_gatesize_est totw) in
   let circ := synth_digital_ibm t nbit lowp_sample in
   Nat.div (ucom_gate_count circ) nsampe_gatesize_est.
 
@@ -98,7 +98,7 @@ Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
   let r := trotter_step err t (lowprog2norm_prog lp) in
   let nt := length lp in
-  let totw := sum_w lp nt in
+  let totw := sum_w (lowprog2norm_prog lp) nt in
   let scale := (R1 / INR r) % R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div nt ns)%nat) in
@@ -112,7 +112,7 @@ Definition translate_lowp2circ_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
   let r := trotter_step_2nd_order err t (lowprog2norm_prog lp) in
   let nt := length lp in
-  let totw := sum_w lp nt in
+  let totw := sum_w (lowprog2norm_prog lp) nt in
   let scale := (R1 / R2 / INR r) % R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div nt ns)%nat) in
@@ -128,16 +128,16 @@ Definition translate_lowp2circ_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat
 
 
 Definition translate_qdrift_ibmdigi (totw : R) (lp : lowprog) (ist nbit : nat)
-  (scale t : R) (sp_size : nat) : EG.ucom EG.U := 
-  let lp1 := sample lp sp_size totw in
+  (scale t : R) (sp_size : nat) : EG.ucom EG.U :=
+  let lp1 := norm_prog2lowprog (sample (lowprog2norm_prog lp) sp_size totw) in
   let lowp := mult_r_hplus scale lp1 in
   synth_digital_ibm t nbit lowp.
 
 
-Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat) 
+Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat)
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
-  let N := qdrift_step err t lp in
-  let totw := sum_w lp (length lp) in
+  let N := qdrift_step err t (lowprog2norm_prog lp) in
+  let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div N ns)%nat) in
@@ -157,9 +157,9 @@ Definition translate_marqsim_ibmdigi (prob_init : list R) (trans_matrix : nat ->
 Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit) 
   (f_mat : nat -> list R) : full_ucom_l nbit :=
-  let N := qdrift_step err t lp in
+  let N := qdrift_step err t (lowprog2norm_prog lp) in
   let prob_init := get_coef lp in
-  let totw := sum_w lp (length lp) in
+  let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div N ns)%nat) in
@@ -250,7 +250,7 @@ Definition translate_stdTrotter_indiAna (lp : lowprog) (ist nbit : nat)
 Definition translate_lowp2IndiAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
   let r := trotter_step err t (lowprog2norm_prog lp) in
   let nt := length lp in
-  let totw := sum_w lp nt in
+  let totw := sum_w (lowprog2norm_prog lp) nt in
   let scale := (R1 / INR r) % R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div nt ns)%nat) in
@@ -263,7 +263,7 @@ Definition translate_lowp2IndiAna_stdTrotter (err t : R) (lp : lowprog) (nbit : 
 Definition translate_lowp2IndiAna_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
   let r := trotter_step_2nd_order err t (lowprog2norm_prog lp) in
   let nt := length lp in
-  let totw := sum_w lp nt in
+  let totw := sum_w (lowprog2norm_prog lp) nt in
   let scale := (R1 / R2 / INR r) % R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div nt ns)%nat) in
@@ -279,14 +279,14 @@ Definition translate_lowp2IndiAna_2ndTrotter (err t : R) (lp : lowprog) (nbit : 
 
 
 Definition translate_qdrift_indiAna (totw : R) (lp : lowprog) (ist nbit : nat)
-  (scale t : R) (sp_size : nat) : list ugate := 
-  let lp1 := sample lp sp_size totw in
+  (scale t : R) (sp_size : nat) : list ugate :=
+  let lp1 := norm_prog2lowprog (sample (lowprog2norm_prog lp) sp_size totw) in
   let lowp := mult_r_hplus scale lp1 in
   synth_analog_indiana t nbit lowp.
 
 Definition translate_lowp2IndiAna_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let N := qdrift_step err t lp in
-  let totw := sum_w lp (length lp) in
+  let N := qdrift_step err t (lowprog2norm_prog lp) in
+  let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div N ns)%nat) in
@@ -305,9 +305,9 @@ Definition translate_marqsim_indiAna (prob_init : list R) (trans_matrix : nat ->
 
 Definition translate_lowp2IndiAna_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
 (f_mat : nat -> list R) : list ugate :=
-  let N := qdrift_step err t lp in
+  let N := qdrift_step err t (lowprog2norm_prog lp) in
   let prob_init := get_coef lp in
-  let totw := sum_w lp (length lp) in
+  let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
   let nch := S ((Nat.div N ns)%nat) in
@@ -331,8 +331,8 @@ Definition translate_lowp2IBMAna_std_2ndTrotter (err t : R) (lp : lowprog) (nbit
   let lowp : lowprog := norm_prog2lowprog (trotter_2nd_order err t (lowprog2norm_prog lp)) in
   synth_analog_ibm t nbit lowp.
 
-Definition translate_lowp2IBMAna_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate := 
-  let lowp : lowprog := trotter_qdrift err t lp in 
+Definition translate_lowp2IBMAna_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
+  let lowp : lowprog := norm_prog2lowprog (trotter_qdrift err t (lowprog2norm_prog lp)) in
   synth_analog_ibm t nbit lowp.
 
 Definition translate_lowp2IBMAna_marqsim (err t : R) (lp : lowprog) (nbit : nat) 
