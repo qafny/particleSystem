@@ -20,6 +20,7 @@ Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
 Require Import QBlue.QBlueParTransJwtProof.
 Require Import QBlue.QBlueTrotter.
+Require Import QBlue.QBlueUtility.
 
 (**** Approximate central value using 1st-order std Trotter
 Approx = exp(-itH_k) exp(-itH_{k-1}) ... exp(-itH_{1})
@@ -926,4 +927,265 @@ Proof.
     unfold approx_trotter_exp_2nd.
     rewrite <- Hlp.
     exact Htel.
+Qed.
+
+Fixpoint mat_pow {m : nat} (A : Square m) (n : nat) : Square m :=
+  match n with
+  | 0 => I m
+  | S n' => Mmult A (mat_pow A n')
+  end.
+
+Lemma wf_mat_pow : forall m (A : Square m) n, WF_Matrix A -> WF_Matrix (mat_pow A n).
+Proof.
+  intros m A n Hwf.
+  induction n as [| n' IH].
+  - simpl. auto with wf_db.
+  - simpl. auto with wf_db.
+Qed.
+
+Lemma unitary_mat_pow : forall m (A : Square m) n,
+  WF_Matrix A -> Mmult A (A †) = I m ->
+  Mmult (mat_pow A n) ((mat_pow A n) †) = I m.
+Proof.
+  intros m A n Hwf HA.
+  induction n as [| n' IH].
+  - simpl. rewrite id_adjoint_eq. apply Mmult_1_l. apply WF_I.
+  - simpl. apply unitary_compose; assumption.
+Qed.
+
+Lemma mat_pow_diff_bound : forall m (X Y : Square m) n,
+  WF_Matrix X -> WF_Matrix Y ->
+  Mmult X (X †) = I m -> Mmult Y (Y †) = I m ->
+  norm m (Mminus (mat_pow X n) (mat_pow Y n)) <= INR n * norm m (Mminus X Y).
+Proof.
+  intros m X Y n HWX HWY HX HY.
+  induction n as [| n' IH].
+  - simpl.
+    unfold Mminus. rewrite Mplus_opp_0.
+    rewrite zero_norm_eqzero.
+    rewrite Rmult_0_l. apply Rle_refl.
+  - assert (Hsplit: Mminus (mat_pow X (S n')) (mat_pow Y (S n'))
+      = Mplus (Mmult X (Mminus (mat_pow X n') (mat_pow Y n')))
+              (Mmult (Mminus X Y) (mat_pow Y n'))).
+    { simpl. unfold Mminus, Mopp.
+      rewrite Mmult_plus_distr_l, Mmult_plus_distr_r.
+      rewrite Mscale_mult_dist_r, Mscale_mult_dist_l.
+      lma. }
+    rewrite Hsplit.
+    assert (HnX: norm m X = 1) by (apply unitarymat_norm_eqone; exact HX).
+    assert (HnYn: norm m (mat_pow Y n') = 1).
+    { apply unitarymat_norm_eqone. apply unitary_mat_pow; assumption. }
+    eapply Rle_trans.
+    + apply matnorm_sum_triangle_ineq.
+    + eapply Rle_trans.
+      * apply Rplus_le_compat; apply matnorm_mult_triangle_ineq.
+      * rewrite HnX, HnYn, Rmult_1_l, Rmult_1_r.
+        rewrite S_INR.
+        nra.
+Qed.
+
+
+Lemma expH_pow : forall n (s : R) (M : Square n) k,
+  mat_pow (expH n s M) (S k) = expH n (INR (S k) * s) M.
+Proof.
+  intros n s M k.
+  induction k as [| k' IH].
+  - simpl. rewrite Mmult_1_r by auto with wf_db.
+    f_equal. simpl. ring.
+  - assert (Hstep: mat_pow (expH n s M) (S (S k')) = Mmult (expH n s M) (mat_pow (expH n s M) (S k'))) by reflexivity.
+    rewrite Hstep, IH.
+    rewrite expH_add.
+    f_equal. rewrite (S_INR (S k')). ring.
+Qed.
+
+Lemma wf_approx_trotter_exp_2nd : forall t hlist d, WF_Matrix (approx_trotter_exp_2nd t hlist d).
+Proof.
+  intros. unfold approx_trotter_exp_2nd. auto with wf_db.
+Qed.
+
+Lemma unitary_approx_trotter_exp_2nd : forall t hlist d,
+  Mmult (approx_trotter_exp_2nd t hlist d) ((approx_trotter_exp_2nd t hlist d) †) = I (2^d).
+Proof.
+  intros t hlist d. unfold approx_trotter_exp_2nd.
+  apply unitary_compose.
+  - auto with wf_db.
+  - apply unitary_mult_exp_list.
+  - apply unitary_mult_exp_list.
+Qed.
+
+Theorem second_order_blocks_error_bound : forall (d : nat) (lp : norm_prog) (t : R) (N : nat),
+  lp <> [] ->
+  norm (2^d) (Mminus (mat_pow (approx_trotter_exp_2nd (t / INR (S N)) lp d) (S N))
+                      (expH (2^d) t (norm_prog2mat lp d)))
+  <= INR (S N) * cal_2nd_trotter_error_bound (t / INR (S N)) d lp.
+Proof.
+  intros d lp t N Hne.
+  assert (Hpos: INR (S N) <> 0) by (apply not_0_INR; lia).
+  assert (Ht: expH (2^d) t (norm_prog2mat lp d)
+            = mat_pow (expH (2^d) (t / INR (S N)) (norm_prog2mat lp d)) (S N)).
+  { rewrite expH_pow. f_equal. field. exact Hpos. }
+  rewrite Ht.
+  eapply Rle_trans.
+  - apply mat_pow_diff_bound.
+    + apply wf_approx_trotter_exp_2nd.
+    + auto with wf_db.
+    + apply unitary_approx_trotter_exp_2nd.
+    + apply expH_unitary.
+  - apply Rmult_le_compat_l.
+    + apply pos_INR.
+    + rewrite <- (cal_2nd_trotter_error_eq (t / INR (S N)) d lp Hne).
+      apply (second_trotter_error_bound d lp (t / INR (S N))
+               (cal_2nd_trotter_error (t / INR (S N)) d lp)
+               (cal_2nd_trotter_error_bound (t / INR (S N)) d lp)); reflexivity.
+Qed.
+
+Theorem first_order_blocks_error_bound : forall (d : nat) (lp : norm_prog) (t : R) (N : nat),
+  norm (2^d) (Mminus (mat_pow (mult_exp_list (t / INR (S N)) d lp) (S N))
+                      (expH (2^d) t (norm_prog2mat lp d)))
+  <= INR (S N) * cal_1st_trotter_error_bound (t / INR (S N)) d lp.
+Proof.
+  intros d lp t N.
+  assert (Hpos: INR (S N) <> 0) by (apply not_0_INR; lia).
+  assert (Ht: expH (2^d) t (norm_prog2mat lp d)
+            = mat_pow (expH (2^d) (t / INR (S N)) (norm_prog2mat lp d)) (S N)).
+  { rewrite expH_pow. f_equal. field. exact Hpos. }
+  rewrite Ht.
+  eapply Rle_trans.
+  - apply mat_pow_diff_bound.
+    + auto with wf_db.
+    + auto with wf_db.
+    + apply unitary_mult_exp_list.
+    + apply expH_unitary.
+  - apply Rmult_le_compat_l.
+    + apply pos_INR.
+    + rewrite <- cal_1st_trotter_error_simplify.
+      apply (first_trotter_error_bound d lp (t / INR (S N))
+               (cal_1st_trotter_error (t / INR (S N)) d lp)
+               (cal_1st_trotter_error_bound (t / INR (S N)) d lp)); reflexivity.
+Qed.
+
+
+(* --- bridge from the N-block theorems to what trotter / trotter_2nd_order build --- *)
+
+(* the compiler scales amplitudes by 1/N, so first: scaling an amplitude scales the matrix *)
+Lemma lowprogten2mat_scale : forall (c a : R) n (f : nat -> paulimat),
+  lowprogten2mat (RtoC (c * a)%R) n f = scale (RtoC c) (lowprogten2mat (RtoC a) n f).
+Proof.
+  intros c a n f.
+  induction n as [| n' IH].
+  - simpl. rewrite Mscale_assoc. f_equal. rewrite RtoC_mult. reflexivity.
+  - simpl. rewrite IH. rewrite Mscale_kron_dist_r. reflexivity.
+Qed.
+
+Lemma norm_prog2mat_single_scale : forall (c a : R) (f : nat -> paulimat) d,
+  norm_prog2mat [((c * a)%R, f)] d = scale (RtoC c) (norm_prog2mat [(a, f)] d).
+Proof.
+  intros c a f d.
+  cbn [norm_prog2mat].
+  unfold normten2mat.
+  rewrite lowprogten2mat_scale.
+  rewrite Mplus_0_r, Mplus_0_r. reflexivity.
+Qed.
+
+(* scaling every amplitude in a list = scaling the time *)
+Lemma mult_exp_list_scale : forall (c t : R) d (l : norm_prog),
+  mult_exp_list t d (mult_r_normprog c l) = mult_exp_list (c * t)%R d l.
+Proof.
+  intros c t d l.
+  induction l as [| [a f] tl IH].
+  - reflexivity.
+  - unfold mult_r_normprog in *. simpl map. cbn [mult_exp_list].
+    rewrite IH.
+    rewrite norm_prog2mat_single_scale.
+    rewrite expH_scale. reflexivity.
+Qed.
+
+(* N copies of a list, one after another *)
+Fixpoint nrep (N : nat) (l : norm_prog) : norm_prog :=
+  match N with
+  | 0 => []
+  | S n => l ++ nrep n l
+  end.
+
+Lemma trotter_nstep_acc_nrep : forall N (ap acc : norm_prog),
+  trotter_nstep_acc N ap acc = rev acc ++ nrep N ap.
+Proof.
+  induction N as [| n IH]; intros ap acc.
+  - simpl. rewrite app_nil_r. reflexivity.
+  - simpl. rewrite IH.
+    rewrite rev_append_rev. rewrite rev_app_distr, rev_involutive.
+    rewrite <- app_assoc. reflexivity.
+Qed.
+
+(* trotter_nstep is just N copies *)
+Lemma trotter_nstep_nrep : forall N (ap : norm_prog), trotter_nstep N ap = nrep N ap.
+Proof.
+  intros. unfold trotter_nstep. rewrite trotter_nstep_acc_nrep. reflexivity.
+Qed.
+
+Lemma mat_pow_succ_r : forall m (A : Square m) n,
+  WF_Matrix A -> mat_pow A (S n) = Mmult (mat_pow A n) A.
+Proof.
+  intros m A n Hwf.
+  induction n as [| n' IH].
+  - simpl. rewrite Mmult_1_r, Mmult_1_l by auto with wf_db. reflexivity.
+  - assert (H: mat_pow A (S (S n')) = Mmult A (mat_pow A (S n'))) by reflexivity.
+    assert (H2: mat_pow A (S n') = Mmult A (mat_pow A n')) by reflexivity.
+    rewrite H. rewrite H2 at 2. rewrite IH. rewrite Mmult_assoc. reflexivity.
+Qed.
+
+(* and N copies of a block is the block to the N *)
+Lemma mult_exp_list_nrep : forall t d N (l : norm_prog),
+  mult_exp_list t d (nrep N l) = mat_pow (mult_exp_list t d l) N.
+Proof.
+  intros t d N l.
+  induction N as [| n IH].
+  - reflexivity.
+  - simpl nrep. rewrite mult_exp_list_app, IH.
+    rewrite mat_pow_succ_r by auto with wf_db. reflexivity.
+Qed.
+
+(* error of what trotter actually outputs (first order) *)
+Theorem trotter_first_order_error : forall (d : nat) (err t : R) (input : norm_prog) (N' : nat),
+  trotter_step err t input = S N' ->
+  norm (2^d) (Mminus (mult_exp_list t d (trotter err t input))
+                      (expH (2^d) t (norm_prog2mat input d)))
+  <= INR (S N') * cal_1st_trotter_error_bound (t / INR (S N')) d input.
+Proof.
+  intros d err t input N' HN.
+  unfold trotter. rewrite HN.
+  rewrite trotter_nstep_nrep, mult_exp_list_nrep.
+  unfold trotter_astep.
+  rewrite mult_exp_list_scale.
+  assert (Hpos: INR (S N') <> 0) by (apply not_0_INR; lia).
+  replace (R1 / INR (S N') * t)%R with (t / INR (S N'))%R by (field; exact Hpos).
+  apply first_order_blocks_error_bound.
+Qed.
+
+(* same for trotter_2nd_order; its block is the second-order formula on (rev input) *)
+Theorem trotter_second_order_error : forall (d : nat) (err t : R) (input : norm_prog) (N' : nat),
+  input <> [] ->
+  trotter_step_2nd_order err t input = S N' ->
+  norm (2^d) (Mminus (mult_exp_list t d (trotter_2nd_order err t input))
+                      (expH (2^d) t (norm_prog2mat input d)))
+  <= INR (S N') * cal_2nd_trotter_error_bound (t / INR (S N')) d (rev input).
+Proof.
+  intros d err t input N' Hne HN.
+  unfold trotter_2nd_order. rewrite HN.
+  rewrite trotter_nstep_nrep, mult_exp_list_nrep.
+  rewrite mult_exp_list_app.
+  unfold trotter_astep.
+  rewrite !mult_exp_list_scale.
+  assert (Hpos: INR (S N') <> 0) by (apply not_0_INR; lia).
+  assert (Hc: (R1 / (INR (S N') * R2) * t = t / INR (S N') / 2)%R)
+    by (unfold R2; field; exact Hpos).
+  rewrite Hc.
+  assert (Hblock: Mmult (mult_exp_list (t / INR (S N') / 2) d input)
+                        (mult_exp_list (t / INR (S N') / 2) d (rev input))
+                = approx_trotter_exp_2nd (t / INR (S N')) (rev input) d).
+  { unfold approx_trotter_exp_2nd. rewrite rev_involutive. reflexivity. }
+  rewrite Hblock.
+  rewrite <- (norm_prog2mat_rev input d).
+  apply second_order_blocks_error_bound.
+  intro Hc'. apply Hne. destruct input; [reflexivity | simpl in Hc'; destruct (rev input); discriminate].
 Qed.
