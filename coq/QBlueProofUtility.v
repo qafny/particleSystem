@@ -35,6 +35,11 @@ Axiom expH_unitary : forall (n : nat) (t : R) (M : Square n),
 Axiom expH_add : forall (n : nat) (t1 t2 : R) (M : Square n),
   Mmult (expH n t1 M) (expH n t2 M) = expH n (t1 + t2) M.
 
+(* scaling the generator is the same as scaling the time: exp(-it(cM)) = exp(-i(ct)M).
+   The compiler puts 1/N on the amplitudes, the error theorems put it on the time. *)
+Axiom expH_scale : forall (n : nat) (c t : R) (M : Square n),
+  expH n t (scale (RtoC c) M) = expH n (c * t) M.
+
 Lemma expH_double : forall n t M, Mmult (expH n t M) (expH n t M) = expH n (2*t) M.
 Proof.
   intros. rewrite expH_add. f_equal. ring.
