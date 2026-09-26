@@ -283,7 +283,7 @@ Fixpoint count_paulis (n:nat) (f:nat -> paulimat) : nat :=
    | S m => if is_i (f m) then S (count_paulis m f) else count_paulis m f
   end.
 
-Definition first_pad (n:nat) : Square (2^n) := if n <? 2 then σx else σx ⊗ I (2^(n-1)).
+Definition first_pad (n:nat) : Square (2^n) := if n =? 0 then I 1 else if n =? 1 then σx else I (2^(n-1)) ⊗ σx.
 
 
 Fixpoint long_z (n:nat) (f: nat -> paulimat) t : Square (2^n) * bool :=

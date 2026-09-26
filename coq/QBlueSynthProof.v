@@ -176,13 +176,26 @@ Proof.
   simpl in *. apply WF.
 Qed.
 
-Lemma mid_paulis_WF: forall a amp f, uc_well_typed (EG.to_base_ucom a (fst (mid_paulis a amp f))).
-Proof.
-Admitted.
-
 Lemma long_z_WF: forall n f r, WF_Matrix (fst (long_z n f r)).
 Proof.
-Admitted.
+  intros. induction n. simpl in *. 
+  auto with wf_db.
+  simpl in *.
+  destruct (is_i (f n)).
+  destruct (long_z n f r). simpl in *.
+  auto with wf_db.
+  destruct (long_z n f r).
+  destruct b. unfold first_pad. 
+  bdestruct (n =? 0);subst. restore_dims. simpl in *.
+  auto with wf_db.
+  bdestruct (n =? 1); subst. restore_dims. simpl in *.
+  auto with wf_db.
+  restore_dims. simpl in *.
+  replace (2 ^ n + (2 ^ n + 0)) with (2^n * 2) by lia.
+  apply WF_plus.
+  auto with wf_db. auto with wf_db.
+  simpl in *. auto with wf_db.
+Qed.
 
 Definition good_b (v: option nat) (b:bool) := match v with None => b = false | Some a => b = true end.
 
@@ -222,106 +235,33 @@ Proof.
   autorewrite with eval_db; try lia.
   bdestruct (n + (1 + (n0 - n - 1) + 1) <=? dim). simpl in *.
   replace ((dim - (n + S (n0 - n - 1 + 1)))) with (dim - S n0) by lia.
-  simpl in *. 
-Admitted.
-
-(*
-
+  unfold first_pad in *.
+  replace (3 * PI / 2 + PI / 2)%R with (2 *PI)%R by lra.
+  replace (PI / 2 + PI / 2)%R with (PI)%R by lra.
+  solve_matrix.
+  1-4: autorewrite with R_db C_db Cexp_db trig_db.
+  unfold Copp,Cmult,Cplus; simpl in *.
+  autorewrite with R_db C_db Cexp_db trig_db.
+  repeat rewrite Ropp_mult_distr_l.
+  replace (- (-1))%R with 1%R by lra.
+  autorewrite with R_db C_db Cexp_db trig_db.
+  specialize (sin2_cos2 ((PI * / 2 * / 2))) as H.
+  unfold Rsqr in H. rewrite Rplus_comm. rewrite H. lca.
+  lca. lca.
+  unfold Copp,Cmult,Cplus; simpl in *.
+  autorewrite with R_db C_db Cexp_db trig_db.
+  rewrite Ropp_mult_distr_r.
+  repeat rewrite Ropp_mult_distr_l.
+  replace (- (-1))%R with 1%R by lra.
+  autorewrite with R_db C_db Cexp_db trig_db.
+  specialize (sin2_cos2 ((PI * / 2 * / 2))) as H.
+  unfold Rsqr in H. rewrite H. lca.
+  rewrite H.
+  easy.
   gridify.
-  prep_matrix_equality.
-  rewrite kron_plus_distr_l.
-  rewrite Mmult_assoc; try auto_wf.
-  rewrite kron_plus_distr_r.
-  Set Printing All.
-  rewrite kron_id_dist_l.
-  bdestruct (0 + 1 <=? 1); try lia.
-  replace R0 with (IZR Z0); try (easy; simpl in.
-  split.
-  rewrite I_rotation. gridify. easy.
-  rewrite phase_shift_rotation. split.
-  autorewrite with eval_db.
-  bdestruct (0 + 1 <=? 1);try lia.
-  gridify. easy.
-  remember (S n) as a.
-  destruct (is_i (f a)).
-  destruct (long_z a f amp). simpl in *.
-  assert (0 < a) by lia. apply IHn in H0. destruct H0.
-  rewrite <- H0; try lia. split.
-  unfold EG.uc_eval.
-  rewrite change_dim_unfold with (m := S a) (n := a).
-  replace (S a) with (a + 1) by lia.
-  rewrite <- pad_dims_r. easy.
-  apply mid_paulis_WF. easy.
-  destruct (mid_paulis a amp f) eqn:eq1; simpl in *.
-  destruct (long_z a f amp) eqn:eq2. simpl in *.
-  destruct o. simpl in *. destruct IHn;subst;simpl in *. lia.
-
-
-Lemma mid_paulis_WF : forall n amp f b j, well_formed ((mid_paulis n amp f b j)).
-Proof.
-  induction n; intros; simpl in *.
-  apply WF_uapp. easy.
-  destruct (is_i (f n) || (j =? 0)). apply IHn.
-  bdestruct (j =? 1).
-  destruct b.
-  apply WF_useq.
-  apply WF_uapp. easy.
-  apply WF_useq.
-  apply WF_uapp. easy.
-  apply WF_uapp. easy.
-  apply WF_uapp. easy.
-  destruct b.
-  apply WF_useq.
-  apply WF_uapp. easy.
-  apply WF_useq. apply IHn.
-  apply WF_uapp. easy.
-  apply IHn.
+  rewrite IHn. easy.
 Qed.
 
-
-
-Lemma mid_paulis_aux_EG_WF : forall n dim amp f b j, n <= dim -> 0 < dim -> good_b n dim b ->
-                   uc_well_typed (to_base_ucom dim (mid_paulis n amp f b j)).
-Proof.
-  induction n; intros; simpl in *. apply SQIR.WT_app1. easy.
-  destruct (is_i (f n) || (j =? 0)); simpl in *.
-  apply IHn; try lia.
-  unfold good_b in *. destruct b; try easy. split. lia. lia.
-  bdestruct (j =? 1). simpl.
-  destruct b. simpl.
-  apply SQIR.WT_seq. apply uc_well_typed_CNOT. unfold good_b in *.
-  split. lia. split. lia. lia.
-  apply SQIR.WT_seq.
-  apply SQIR.WT_app1. lia.
-  apply uc_well_typed_CNOT.
-  unfold good_b in *. split. lia.
-  split. lia. lia.
-  simpl.
-  apply SQIR.WT_app1. lia.
-  unfold good_b in *. destruct b.
-  simpl. constructor.
-  apply uc_well_typed_CNOT.
-  split. lia. split. lia. lia.
-  simpl. constructor.
-  apply IHn; try lia.
-  apply uc_well_typed_CNOT.
-  split. lia. split. lia. lia.
-  apply IHn. lia. lia. split. lia. easy.
-Qed.
-
-
-Lemma long_z_wf: forall n f j amp, WF_Matrix (long_z n f j amp).
-Proof.
-  induction n; intros; try auto_wf. simpl.
-  destruct (is_i (f n) || (j =? 0)). simpl. apply WF_kron; try lia. apply IHn.
-  auto_wf.
-  bdestruct (j =? 1). apply WF_kron; try lia. apply IHn. auto_wf.
-  restore_dims.
-  apply WF_plus.
-  apply WF_kron; try lia. apply IHn. auto_wf.
-  apply WF_kron; try lia. apply IHn. auto_wf.  
-Qed.
- *)
 
 
 Theorem synth_digital_ibm_pauli_correctness: forall (n : nat) (t : R) (f : nat->paulimat), 0 < n ->
