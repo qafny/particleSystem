@@ -14,6 +14,7 @@
    (real) Hamiltonian are embedded into that representation via RtoC exactly
    where they're fed into that machinery, and nowhere else. *)
 Require Import QuantumLib.Matrix.
+Require Import QuantumLib.CauchySchwarz.
 
 Require Import QBlue.QBlueProofUtility.
 Require Import QBlue.QBlueSyntax.
@@ -228,7 +229,7 @@ Definition expand_1st_trotter_error (t : R) (d : nat) (hlist : norm_prog) : Squa
 Fixpoint expand_1st_trotter_error_1est_helper (t : R) (k d : nat) (hlist : norm_prog) : R :=
   match k with
   | 0 => 0
-  | S k' => norm (2^d) (expand_transit_term t k d hlist)
+  | S k' => @norm (2^d) (expand_transit_term t k d hlist)
   + (expand_1st_trotter_error_1est_helper t k' d hlist)
   end.
 
@@ -244,7 +245,7 @@ Definition cal_1st_trotter_error (t : R) (d : nat) (lp : norm_prog) : R :=
   | _ =>
     let exp_mat_gold := approx_transit_exp_aterm t (length lp) d lp in
     let exp_mat_approx := approx_transit_exp_aterm t 0%nat d lp in
-    norm (2^d) (Mminus exp_mat_gold exp_mat_approx)
+    @norm (2^d) (Mminus exp_mat_gold exp_mat_approx)
   end.
 
 
@@ -280,7 +281,7 @@ Fixpoint trotter_error_bound_helper (k d : nat) (hlist : norm_prog) : R :=
   match k with
   | 0 => 0
   | S k' => let comm_sum := expand_aterm_approx k d hlist in
-       (norm (2 ^ d) comm_sum) + (trotter_error_bound_helper k' d hlist)
+       (@norm (2 ^ d) comm_sum) + (trotter_error_bound_helper k' d hlist)
   end.
 
 (* 1st-order error: t^2/2 * ∑_{γ1=1}^Γ || ∑_{γ2=γ1+1}^Γ [Hγ2, Hγ1] *)
@@ -292,28 +293,36 @@ Definition cal_1st_trotter_error_bound (t : R) (d : nat) (hlist : norm_prog) : R
   end.
 
 (* norm(exp(A+B) - exp(A) exp(B)) <= [A, B] *)
-Axiom expmat_commnute_ineq: forall (n : nat) (m1 m2 : Square n) (t : R),
-  norm n (Mminus (Mmult (expH n t m2) (expH n t m1)) (expH n t (m1 .+ m2)))
-  <= (t*t/2) * (norm n (Mminus (Mmult m2 m1) (Mmult m1 m2))).
+Lemma expmat_commnute_ineq: forall (n : nat) (m1 m2 : Square n) (t : R),
+  @norm n (Mminus (Mmult (expH n t m2) (expH n t m1)) (expH n t (m1 .+ m2)))
+  <= (t*t/2) * (@norm n (Mminus (Mmult m2 m1) (Mmult m1 m2))).
+Proof.
+Admitted.
 
-Axiom matnorm_sum_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
-  norm n (Mplus m1 m2) <= (norm n m1) + (norm n m2).
+Lemma matnorm_sum_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
+  @norm n (Mplus m1 m2) <= (@norm n m1) + (@norm n m2).
+Proof.
+  intros. unfold norm; simpl in *.
+Admitted.
 
 Axiom matnorm_scale : forall (n : nat) (c : R) (A : Square n),
-  norm n (scale c A) = (Rabs c * norm n A)%R.
+  @norm n (scale c A) = (Rabs c * @norm n A)%R.
 
-Axiom zero_norm_eqzero: forall (d: nat),
-  norm d Zero = 0.
+Lemma zero_norm_eqzero: forall (d: nat),
+  @norm d Zero = 0.
+Proof.
+  intros. rewrite norm_zero_iff_zero; try easy.
+Qed.
 
 Axiom zero_expH_isI: forall (d : nat) (t : R),
   expH d t Zero = I d.
 
 Axiom matnorm_mult_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
-  norm n (Mmult m1 m2) <= (norm n m1) * (norm n m2).
+  @norm n (Mmult m1 m2) <= (@norm n m1) * (@norm n m2).
 
 Axiom unitarymat_norm_eqone: forall (d : nat) (m: Square d),
   Mmult m (m †) = I d
-  -> norm d m = 1.
+  -> @norm d m = 1.
 
 Lemma Mplus_opp_0 : forall (m n : nat) (A : Matrix m n), A .+ (Mopp A) = Zero.
 Proof.
