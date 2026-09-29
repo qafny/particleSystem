@@ -8,11 +8,27 @@ Require Import QBlue.QBlueSyntax.
 (* L2-norm of a n*n matrix  *)
 Parameter norm : forall n : nat, Square n -> R.
 
-(* exp(-i t H) *)
-Parameter expH : forall n : nat, R -> Square n -> Square n.
+(* exp(-i t H). The actual entries are left abstract (expH_raw); expH just
+   zeroes everything outside the n x n block. That makes WF_expH a lemma
+   instead of an axiom -- WF_Matrix is only about the matrix's shape, the
+   real math about expH is in the axioms below. *)
+Parameter expH_raw : forall n : nat, R -> Square n -> Square n.
 
-Axiom WF_expH : forall (n : nat) (t : R) (M : Square n), WF_Matrix (expH n t M).
+Definition expH (n : nat) (t : R) (M : Square n) : Square n :=
+  fun i j => if (i <? n) && (j <? n) then expH_raw n t M i j else C0.
+
+Lemma WF_expH : forall (n : nat) (t : R) (M : Square n), WF_Matrix (expH n t M).
+Proof.
+  intros n t M i j H.
+  unfold expH.
+  destruct H as [H | H]; apply Nat.ltb_ge in H; rewrite H.
+  - reflexivity.
+  - rewrite andb_false_r. reflexivity.
+Qed.
 Global Hint Resolve WF_expH : wf_db.
+
+(* nothing downstream should look inside expH *)
+Global Opaque expH.
 
 (* expH is meant to model exp(-itM), the simulation of a Hamiltonian -- and the
    whole premise of Hamiltonian simulation is that this is always unitary
@@ -46,7 +62,7 @@ Proof.
 Qed.
 
 (* Every axiom above is a generic property true of ANY valid simulation
-   operator -- these four are different in kind: they pin down expH's actual
+   operator -- this one is different in kind: it pins down expH's actual
    value on specific generators, straight from the paper's own Figure 8
    (itself citing Nielsen & Chuang's standard single-qubit rotation-gate
    formulas). This is the first place expH gets a concrete value rather than
@@ -54,22 +70,6 @@ Qed.
    like this, nothing connects the abstract expH to any real circuit matrix,
    so no digital/analog synthesis correctness lemma (4.3/4.4) can be proved
    at all. *)
-Axiom expH_I : forall (n : nat) (t : R), expH n t (I n) = Cexp (-t) .* I n.
-
-Axiom expH_X : forall (t : R),
-  expH 2 t σx = fun x y => match x, y with
-    | 0, 0 => cos t          | 0, 1 => -Ci * sin t
-    | 1, 0 => -Ci * sin t    | 1, 1 => cos t
-    | _, _ => C0
-    end.
-
-Axiom expH_Y : forall (t : R),
-  expH 2 t σy = fun x y => match x, y with
-    | 0, 0 => cos t          | 0, 1 => -(sin t)
-    | 1, 0 => sin t          | 1, 1 => cos t
-    | _, _ => C0
-    end.
-
 Axiom expH_Z : forall (t : R),
   expH 2 t σz = fun x y => match x, y with
     | 0, 0 => Cexp (-t)     | 1, 1 => Cexp t
@@ -314,6 +314,3 @@ Definition exp_paulis (n:nat) (t:R) (f: nat -> paulimat) : Square (2^n) :=
 
 (*********** Transform lowprog into Matrix. **************)
 
-Axiom expH_conj_eq_conj_expH: forall (t : R) (k : nat) (U P : Square k),
-  Mmult (U †) U = I k
-  -> expH k t (Mmult (U †) (Mmult P U) ) = Mmult (U †) (Mmult (expH k t P) U).
