@@ -121,7 +121,7 @@ Qed.
 (* TODO to extend Lemma 4.3's proof beyond this base case:
    1. X and Y, single qubit: need EG.uc_eval of EG.H (the Hadamard gate) and
       of the U1(pi/2)-then-H combination that cvt2base uses for Y, matched
-      against expH_X / expH_Y (added alongside expH_Z in
+      against axioms for exp(-itX) / exp(-itY) (like expH_Z in
       QBlueProofUtility.v). Same technique as above (unfold to base SQIR
       semantics, reduce pad_u/kron_1_l/r, compute the resulting 2x2 matrix),
       just more trig to push through.
