@@ -2,6 +2,7 @@ Require Import Reals.
 Require Import Psatz.
 Require Import QuantumLib.Complex.
 Require Import QuantumLib.Matrix.
+Require Import QuantumLib.CauchySchwarz.
 Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueType.
 Require Import QBlue.QBlueCompile.
@@ -51,8 +52,8 @@ Axiom qdrift_round_bound : forall (d : nat) (tau lam : R) (hlist : norm_prog) (r
   lam > 0 ->
   lam = sum_w hlist (length hlist) ->
   WF_Matrix rho ->
-  norm (2^d) rho <= 1 ->
-  norm (2^d) (Mminus (qdrift_round d tau lam hlist rho)
+  @norm (2^d) rho <= 1 ->
+  @norm (2^d) (Mminus (qdrift_round d tau lam hlist rho)
                       (qdrift_round_ideal d (tau/lam) hlist rho))
   <= 4 * tau * tau * exp (2 * tau).
 
@@ -75,9 +76,9 @@ Lemma Mscale_minus_distr : forall n (p : R) (X Y : Square n), Mminus (scale p X)
 Proof. intros. lma. Qed.
 
 Lemma qdrift_term_contract : forall (d : nat) (tau p : R) (M rho1 rho2 : Square (2^d)),
-  norm (2^d) (Mminus (scale p (Mmult (expH (2^d) tau M) (Mmult rho1 ((expH (2^d) tau M) †))))
+  @norm (2^d) (Mminus (scale p (Mmult (expH (2^d) tau M) (Mmult rho1 ((expH (2^d) tau M) †))))
                       (scale p (Mmult (expH (2^d) tau M) (Mmult rho2 ((expH (2^d) tau M) †)))))
-  <= Rabs p * norm (2^d) (Mminus rho1 rho2).
+  <= Rabs p * @norm (2^d) (Mminus rho1 rho2).
 Proof.
   intros d tau p M rho1 rho2.
   rewrite Mscale_minus_distr.
@@ -93,8 +94,8 @@ Qed.
 
 Lemma qdrift_round_contract : forall (d : nat) (tau lam : R) (hlist : norm_prog) (rho1 rho2 : Square (2^d)),
   lam > 0 ->
-  norm (2^d) (Mminus (qdrift_round d tau lam hlist rho1) (qdrift_round d tau lam hlist rho2))
-  <= (sum_w hlist (length hlist) / lam) * norm (2^d) (Mminus rho1 rho2).
+  @norm (2^d) (Mminus (qdrift_round d tau lam hlist rho1) (qdrift_round d tau lam hlist rho2))
+  <= (sum_w hlist (length hlist) / lam) * @norm (2^d) (Mminus rho1 rho2).
 Proof.
   intros d tau lam hlist.
   induction hlist as [| [amp f] rem IH]; intros rho1 rho2 Hlam.
@@ -110,12 +111,12 @@ Proof.
             (Mminus (qdrift_round d tau lam rem rho1) (qdrift_round d tau lam rem rho2))).
     { intros U. unfold Mminus, Mopp. lma. }
     rewrite Hsplit.
-    assert (Hb1: norm (2^d) (Mminus (scale (Rabs amp / lam)%R (Mmult (expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) (Mmult rho1 ((expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) †))))
+    assert (Hb1: @norm (2^d) (Mminus (scale (Rabs amp / lam)%R (Mmult (expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) (Mmult rho1 ((expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) †))))
                                     (scale (Rabs amp / lam)%R (Mmult (expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) (Mmult rho2 ((expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) †)))))
-      <= Rabs (Rabs amp / lam) * norm (2^d) (Mminus rho1 rho2)).
+      <= Rabs (Rabs amp / lam) * @norm (2^d) (Mminus rho1 rho2)).
     { apply qdrift_term_contract. }
-    assert (Hb2: norm (2^d) (Mminus (qdrift_round d tau lam rem rho1) (qdrift_round d tau lam rem rho2))
-      <= (sum_w rem (length rem) / lam) * norm (2^d) (Mminus rho1 rho2)).
+    assert (Hb2: @norm (2^d) (Mminus (qdrift_round d tau lam rem rho1) (qdrift_round d tau lam rem rho2))
+      <= (sum_w rem (length rem) / lam) * @norm (2^d) (Mminus rho1 rho2)).
     { apply IH. exact Hlam. }
     eapply Rle_trans.
     + apply matnorm_sum_triangle_ineq.
@@ -126,12 +127,12 @@ Proof.
 Qed.
 
 Lemma expH_conj_norm_le : forall (n : nat) (t : R) (M rho : Square n),
-  norm n (Mmult (expH n t M) (Mmult rho ((expH n t M) †))) <= norm n rho.
+  @norm n (Mmult (expH n t M) (Mmult rho ((expH n t M) †))) <= @norm n rho.
 Proof.
   intros n t M rho.
-  assert (HU: norm n (expH n t M) = 1).
+  assert (HU: @norm n (expH n t M) = 1).
   { apply unitarymat_norm_eqone. apply expH_unitary. }
-  assert (HUd: norm n ((expH n t M) †) = 1).
+  assert (HUd: @norm n ((expH n t M) †) = 1).
   { apply unitarymat_norm_eqone. rewrite adjoint_involutive. apply expH_adjoint_unitary. }
   eapply Rle_trans.
   - apply matnorm_mult_triangle_ineq.
@@ -142,7 +143,7 @@ Proof.
 Qed.
 
 Lemma qdrift_round_ideal_norm_le : forall (d : nat) (s : R) (hlist : norm_prog) (rho : Square (2^d)),
-  norm (2^d) (qdrift_round_ideal d s hlist rho) <= norm (2^d) rho.
+  @norm (2^d) (qdrift_round_ideal d s hlist rho) <= @norm (2^d) rho.
 Proof.
   intros d s hlist rho.
   unfold qdrift_round_ideal.
@@ -153,24 +154,24 @@ Qed.
 
 Lemma qdrift_round_norm_le : forall (d : nat) (tau lam : R) (hlist : norm_prog) (rho : Square (2^d)),
   lam > 0 ->
-  norm (2^d) (qdrift_round d tau lam hlist rho) <= (sum_w hlist (length hlist) / lam) * norm (2^d) rho.
+  @norm (2^d) (qdrift_round d tau lam hlist rho) <= (sum_w hlist (length hlist) / lam) * @norm (2^d) rho.
 Proof.
   intros d tau lam hlist rho.
   induction hlist as [| [amp f] rem IH]; intros Hlam.
   - simpl.
     rewrite zero_norm_eqzero.
-    assert (H0: (R0 / lam * norm (2^d) rho)%R = 0%R) by (unfold Rdiv; ring).
+    assert (H0: (R0 / lam * @norm (2^d) rho)%R = 0%R) by (unfold Rdiv; ring).
     rewrite H0. apply Rle_refl.
 
   - simpl.
-     assert (Hb1: norm (2^d) (scale (Rabs amp / lam)%R (Mmult (expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) (Mmult rho ((expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) †))))
-                <= Rabs (Rabs amp / lam) * norm (2^d) rho).
+     assert (Hb1: @norm (2^d) (scale (Rabs amp / lam)%R (Mmult (expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) (Mmult rho ((expH (2^d) tau (normten2mat (if Rltb amp R0 then (-R1)%R else R1) d f)) †))))
+                <= Rabs (Rabs amp / lam) * @norm (2^d) rho).
     { rewrite matnorm_scale.
       apply Rmult_le_compat_l.
       - apply Rabs_pos.
       - apply expH_conj_norm_le. }
-        assert (Hb2: norm (2^d) (qdrift_round d tau lam rem rho)
-                <= (sum_w rem (length rem) / lam) * norm (2^d) rho).
+        assert (Hb2: @norm (2^d) (qdrift_round d tau lam rem rho)
+                <= (sum_w rem (length rem) / lam) * @norm (2^d) rho).
     { apply IH. exact Hlam. }
         eapply Rle_trans.
     + apply matnorm_sum_triangle_ineq.
@@ -193,7 +194,7 @@ Fixpoint qdrift_ideal_iter (d : nat) (s : R) (hlist : norm_prog) (N : nat) (rho 
   end.
 
 Lemma qdrift_ideal_iter_norm_le : forall (d : nat) (s : R) (hlist : norm_prog) (N : nat) (rho : Square (2^d)),
-  norm (2^d) (qdrift_ideal_iter d s hlist N rho) <= norm (2^d) rho.
+  @norm (2^d) (qdrift_ideal_iter d s hlist N rho) <= @norm (2^d) rho.
 Proof.
   intros d s hlist N rho.
   induction N as [| N' IH].
@@ -217,8 +218,8 @@ Lemma qdrift_iter_bound : forall (d : nat) (tau lam : R) (hlist : norm_prog) (N 
   lam > 0 ->
   lam = sum_w hlist (length hlist) ->
   WF_Matrix rho ->
-  norm (2^d) rho <= 1 ->
-  norm (2^d) (Mminus (qdrift_iter d tau lam hlist N rho)
+  @norm (2^d) rho <= 1 ->
+  @norm (2^d) (Mminus (qdrift_iter d tau lam hlist N rho)
                       (qdrift_ideal_iter d (tau / lam) hlist N rho))
   <= INR N * (4 * tau * tau * exp (2 * tau)).
 Proof.
@@ -234,15 +235,15 @@ Proof.
       (qdrift_round d tau lam hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho)) _).
     eapply Rle_trans.
     + apply matnorm_sum_triangle_ineq.
-    + assert (Hc: norm (2^d) (Mminus (qdrift_round d tau lam hlist (qdrift_iter d tau lam hlist N' rho))
+    + assert (Hc: @norm (2^d) (Mminus (qdrift_round d tau lam hlist (qdrift_iter d tau lam hlist N' rho))
                                       (qdrift_round d tau lam hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho)))
-                  <= norm (2^d) (Mminus (qdrift_iter d tau lam hlist N' rho)
+                  <= @norm (2^d) (Mminus (qdrift_iter d tau lam hlist N' rho)
                                          (qdrift_ideal_iter d (tau / lam) hlist N' rho))).
       { eapply Rle_trans.
         - apply qdrift_round_contract. exact Hlam.
         - rewrite <- Hsum. unfold Rdiv. rewrite Rinv_r by lra.
           rewrite Rmult_1_l. apply Rle_refl. }
-      assert (Hb: norm (2^d) (Mminus (qdrift_round d tau lam hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho))
+      assert (Hb: @norm (2^d) (Mminus (qdrift_round d tau lam hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho))
                                       (qdrift_round_ideal d (tau / lam) hlist (qdrift_ideal_iter d (tau / lam) hlist N' rho)))
                   <= 4 * tau * tau * exp (2 * tau)).
       { apply qdrift_round_bound.
@@ -294,8 +295,8 @@ Theorem qdrift_error_bound : forall (d : nat) (tau lam t : R) (hlist : norm_prog
   lam = sum_w hlist (length hlist) ->
   INR (S N) * (tau / lam) = t ->
   WF_Matrix rho ->
-  norm (2^d) rho <= 1 ->
-  norm (2^d) (Mminus (qdrift_iter d tau lam hlist (S N) rho)
+  @norm (2^d) rho <= 1 ->
+  @norm (2^d) (Mminus (qdrift_iter d tau lam hlist (S N) rho)
                       (qdrift_round_ideal d t hlist rho))
   <= INR (S N) * (4 * tau * tau * exp (2 * tau)).
 Proof.
