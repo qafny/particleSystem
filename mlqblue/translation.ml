@@ -37,7 +37,7 @@ let print_optimization_detail n c0 c1 c2 c3 =
 let trotterStd_IBMDigi_est (lp : lowprog) (nbit : int) (err : float) (t : float) f_opt =
   let r = trotter_step err t lp in
   let nt = Stdlib.List.length lp in
-  let totw = sum_w lp nt in
+  let totw = sum_w (QBlueUtility.lowprog2norm_prog lp) nt in
   let scale = 1.0 /. Float.of_int r in
   let gates_per_term = max 1 (ngates_per_term t lp nbit totw) in
   let ns = max 1 (ngates_per_chunk / gates_per_term) in
@@ -191,8 +191,8 @@ let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
 
 
 let trotterQDrift_IBMDigi_est (lp : lowprog) (nbit : int) (err : float) (t : float) f_opt =
-  let npau = qdrift_step err t lp in
-  let totw = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let totw = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
   let scale = totw /. Float.of_int npau in
   let gates_per_term = max 1 (ngates_per_term t lp nbit totw) in
   let ns = max 1 (ngates_per_chunk / gates_per_term) in
@@ -207,8 +207,8 @@ let trotterQDrift_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : f
   Random.init 10;
 
   if verbose then dbg "---- Trotterization (QDrift) -> IBMDigital circuits: ----";
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -237,8 +237,8 @@ let trotterMarQSim_CNOT_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (e
 
   if verbose then dbg "---- Trotterization (MarQSim, CNOT matrix) -> IBMDigital circuits: ----";
   fail_big_program "MarQSim (CNOT matrix) -> IBMDigital" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -259,8 +259,8 @@ let trotterMarQSim_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (er
 
   if verbose then dbg "---- Trotterization (MarQSim, CNOT + single-qubit matrix) -> IBMDigital circuits: ----";
   fail_big_program "MarQSim (CNOT + single-qubit matrix) -> IBMDigital" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -280,8 +280,8 @@ let trotterMarQdrift_CNOT_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) 
 
   if verbose then dbg "---- Trotterization (MarQSim, 0.6 * CNOT + 0.4 * qdrift) -> IBMDigital circuits: ----";
   fail_big_program "MarQSim (CNOT + qdrift) -> IBMDigital" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -304,8 +304,8 @@ let trotterMarQdrift_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (
 
   if verbose then dbg "---- Trotterization (MarQdrift, 0.6 * CNOT + single-qubit + 0.4 * qdrift) -> IBMDigital circuits: ----";
   fail_big_program "MarQdrift ( CNOT + single-qubit + qdrift) -> IBMDigital" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -369,8 +369,8 @@ let trotterQDrift_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : f
   Random.init 10;
 
   if verbose then dbg "---- Trotterization (QDrift) -> IndiAnalog circuits: ----";
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -388,8 +388,8 @@ let trotterMarQSim_CNOT_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (e
 
   if verbose then dbg "---- Trotterization (MarQSim, CNOT matrix) -> IndiAnalog circuits: ----";
   fail_big_program "MarQSim (CNOT matrix) -> IndiAnalog" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -408,8 +408,8 @@ let trotterMarQSim_mix_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (er
 
   if verbose then dbg "---- Trotterization (MarQSim, CNOT + single-qubit matrix) -> IndiAnalog circuits: ----";
   fail_big_program "MarQSim (CNOT + single-qubit matrix) -> IndiAnalog" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -428,8 +428,8 @@ let trotterMarQdrift_CNOT_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) 
 
   if verbose then dbg "---- Trotterization (MarQSim, 0.6 * CNOT + 0.4 * qdrift) -> IndiAnalog circuits: ----";
   fail_big_program "MarQSim (CNOT + qdrift) -> IndiAnalog" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -449,8 +449,8 @@ let trotterMarQdrift_mix_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (
 
   if verbose then dbg "---- Trotterization (MarQdrift, 0.6 * CNOT + single-qubit + 0.4 * qdrift) -> IndiAnalog circuits: ----";
   fail_big_program "MarQdrift (CNOT + single-qubit + qdrift) -> IndiAnalog" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -519,8 +519,8 @@ let trotterQDrift_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : fl
   Random.init 10;
 
   if verbose then dbg "---- Trotterization (QDrift) -> IBM analog circuits: ----";
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -541,8 +541,8 @@ let trotterMarQSim_CNOT_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (er
 
   if verbose then dbg "---- Trotterization (MarQSim, CNOT matrix) -> IBM analog circuits: ----";
   fail_big_program "MarQSim (CNOT matrix) -> IBMAnalog" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -564,8 +564,8 @@ let trotterMarQSim_mix_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err
 
   if verbose then dbg "---- Trotterization (MarQSim, CNOT + single-qubit matrix) -> IBM analog circuits: ----";
   fail_big_program "MarQSim (CNOT + single-qubit matrix) -> IBMAnalog" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -587,8 +587,8 @@ let trotterMarQdrift_CNOT_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (
 
   if verbose then dbg "---- Trotterization (MarQSim, 0.6 * CNOT + 0.4 * qdrift) -> IBM analog circuits: ----";
   fail_big_program "MarQSim (CNOT + qdrift) -> IBMAnalog" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
@@ -611,8 +611,8 @@ let trotterMarQdrift_mix_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (e
 
   if verbose then dbg "---- Trotterization (MarQdrift, 0.6 * CNOT + single-qubit + 0.4 * qdrift) -> IBM analog circuits: ----";
   fail_big_program "MarQdrift (CNOT + single-qubit + qdrift) -> IBMAnalog" lp;
-  let npau = qdrift_step err t lp in
-  let lambda = sum_w lp (Stdlib.List.length lp) in
+  let npau = qdrift_step err t (QBlueUtility.lowprog2norm_prog lp) in
+  let lambda = sum_w (QBlueUtility.lowprog2norm_prog lp) (Stdlib.List.length lp) in
 
   (* rfactor must be very close to 1 to make sure error <= expected error  *)
   let rfactor = exp(2.0 *. lambda *. t /. (float_of_int npau)) in
