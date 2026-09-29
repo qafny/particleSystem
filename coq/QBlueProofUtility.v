@@ -6,9 +6,7 @@ Require Import QBlue.QBlueSyntax.
 
 
 (* L2-norm of a n*n matrix  *)
-(*
 Parameter norm : forall n : nat, Square n -> R.
-*)
 
 (* exp(-i t H). The actual entries are left abstract (expH_raw); expH just
    zeroes everything outside the n x n block. That makes WF_expH a lemma
