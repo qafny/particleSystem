@@ -29,3 +29,6 @@ CoqMakefile.conf
 .CoqMakefile.d
 .nia.cache
 .nra.cache
+
+# Ignore thirdparty
+thirdparty/
