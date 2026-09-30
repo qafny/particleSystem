@@ -797,12 +797,15 @@ Lemma wf_hybrid_wrap : forall t d bwd fwd suf,
 Proof. intros. unfold hybrid_wrap. auto with wf_db. Qed.
 Global Hint Resolve wf_hybrid_wrap : wf_db.
 
-(* One Strang step: swapping exp(-it(H_k+H_rest)) for the half-step sandwich
-   exp(-i(t/2)H_k) exp(-itH_rest) exp(-i(t/2)H_k) costs at most the
-   double-commutator terms suzuki_error_bound_helper sums for this position
-   (A Theory of Trotter Error, Childs et al.; paper's Appendix C). Same
-   status as expmat_commnute_ineq above -- a fact about the abstract expH
-   primitive, not derivable from its WF/unitary/semigroup axioms alone. *)
+(* One second-order (Strang) step. Let A be the first term (amp, f) and B the
+   rest of the list. Replacing the exact exp(-it(A+B)) with
+       exp(-i(t/2)A) exp(-itB) exp(-i(t/2)A)
+   is off by at most
+       t^3/12 * ||[B,[B,A]]||  +  t^3/24 * ||[A,[A,B]]||.
+   t1 and t2 are those two double commutators (built by suzuki_comm_sum_helper).
+   This is the standard second-order Trotter bound (Childs et al., "A Theory of
+   Trotter Error"; paper's Appendix C). Like expmat_commnute_ineq, it's a fact
+   about exp(-itH) that we assume rather than prove. *)
 Axiom suzuki_2nd_trotter_bound_step : forall (d : nat) (t : R) (amp : R) (f : nat -> paulimat) (rest : norm_prog),
   let '(t1, t2) := suzuki_comm_sum_helper d ((amp, f) :: rest) in
   norm (2^d) (Mminus
