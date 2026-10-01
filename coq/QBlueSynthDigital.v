@@ -39,7 +39,7 @@ Definition abit_cx (curbit tarbit : nat) (s : paulimat) :
 Fixpoint abit_cx_all (curbit tarbit:nat) (f : nat -> paulimat) :=
   match curbit with
    | 0 => EG.SKIP
-   | S m => if is_i (f m) then abit_cx_all m tarbit f else EG.useq (abit_cx_all m curbit f) (EG.CX curbit tarbit)
+   | S m => if is_i (f m) then abit_cx_all m tarbit f else EG.useq (abit_cx_all m curbit f) (EG.CX m tarbit)
   end.
 
 Fixpoint find_last_abit (n : nat) (f : nat -> paulimat) :=
