@@ -1,6 +1,7 @@
 -R . QBlue
 
 QBlueUtility.v
+QBlueMatNorm.v
 QBlueProofUtility.v
 QBlueSyntax.v
 QBlueType.v
