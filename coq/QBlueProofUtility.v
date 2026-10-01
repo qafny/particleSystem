@@ -3,10 +3,11 @@ Require Import QuantumLib.Matrix.
 Require Import QuantumLib.Quantum.
 
 Require Import QBlue.QBlueSyntax.
+Require Import QBlue.QBlueMatNorm.
 
 
-(* L2-norm of a n*n matrix  *)
-Parameter norm : forall n : nat, Square n -> R.
+(* matrix norm (operator norm), defined in QBlueMatNorm.v *)
+Definition norm (n : nat) (M : Square n) : R := mnorm n M.
 
 (* exp(-i t H). The actual entries are left abstract (expH_raw); expH just
    zeroes everything outside the n x n block. That makes WF_expH a lemma
