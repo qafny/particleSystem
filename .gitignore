@@ -32,3 +32,4 @@ CoqMakefile.conf
 
 # Ignore thirdparty
 thirdparty/
+results/
