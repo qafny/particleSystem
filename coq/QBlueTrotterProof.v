@@ -5,7 +5,7 @@
    Definition 3.1), so working with a real amplitude throughout lets
    Hermiticity of the generator be PROVED (hermitian_norm_prog2mat in
    QBlueProofUtility.v) rather than assumed away.
-   The "commutator" symbolic-arithmetic helpers below (commutator_tt/st/ts/ss)
+   The "commutator" symbolic-arithmetic helpers below (commutator_tt/st/ts)
    are a deliberate exception and stay lowprog/complex-typed: composing two
    Pauli strings via operator composition (not sum) can produce genuinely
    non-real coefficients (e.g. X ∘ Y = iZ, from QBlueParTransJwt.v's
@@ -296,6 +296,20 @@ Definition cal_1st_trotter_error_bound (t : R) (d : nat) (hlist : norm_prog) : R
 Axiom expmat_commnute_ineq: forall (n : nat) (m1 m2 : Square n) (t : R),
   norm n (Mminus (Mmult (expH n t m2) (expH n t m1)) (expH n t (m1 .+ m2)))
   <= (t*t/2) * (norm n (Mminus (Mmult m2 m1) (Mmult m1 m2))).
+
+(* commutator [X, Y] = XY - YX *)
+Definition mcomm {n : nat} (X Y : Square n) : Square n :=
+  Mminus (Mmult X Y) (Mmult Y X).
+
+(* second-order version of the one above, for two Hermitian matrices A, B:
+   norm(exp(A/2) exp(B) exp(A/2) - exp(A+B)) <= |t|^3/12 [B,[B,A]] + |t|^3/24 [A,[A,B]]
+   (Childs et al., "A Theory of Trotter Error"; paper's Appendix C) *)
+Axiom expmat_strang_ineq : forall (n : nat) (A B : Square n) (t : R),
+  is_hermitian_mat A -> is_hermitian_mat B ->
+  norm n (Mminus (Mmult (expH n (t/2) A) (Mmult (expH n t B) (expH n (t/2) A)))
+                 (expH n t (A .+ B)))
+  <= (Rabs t ^ 3 / 12) * norm n (mcomm B (mcomm B A))
+     + (Rabs t ^ 3 / 24) * norm n (mcomm A (mcomm A B)).
 
 (* norm facts, proved from the matrix norm in QBlueMatNorm.v *)
 Lemma matnorm_sum_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
@@ -606,37 +620,23 @@ Definition cal_2nd_trotter_error (t : R) (n : nat) (lp : norm_prog) : R :=
   end.
 
 
-(* Tight error bound for the second-order Suzuki formula.
-   commutator_ss stays lowprog/complex-typed like commutator_tt/st/ts above. *)
-Definition commutator_ss (d : nat) (h1 : lowprog) (h2 : lowprog) : lowprog :=
-  let l1 := plus_app_plus d h1 h2 in
-  let l2 := mult_ampli_hplus (-C1) (plus_app_plus d h2 h1) in
-  plus_plus_plus l1 l2.
-
-(* Embeds one norm_prog term / the rest of a norm_prog list into the
-   lowprog/complex representation the commutator_* helpers need, via RtoC --
-   exact, since the amplitude really is that real number, just typed C here. *)
-Definition norm_ten2low (nt : norm_ten) : lowprog_ten :=
-  let (amp, f) := nt in (RtoC amp, f).
-
-Definition suzuki_comm_sum_helper (d : nat) (hlist : norm_prog) : (lowprog * lowprog) :=
+(* the two double commutators for one step: with X the first term and Rm the
+   rest of the list, [Rm,[Rm,X]] and [X,[X,Rm]] *)
+Definition suzuki_comm_sum_helper (d : nat) (hlist : norm_prog) : (Square (2^d) * Square (2^d)) :=
   match hlist with
-  | [] => ([], [])
+  | [] => (Zero, Zero)
   | x :: rem =>
-    let rem_low := norm_prog2lowprog rem in
-    let x_low := norm_ten2low x in
-    let t1 := commutator_ss d rem_low (commutator_st d rem_low x_low) in
-    let t2 := commutator_ts d x_low (commutator_ts d x_low rem_low) in (t1, t2)
-    end.
+    let X := norm_prog2mat [x] d in
+    let Rm := norm_prog2mat rem d in
+    (mcomm Rm (mcomm Rm X), mcomm X (mcomm X Rm))
+  end.
 
 Fixpoint suzuki_error_bound_helper (n : nat) (t: R) (hlist : norm_prog) : R :=
   match hlist with
   | [] => 0
-  | x :: ax => let (term1, term2) := suzuki_comm_sum_helper n hlist in
-      let t1 := lowprog2mat term1 n in
-      let t2 := lowprog2mat term2 n in
-      Rplus (Rplus (Rdiv ((norm (2 ^ n) t1) * (pow t 3)) 12)
-                   (Rdiv ((norm (2 ^ n) t2) * (pow t 3)) 24))
+  | x :: ax => let (t1, t2) := suzuki_comm_sum_helper n hlist in
+      Rplus (Rplus (Rdiv ((norm (2 ^ n) t1) * (pow (Rabs t) 3)) 12)
+                   (Rdiv ((norm (2 ^ n) t2) * (pow (Rabs t) 3)) 24))
             (suzuki_error_bound_helper n t ax)
   end.
 
@@ -814,24 +814,31 @@ Lemma wf_hybrid_wrap : forall t d bwd fwd suf,
 Proof. intros. unfold hybrid_wrap. auto with wf_db. Qed.
 Global Hint Resolve wf_hybrid_wrap : wf_db.
 
-(* One second-order (Strang) step. Let A be the first term (amp, f) and B the
-   rest of the list. Replacing the exact exp(-it(A+B)) with
-       exp(-i(t/2)A) exp(-itB) exp(-i(t/2)A)
-   is off by at most
-       t^3/12 * ||[B,[B,A]]||  +  t^3/24 * ||[A,[A,B]]||.
-   t1 and t2 are those two double commutators (built by suzuki_comm_sum_helper).
-   This is the standard second-order Trotter bound (Childs et al., "A Theory of
-   Trotter Error"; paper's Appendix C). Like expmat_commnute_ineq, it's a fact
-   about exp(-itH) that we assume rather than prove. *)
-Axiom suzuki_2nd_trotter_bound_step : forall (d : nat) (t : R) (amp : R) (f : nat -> paulimat) (rest : norm_prog),
+(* One second-order step: with A the first term (amp, f) and B the rest of
+   the list, exp(-i(t/2)A) exp(-itB) exp(-i(t/2)A) is close to exp(-it(A+B)).
+   Follows from expmat_strang_ineq, since both are Hermitian. *)
+Lemma suzuki_2nd_trotter_bound_step : forall (d : nat) (t : R) (amp : R) (f : nat -> paulimat) (rest : norm_prog),
   let '(t1, t2) := suzuki_comm_sum_helper d ((amp, f) :: rest) in
   norm (2^d) (Mminus
     (Mmult (expH (2^d) (t/2) (norm_prog2mat [(amp, f)] d))
        (Mmult (expH (2^d) t (norm_prog2mat rest d))
               (expH (2^d) (t/2) (norm_prog2mat [(amp, f)] d))))
     (expH (2^d) t (norm_prog2mat ((amp, f) :: rest) d)))
-  <= (norm (2^d) (lowprog2mat t1 d) * (t^3)) / 12
-     + (norm (2^d) (lowprog2mat t2 d) * (t^3)) / 24.
+  <= (norm (2^d) t1 * (Rabs t ^ 3)) / 12
+     + (norm (2^d) t2 * (Rabs t ^ 3)) / 24.
+Proof.
+  intros d t amp f rest.
+  cbn [suzuki_comm_sum_helper].
+  change (@cons norm_ten (amp, f) (@nil norm_ten))
+    with (@cons (R * (nat -> paulimat)) (amp, f) nil).
+  assert (Hsum: norm_prog2mat ((amp, f) :: rest) d
+              = norm_prog2mat [(amp, f)] d .+ norm_prog2mat rest d).
+  { cbn [norm_prog2mat]. rewrite Mplus_0_r. reflexivity. }
+  rewrite Hsum.
+  eapply Rle_trans.
+  - apply expmat_strang_ineq; apply hermitian_norm_prog2mat.
+  - apply Req_le. unfold Rdiv. ring.
+Qed.
 
 (* Same step, at an arbitrary already-peeled bwd/fwd instead of the identity. *)
 Lemma hybrid_wrap_step : forall (d : nat) (t : R) (bwd fwd : Square (2^d)) (amp : R) (f : nat -> paulimat) (rest : norm_prog),
@@ -842,8 +849,8 @@ Lemma hybrid_wrap_step : forall (d : nat) (t : R) (bwd fwd : Square (2^d)) (amp 
       (hybrid_wrap t d (Mmult bwd (expH (2^d) (t/2) (norm_prog2mat [(amp,f)] d)))
                         (Mmult (expH (2^d) (t/2) (norm_prog2mat [(amp,f)] d)) fwd) rest)
       (hybrid_wrap t d bwd fwd ((amp, f) :: rest)))
-  <= (norm (2^d) (lowprog2mat t1 d) * (t^3)) / 12
-     + (norm (2^d) (lowprog2mat t2 d) * (t^3)) / 24.
+  <= (norm (2^d) t1 * (Rabs t ^ 3)) / 12
+     + (norm (2^d) t2 * (Rabs t ^ 3)) / 24.
 Proof.
   intros d t bwd fwd amp f rest HWFbwd HWFfwd Hbwd Hfwd.
   destruct (suzuki_comm_sum_helper d ((amp,f)::rest)) as [t1 t2] eqn:Hcomm.
