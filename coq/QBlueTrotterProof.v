@@ -5,7 +5,7 @@
    Definition 3.1), so working with a real amplitude throughout lets
    Hermiticity of the generator be PROVED (hermitian_norm_prog2mat in
    QBlueProofUtility.v) rather than assumed away.
-   The "commutator" symbolic-arithmetic helpers below (commutator_tt/st/ts/ss)
+   The "commutator" symbolic-arithmetic helpers below (commutator_tt/st/ts)
    are a deliberate exception and stay lowprog/complex-typed: composing two
    Pauli strings via operator composition (not sum) can produce genuinely
    non-real coefficients (e.g. X ∘ Y = iZ, from QBlueParTransJwt.v's
@@ -16,6 +16,7 @@
 Require Import QuantumLib.Matrix.
 
 Require Import QBlue.QBlueProofUtility.
+Require Import QBlue.QBlueMatNorm.
 Require Import QBlue.QBlueSyntax.
 Require Import QBlue.QBlueParTransJwt.
 Require Import QBlue.QBlueParTransJwtProof.
@@ -296,24 +297,52 @@ Axiom expmat_commnute_ineq: forall (n : nat) (m1 m2 : Square n) (t : R),
   norm n (Mminus (Mmult (expH n t m2) (expH n t m1)) (expH n t (m1 .+ m2)))
   <= (t*t/2) * (norm n (Mminus (Mmult m2 m1) (Mmult m1 m2))).
 
-Axiom matnorm_sum_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
+(* commutator [X, Y] = XY - YX *)
+Definition mcomm {n : nat} (X Y : Square n) : Square n :=
+  Mminus (Mmult X Y) (Mmult Y X).
+
+(* second-order version of the one above, for two Hermitian matrices A, B:
+   norm(exp(A/2) exp(B) exp(A/2) - exp(A+B)) <= |t|^3/12 [B,[B,A]] + |t|^3/24 [A,[A,B]]
+   (Childs et al., "A Theory of Trotter Error"; paper's Appendix C) *)
+Axiom expmat_strang_ineq : forall (n : nat) (A B : Square n) (t : R),
+  is_hermitian_mat A -> is_hermitian_mat B ->
+  norm n (Mminus (Mmult (expH n (t/2) A) (Mmult (expH n t B) (expH n (t/2) A)))
+                 (expH n t (A .+ B)))
+  <= (Rabs t ^ 3 / 12) * norm n (mcomm B (mcomm B A))
+     + (Rabs t ^ 3 / 24) * norm n (mcomm A (mcomm A B)).
+
+(* norm facts, proved from the matrix norm in QBlueMatNorm.v *)
+Lemma matnorm_sum_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
   norm n (Mplus m1 m2) <= (norm n m1) + (norm n m2).
+Proof. intros. apply mnorm_triangle. Qed.
 
-Axiom matnorm_scale : forall (n : nat) (c : R) (A : Square n),
+Lemma matnorm_scale : forall (n : nat) (c : R) (A : Square n),
   norm n (scale c A) = (Rabs c * norm n A)%R.
+Proof. intros. apply mnorm_scale. Qed.
 
-Axiom zero_norm_eqzero: forall (d: nat),
+Lemma zero_norm_eqzero: forall (d: nat),
   norm d Zero = 0.
+Proof. intros. apply mnorm_zero. Qed.
 
 Axiom zero_expH_isI: forall (d : nat) (t : R),
   expH d t Zero = I d.
 
-Axiom matnorm_mult_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
+Lemma matnorm_mult_triangle_ineq: forall (n : nat) (m1 m2 : Square n),
   norm n (Mmult m1 m2) <= (norm n m1) * (norm n m2).
+Proof. intros. apply mnorm_submult. Qed.
 
-Axiom unitarymat_norm_eqone: forall (d : nat) (m: Square d),
+(* needs size >= 1 (at size 0 the zero matrix is also the identity) *)
+Lemma unitarymat_norm_eqone: forall (d : nat) (m: Square d),
+  WF_Matrix m -> (0 < d)%nat ->
   Mmult m (m †) = I d
   -> norm d m = 1.
+Proof. intros. apply mnorm_unitary; assumption. Qed.
+
+Lemma norm_dim0 : forall (M : Square 0), norm 0 M = 0.
+Proof. intros. apply mnorm_dim0. Qed.
+
+Lemma two_pow_pos : forall d, (0 < 2^d)%nat.
+Proof. intros. apply Nat.neq_0_lt_0, Nat.pow_nonzero. lia. Qed.
 
 Lemma Mplus_opp_0 : forall (m n : nat) (A : Matrix m n), A .+ (Mopp A) = Zero.
 Proof.
@@ -355,7 +384,7 @@ Global Hint Resolve wf_expand_1st_trotter_error : wf_db.
 Lemma approx_mult_exp_norm_one : forall t k d hlist,
   norm (2^d) (approx_mult_exp t k d hlist) = 1.
 Proof.
-  intros. apply unitarymat_norm_eqone. apply unitary_approx_mult_exp.
+  intros. apply unitarymat_norm_eqone; [auto with wf_db | apply two_pow_pos | apply unitary_approx_mult_exp].
 Qed.
 
 (* sublemma for proving 1st trotter:
@@ -591,37 +620,23 @@ Definition cal_2nd_trotter_error (t : R) (n : nat) (lp : norm_prog) : R :=
   end.
 
 
-(* Tight error bound for the second-order Suzuki formula.
-   commutator_ss stays lowprog/complex-typed like commutator_tt/st/ts above. *)
-Definition commutator_ss (d : nat) (h1 : lowprog) (h2 : lowprog) : lowprog :=
-  let l1 := plus_app_plus d h1 h2 in
-  let l2 := mult_ampli_hplus (-C1) (plus_app_plus d h2 h1) in
-  plus_plus_plus l1 l2.
-
-(* Embeds one norm_prog term / the rest of a norm_prog list into the
-   lowprog/complex representation the commutator_* helpers need, via RtoC --
-   exact, since the amplitude really is that real number, just typed C here. *)
-Definition norm_ten2low (nt : norm_ten) : lowprog_ten :=
-  let (amp, f) := nt in (RtoC amp, f).
-
-Definition suzuki_comm_sum_helper (d : nat) (hlist : norm_prog) : (lowprog * lowprog) :=
+(* the two double commutators for one step: with X the first term and Rm the
+   rest of the list, [Rm,[Rm,X]] and [X,[X,Rm]] *)
+Definition suzuki_comm_sum_helper (d : nat) (hlist : norm_prog) : (Square (2^d) * Square (2^d)) :=
   match hlist with
-  | [] => ([], [])
+  | [] => (Zero, Zero)
   | x :: rem =>
-    let rem_low := norm_prog2lowprog rem in
-    let x_low := norm_ten2low x in
-    let t1 := commutator_ss d rem_low (commutator_st d rem_low x_low) in
-    let t2 := commutator_ts d x_low (commutator_ts d x_low rem_low) in (t1, t2)
-    end.
+    let X := norm_prog2mat [x] d in
+    let Rm := norm_prog2mat rem d in
+    (mcomm Rm (mcomm Rm X), mcomm X (mcomm X Rm))
+  end.
 
 Fixpoint suzuki_error_bound_helper (n : nat) (t: R) (hlist : norm_prog) : R :=
   match hlist with
   | [] => 0
-  | x :: ax => let (term1, term2) := suzuki_comm_sum_helper n hlist in
-      let t1 := lowprog2mat term1 n in
-      let t2 := lowprog2mat term2 n in
-      Rplus (Rplus (Rdiv ((norm (2 ^ n) t1) * (pow t 3)) 12)
-                   (Rdiv ((norm (2 ^ n) t2) * (pow t 3)) 24))
+  | x :: ax => let (t1, t2) := suzuki_comm_sum_helper n hlist in
+      Rplus (Rplus (Rdiv ((norm (2 ^ n) t1) * (pow (Rabs t) 3)) 12)
+                   (Rdiv ((norm (2 ^ n) t2) * (pow (Rabs t) 3)) 24))
             (suzuki_error_bound_helper n t ax)
   end.
 
@@ -663,6 +678,8 @@ Lemma sandwich_diff_bound : forall n (U V A B : Square n),
   norm n (Mminus (Mmult U (Mmult A V)) (Mmult U (Mmult B V))) <= norm n (Mminus A B).
 Proof.
   intros n U V A B HWFU HWFV HU HV.
+  destruct n as [| n'].
+  { rewrite !norm_dim0. lra. }
   assert (Heq: Mminus (Mmult U (Mmult A V)) (Mmult U (Mmult B V))
              = Mmult U (Mmult (Mminus A B) V)).
   { unfold Mminus, Mopp.
@@ -673,11 +690,11 @@ Proof.
   rewrite Heq.
   eapply Rle_trans.
   - apply matnorm_mult_triangle_ineq.
-  - assert (HnU: norm n U = 1) by (apply unitarymat_norm_eqone; exact HU).
+  - assert (HnU: norm (S n') U = 1) by (apply unitarymat_norm_eqone; [exact HWFU | lia | exact HU]).
     rewrite HnU, Rmult_1_l.
     eapply Rle_trans.
     + apply matnorm_mult_triangle_ineq.
-    + assert (HnV: norm n V = 1) by (apply unitarymat_norm_eqone; exact HV).
+    + assert (HnV: norm (S n') V = 1) by (apply unitarymat_norm_eqone; [exact HWFV | lia | exact HV]).
       rewrite HnV, Rmult_1_r. apply Rle_refl.
 Qed.
 
@@ -761,11 +778,11 @@ Proof.
         (mult_exp_list (t/2) d lp)
         (expH (2^d) (t/2) (norm_prog2mat (rev lp) d))).
     + assert (Hnorm_rev: norm (2^d) (mult_exp_list (t/2) d (rev lp)) = 1).
-      { apply unitarymat_norm_eqone. apply unitary_mult_exp_list. }
+      { apply unitarymat_norm_eqone; [auto with wf_db | apply two_pow_pos | apply unitary_mult_exp_list]. }
       assert (Hnorm_fwd: norm (2^d) (mult_exp_list (t/2) d lp) = 1).
-      { apply unitarymat_norm_eqone. apply unitary_mult_exp_list. }
+      { apply unitarymat_norm_eqone; [auto with wf_db | apply two_pow_pos | apply unitary_mult_exp_list]. }
       assert (Hnorm_E: norm (2^d) (expH (2^d) (t/2) (norm_prog2mat (rev lp) d)) = 1).
-      { apply unitarymat_norm_eqone. apply expH_unitary. }
+      { apply unitarymat_norm_eqone; [auto with wf_db | apply two_pow_pos | apply expH_unitary]. }
       rewrite Hnorm_fwd, Hnorm_E, Rmult_1_r, Rmult_1_l.
       assert (Hbound_rev: norm (2^d) (Mminus (mult_exp_list (t/2) d (rev lp))
                                         (expH (2^d) (t/2) (norm_prog2mat (rev lp) d)))
@@ -797,24 +814,31 @@ Lemma wf_hybrid_wrap : forall t d bwd fwd suf,
 Proof. intros. unfold hybrid_wrap. auto with wf_db. Qed.
 Global Hint Resolve wf_hybrid_wrap : wf_db.
 
-(* One second-order (Strang) step. Let A be the first term (amp, f) and B the
-   rest of the list. Replacing the exact exp(-it(A+B)) with
-       exp(-i(t/2)A) exp(-itB) exp(-i(t/2)A)
-   is off by at most
-       t^3/12 * ||[B,[B,A]]||  +  t^3/24 * ||[A,[A,B]]||.
-   t1 and t2 are those two double commutators (built by suzuki_comm_sum_helper).
-   This is the standard second-order Trotter bound (Childs et al., "A Theory of
-   Trotter Error"; paper's Appendix C). Like expmat_commnute_ineq, it's a fact
-   about exp(-itH) that we assume rather than prove. *)
-Axiom suzuki_2nd_trotter_bound_step : forall (d : nat) (t : R) (amp : R) (f : nat -> paulimat) (rest : norm_prog),
+(* One second-order step: with A the first term (amp, f) and B the rest of
+   the list, exp(-i(t/2)A) exp(-itB) exp(-i(t/2)A) is close to exp(-it(A+B)).
+   Follows from expmat_strang_ineq, since both are Hermitian. *)
+Lemma suzuki_2nd_trotter_bound_step : forall (d : nat) (t : R) (amp : R) (f : nat -> paulimat) (rest : norm_prog),
   let '(t1, t2) := suzuki_comm_sum_helper d ((amp, f) :: rest) in
   norm (2^d) (Mminus
     (Mmult (expH (2^d) (t/2) (norm_prog2mat [(amp, f)] d))
        (Mmult (expH (2^d) t (norm_prog2mat rest d))
               (expH (2^d) (t/2) (norm_prog2mat [(amp, f)] d))))
     (expH (2^d) t (norm_prog2mat ((amp, f) :: rest) d)))
-  <= (norm (2^d) (lowprog2mat t1 d) * (t^3)) / 12
-     + (norm (2^d) (lowprog2mat t2 d) * (t^3)) / 24.
+  <= (norm (2^d) t1 * (Rabs t ^ 3)) / 12
+     + (norm (2^d) t2 * (Rabs t ^ 3)) / 24.
+Proof.
+  intros d t amp f rest.
+  cbn [suzuki_comm_sum_helper].
+  change (@cons norm_ten (amp, f) (@nil norm_ten))
+    with (@cons (R * (nat -> paulimat)) (amp, f) nil).
+  assert (Hsum: norm_prog2mat ((amp, f) :: rest) d
+              = norm_prog2mat [(amp, f)] d .+ norm_prog2mat rest d).
+  { cbn [norm_prog2mat]. rewrite Mplus_0_r. reflexivity. }
+  rewrite Hsum.
+  eapply Rle_trans.
+  - apply expmat_strang_ineq; apply hermitian_norm_prog2mat.
+  - apply Req_le. unfold Rdiv. ring.
+Qed.
 
 (* Same step, at an arbitrary already-peeled bwd/fwd instead of the identity. *)
 Lemma hybrid_wrap_step : forall (d : nat) (t : R) (bwd fwd : Square (2^d)) (amp : R) (f : nat -> paulimat) (rest : norm_prog),
@@ -825,8 +849,8 @@ Lemma hybrid_wrap_step : forall (d : nat) (t : R) (bwd fwd : Square (2^d)) (amp 
       (hybrid_wrap t d (Mmult bwd (expH (2^d) (t/2) (norm_prog2mat [(amp,f)] d)))
                         (Mmult (expH (2^d) (t/2) (norm_prog2mat [(amp,f)] d)) fwd) rest)
       (hybrid_wrap t d bwd fwd ((amp, f) :: rest)))
-  <= (norm (2^d) (lowprog2mat t1 d) * (t^3)) / 12
-     + (norm (2^d) (lowprog2mat t2 d) * (t^3)) / 24.
+  <= (norm (2^d) t1 * (Rabs t ^ 3)) / 12
+     + (norm (2^d) t2 * (Rabs t ^ 3)) / 24.
 Proof.
   intros d t bwd fwd amp f rest HWFbwd HWFfwd Hbwd Hfwd.
   destruct (suzuki_comm_sum_helper d ((amp,f)::rest)) as [t1 t2] eqn:Hcomm.
@@ -962,6 +986,8 @@ Lemma mat_pow_diff_bound : forall m (X Y : Square m) n,
   norm m (Mminus (mat_pow X n) (mat_pow Y n)) <= INR n * norm m (Mminus X Y).
 Proof.
   intros m X Y n HWX HWY HX HY.
+  destruct m as [| m'].
+  { rewrite !norm_dim0. rewrite Rmult_0_r. lra. }
   induction n as [| n' IH].
   - simpl.
     unfold Mminus. rewrite Mplus_opp_0.
@@ -975,9 +1001,9 @@ Proof.
       rewrite Mscale_mult_dist_r, Mscale_mult_dist_l.
       lma. }
     rewrite Hsplit.
-    assert (HnX: norm m X = 1) by (apply unitarymat_norm_eqone; exact HX).
-    assert (HnYn: norm m (mat_pow Y n') = 1).
-    { apply unitarymat_norm_eqone. apply unitary_mat_pow; assumption. }
+    assert (HnX: norm (S m') X = 1) by (apply unitarymat_norm_eqone; [exact HWX | lia | exact HX]).
+    assert (HnYn: norm (S m') (mat_pow Y n') = 1).
+    { apply unitarymat_norm_eqone; [apply wf_mat_pow; exact HWY | lia | apply unitary_mat_pow; assumption]. }
     eapply Rle_trans.
     + apply matnorm_sum_triangle_ineq.
     + eapply Rle_trans.

@@ -129,10 +129,13 @@ Lemma expH_conj_norm_le : forall (n : nat) (t : R) (M rho : Square n),
   norm n (Mmult (expH n t M) (Mmult rho ((expH n t M) †))) <= norm n rho.
 Proof.
   intros n t M rho.
-  assert (HU: norm n (expH n t M) = 1).
-  { apply unitarymat_norm_eqone. apply expH_unitary. }
-  assert (HUd: norm n ((expH n t M) †) = 1).
-  { apply unitarymat_norm_eqone. rewrite adjoint_involutive. apply expH_adjoint_unitary. }
+  destruct n as [| n'].
+  { rewrite !norm_dim0. lra. }
+  assert (HU: norm (S n') (expH (S n') t M) = 1).
+  { apply unitarymat_norm_eqone; [auto with wf_db | lia | apply expH_unitary]. }
+  assert (HUd: norm (S n') ((expH (S n') t M) †) = 1).
+  { apply unitarymat_norm_eqone; [auto with wf_db | lia |].
+    rewrite adjoint_involutive. apply expH_adjoint_unitary. }
   eapply Rle_trans.
   - apply matnorm_mult_triangle_ineq.
   - rewrite HU, Rmult_1_l.
