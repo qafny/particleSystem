@@ -1,66 +1,19 @@
-# OpenFermion benchmark
-
-From the repository root:
-
-```sh
-source .venv/bin/activate
-cd mlqblue
-python3 ../scripts/openfermion_bench.py -i job.csv -o result_openfermion.csv
-```
-
-For OpenFermion's tighter (more expensive) error calculation, add `--tight`:
+OpenFermion synthesizes one first-order Trotter step and Phoenix uses same-weight grouping, simplification, trivial ordering, and the original cancellation passes from `jbg/202603`; both read Hamiltonians in Python using the current signed `coefficient * Pauli` format and multiply native before-optimization and optimized IBM-basis (`u1/u2/u3/cx`) gate counts by QBlue’s `trotter_step`, write exactly the `qblue_result.csv` columns for `path_flag=1` rows, and record failures above 5000 non-identity terms, with `compilation_terms=program_size*trotter_step` denoting repeated input terms.
+The plots preserve the original scatter, mirrored optimization, and flower aesthetics, matching full input paths, errors, times, and pipelines to compare baseline total gate costs and synthesis-plus-optimization times with QBlue’s already full-circuit gate counts and reported compilation times, alongside QBlue’s pre-optimization QDrift/Trotter and analog/digital comparisons; the shared repetition factor estimates gate cost without proving equal achieved error, and times are never multiplied.
 
 ```sh
-python3 ../scripts/openfermion_bench.py -i job.csv -o result_openfermion_tight.csv --tight
+scripts/run.sh
+# Optional concurrency: WORKERS=4 scripts/run.sh
+.venv/bin/python scripts/openfermion_bench.py
+.venv/bin/python scripts/phoenix_bench.py
+.venv/bin/python scripts/benchmark_threaded.py --workers 4
+.venv/bin/python scripts/plot_results.py
 ```
 
-To run jobs concurrently (from `mlqblue`):
-
-```sh
-python3 ../scripts/bench_threaded.py -i job.csv -o result_openfermion_threaded.csv -w 4 --tight
-```
-
-The wrapper accepts all options below plus `-w` / `--workers` (default `1`).
-It runs one independent process per job and saves completed CSV rows and metadata
-in input order after each completion. Concurrent jobs share CPU and memory,
-so their timings reflect that load. Its default output is `result_openfermion_threaded.csv`.
-
-Input uses the same format as QBlue; file paths are relative to your working directory:
-
-```csv
-file_name,error,time,path_flag
-DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,2
-```
-
-Only `path_flag=2` (second-order digital Trotter) is supported. Other paths are
-recorded as `unsupported`. Output has the same columns as `gen_result.py`, with
-bound details in `<output>.metadata.jsonl`. Existing output files are overwritten.
-
-## Options
-
-| Option | Meaning / default |
-|---|---|
-| `-i`, `--input` | Required job CSV |
-| `-o`, `--output` | Result CSV; default `result_openfermion.csv` |
-| `-e`, `--error` | Default tolerance: `0.1` |
-| `-t`, `--time` | Default evolution time: `0.7854` |
-| `-p`, `--path-flag` | Default path: `2` |
-| `--tight` | Use `error_bound(..., tight=True)`; default is loose |
-| `--max-terms` | Maximum effective Hamiltonian terms: `5000`; `0` disables |
-| `--max-exponentials` | Maximum expanded Pauli exponentials: `1000000`; `0` disables |
-| `-h`, `--help` | Show help |
-
-CSV values override the error/time/path defaults. Failed jobs are recorded as
-`error`; remaining jobs continue, and the process exits nonzero.
-
-Step selection uses OpenFermion's `error_bound` and
-`trotter_steps_required_propagator`. This is a leading-order error estimate,
-not a certified bound on higher-order terms.
-
-For first-time setup, run from the repository root (skip creation if `.venv` already exists):
-
-```sh
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install qiskit ./thirdparty/OpenFermion
-```
+| Script | Defaults | Options |
+| --- | --- | --- |
+| `run.sh` | `mlqblue/job.csv` → `results/{qblue,openfermion,phoenix}_results.csv`; QBlue first, then both baselines | `WORKERS` (default 1) |
+| `openfermion_bench.py` | `results/qblue_results.csv` → `results/openfermion_results.csv` | `--input`, `--output` |
+| `phoenix_bench.py` | `results/qblue_results.csv` → `results/phoenix_results.csv` | `--input`, `--output` |
+| `benchmark_threaded.py` | Both baselines → `results/{openfermion,phoenix}_results.csv`; one independent Python process per compiler/input/time, input order preserved, atomic saves after each completed job; timings reflect concurrent load | `--input`, `--output-dir`, `--workers` (default 1) |
+| `plot_results.py` | CSVs in `results/` → PNG/PDF in `results/plots/` | `--csv-dir`, `--out-dir` |
