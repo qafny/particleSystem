@@ -266,3 +266,124 @@ Proof.
   apply mnorm_least. intros v Hv.
   unfold norm. rewrite fst_inner_self. simpl. rewrite sqrt_0. lra.
 Qed.
+
+Lemma Mopp_adjoint :
+  forall n (A : Square n),
+    (Mopp A) † = Mopp (A †).
+Proof.
+  intros n A.
+  unfold Mopp, adjoint.
+  prep_matrix_equality.
+
+  unfold scale, Cconj, Cmult.
+  simpl.
+
+  destruct (A y x) as [ar ai].
+  simpl.
+  f_equal;
+  ring.
+Qed.
+
+
+Lemma Mminus_adjoint :
+  forall n (A B : Square n),
+    (Mminus A B) †
+    =
+    Mminus (A †) (B †).
+Proof.
+  intros n A B.
+
+  unfold Mminus.
+  rewrite Mplus_adjoint.
+  rewrite Mopp_adjoint.
+
+  reflexivity.
+Qed.
+
+Lemma Mopp_mult_l :
+  forall m n o
+         (A : Matrix m n)
+         (B : Matrix n o),
+    Mmult (Mopp A) B
+    =
+    Mopp (Mmult A B).
+Proof.
+  intros m n o A B.
+  unfold Mopp.
+  rewrite Mscale_mult_dist_l.
+  reflexivity.
+Qed.
+
+Lemma Mopp_mult_r :
+  forall m n o
+         (A : Matrix m n)
+         (B : Matrix n o),
+    Mmult A (Mopp B)
+    =
+    Mopp (Mmult A B).
+Proof.
+  intros m n o A B.
+  unfold Mopp.
+  rewrite Mscale_mult_dist_r.
+  reflexivity.
+Qed.
+
+Lemma channel_difference_decomp :
+  forall n (U L rho : Square n),
+    Mminus
+      (Mmult U (Mmult rho (U †)))
+      (Mmult L (Mmult rho (L †)))
+    =
+    Mplus
+      (Mmult
+         (Mminus U L)
+         (Mmult rho (U †)))
+      (Mmult
+         L
+         (Mmult rho
+            (Mminus (U †) (L †)))).
+Proof.
+  intros n U L rho.
+
+  unfold Mminus.
+
+  rewrite Mmult_plus_distr_l.
+  rewrite Mmult_plus_distr_l.
+  rewrite Mmult_plus_distr_r.
+
+  rewrite Mopp_mult_l.
+
+  (* rho × Mopp(L†) *)
+  rewrite Mopp_mult_r.
+
+  (* L × Mopp(rho × L†) *)
+  rewrite Mopp_mult_r.
+
+  lma.
+Qed.
+
+Lemma vnorm_dual_bound :
+  forall n (x y : Vector n),
+    norm y <= 1 ->
+    Cmod ⟨y, x⟩ <= norm x.
+Proof.
+  intros n x y Hy.
+
+  eapply Rle_trans.
+  - apply Cauchy_Schwartz_ver2.
+  - pose proof (norm_ge_0 x).
+    nra.
+Qed.
+
+Lemma inner_product_adjoint_move :
+  forall n (A : Square n) (u v : Vector n),
+    ⟨u, (A †) × v⟩
+    =
+    ⟨A × u, v⟩.
+Proof.
+  intros n A u v.
+  rewrite inner_product_adjoint_r.
+  rewrite adjoint_involutive.
+  reflexivity.
+Qed.
+
