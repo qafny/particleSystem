@@ -64,7 +64,6 @@ def plot_scatter_vs_competitor(merged: pd.DataFrame, competitor_key: str, compet
     ax.grid(True, which='both', linestyle=':', linewidth=0.4)
     fig.tight_layout()
     fig.savefig(out, dpi=150, bbox_inches="tight")
-    fig.savefig(out.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)
     print(f'  saved {out.name}')
 
@@ -85,7 +84,6 @@ def plot_compile_time(qb: pd.DataFrame, ph: pd.DataFrame | None, of: pd.DataFram
     ax.grid(True, which='both', linestyle=':', linewidth=0.4)
     fig.tight_layout()
     fig.savefig(out, dpi=150, bbox_inches="tight")
-    fig.savefig(out.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)
     print(f'  saved {out.name}')
 
@@ -106,7 +104,6 @@ def plot_gate_count(qb: pd.DataFrame, merged_ph: pd.DataFrame | None, merged_of:
     ax.grid(True, which='both', linestyle=':', linewidth=0.4)
     fig.tight_layout()
     fig.savefig(out, dpi=150, bbox_inches="tight")
-    fig.savefig(out.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)
     print(f'  saved {out.name}')
 
@@ -183,7 +180,6 @@ def plot_gate_reduction(merged: pd.DataFrame, competitor_key: str, competitor_la
     fig.text(0.5, 0.005, f'QBlue medians: before {before_median_qb:,.0f}, after {after_median_qb:,.0f} gates.  {competitor_label} median: {after_median_other:,.0f} gates.', ha='center', va='bottom', fontsize=8, color='#555555')
     fig.tight_layout(rect=(0, 0.12, 1, 0.95))
     fig.savefig(out, dpi=150, bbox_inches="tight")
-    fig.savefig(out.with_suffix(".pdf"), bbox_inches="tight")
     plt.close(fig)
     print(f'  saved {out.name}')
 
@@ -274,7 +270,6 @@ def plot_qdrift_vs_std_polar(qb: pd.DataFrame, out: Path, t_label: str=T_LABEL_P
     fig.legend(handles=legend_handles, loc='lower center', bbox_to_anchor=(0.5, 0.0), ncol=len(legend_handles), frameon=False, fontsize=8.5)
     fig.suptitle(f'QDrift vs. Standard Trotterization: gate reduction  ({t_label})', fontsize=12)
     fig.tight_layout(rect=(0, 0.0, 1, 0.95))
-    fig.savefig(out.with_suffix(".pdf"), bbox_inches="tight", pad_inches=0.15)
     fig.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.15)
     plt.close(fig)
     print(f'  saved {out.name}')
@@ -365,7 +360,6 @@ def plot_analog_vs_digital_polar(merged: pd.DataFrame, ibm_col: str, ind_col: st
     fig.legend(handles=legend_handles, loc='lower center', bbox_to_anchor=(0.5, 0.0), ncol=len(legend_handles), frameon=False, fontsize=8.5)
     fig.suptitle(f'Indiana analog vs. IBM digital: {gate_label} gate counts  (full circuit)', fontsize=12)
     fig.tight_layout(rect=(0, 0.08, 1, 0.95))
-    fig.savefig(out.with_suffix(".pdf"), bbox_inches="tight", pad_inches=0.15)
     fig.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.15)
     plt.close(fig)
     print(f'  saved {out.name}')

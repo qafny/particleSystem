@@ -77,8 +77,11 @@ def main():
     parser.add_argument("--output-dir", type=Path, default=ROOT / "results")
     parser.add_argument("--workers", type=positive_int, default=1,
                         help="Concurrent compiler processes (default: 1)")
+    parser.add_argument("--compiler", choices=COMPILERS,
+                        help="Run only this compiler (default: both)")
     args = parser.parse_args()
-    outputs = {name: args.output_dir / f"{name}_results.csv" for name in COMPILERS}
+    compilers = (args.compiler,) if args.compiler else COMPILERS
+    outputs = {name: args.output_dir / f"{name}_results.csv" for name in compilers}
     if args.input.resolve() in {path.resolve() for path in outputs.values()}:
         parser.error("Input and output must differ")
     with args.input.open(newline="") as source:
@@ -95,15 +98,15 @@ def main():
             path = ROOT / "mlqblue" / path
         groups.setdefault((path.resolve(), float(row["time"])), []).append(index)
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    results = {name: [None] * len(references) for name in COMPILERS}
+    results = {name: [None] * len(references) for name in compilers}
     for name, path in outputs.items():
         save_results(path, fields, results[name])
-    print(f"Running {len(groups) * len(COMPILERS)} jobs with {args.workers} worker(s). "
+    print(f"Running {len(groups) * len(compilers)} jobs with {args.workers} worker(s). "
           "Compilation timings reflect concurrent CPU and memory load.", flush=True)
     executor = ThreadPoolExecutor(max_workers=args.workers)
     futures = {}
     try:
-        for name in COMPILERS:
+        for name in compilers:
             for indices in groups.values():
                 future = executor.submit(run_job, name, fields, [references[i] for i in indices])
                 futures[future] = name, indices

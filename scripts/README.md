@@ -15,5 +15,5 @@ scripts/run.sh
 | `run.sh` | `mlqblue/job.csv` → `results/{qblue,openfermion,phoenix}_results.csv`; QBlue first, then both baselines | `WORKERS` (default 1) |
 | `openfermion_bench.py` | `results/qblue_results.csv` → `results/openfermion_results.csv` | `--input`, `--output` |
 | `phoenix_bench.py` | `results/qblue_results.csv` → `results/phoenix_results.csv` | `--input`, `--output` |
-| `benchmark_threaded.py` | Both baselines → `results/{openfermion,phoenix}_results.csv`; one independent Python process per compiler/input/time, input order preserved, atomic saves after each completed job; timings reflect concurrent load | `--input`, `--output-dir`, `--workers` (default 1) |
-| `plot_results.py` | CSVs in `results/` → PNG/PDF in `results/plots/` | `--csv-dir`, `--out-dir` |
+| `benchmark_threaded.py` | Both baselines → `results/{openfermion,phoenix}_results.csv`; one independent Python process per compiler/input/time, input order preserved, atomic saves after each completed job; timings reflect concurrent load | `--input`, `--output-dir`, `--workers` (default 1), `--compiler` (`phoenix` or `openfermion`; default both) |
+| `plot_results.py` | CSVs in `results/` → PNG in `results/plots/` | `--csv-dir`, `--out-dir` |
