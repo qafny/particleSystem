@@ -1825,8 +1825,6 @@ Fixpoint qdrift_first_order_sum
            d tau lam rem rho)
   end.
 
-
-
 Lemma exact_hamiltonian_second_order_tau_bound :
   forall n tau (H U : Square n),
 
@@ -1851,7 +1849,9 @@ Proof.
     + exact HU.
 
   - rewrite Rabs_right.
-    2:{ lra. }
+    2:{
+      lra.
+    }
 
     set (x := tau * mnorm n H).
 
@@ -1871,9 +1871,74 @@ Proof.
     }
 
     eapply Rle_trans.
-+ apply exp_second_order_remainder_bound.
-  exact Hx0.
-Admitted.
+
+    + apply exp_second_order_remainder_bound.
+      exact Hx0.
+
+    + assert (Hexp :
+        exp x <= exp tau).
+      {
+        destruct (Req_dec x tau) as [Heq | Hneq].
+
+        - rewrite Heq.
+          apply Rle_refl.
+
+        - assert (Hlt : x < tau).
+          {
+            lra.
+          }
+
+          apply Rlt_le.
+          apply exp_increasing.
+          exact Hlt.
+      }
+
+      assert (Hsq :
+        x * x <= tau * tau).
+      {
+        nra.
+      }
+
+      assert (Hxcoef :
+        0 <= x * x / 2).
+      {
+        nra.
+      }
+
+      assert (Hcoef :
+        x * x / 2 <= tau * tau / 2).
+      {
+        apply Rmult_le_compat_r.
+
+        - apply Rlt_le.
+          apply Rinv_0_lt_compat.
+          lra.
+
+        - exact Hsq.
+      }
+
+      assert (Hexppos :
+        0 <= exp tau).
+      {
+        apply Rlt_le.
+        apply exp_pos.
+      }
+
+      eapply Rle_trans
+        with (r2 := (x * x / 2) * exp tau).
+
+      * apply Rmult_le_compat_l.
+
+        -- exact Hxcoef.
+
+        -- exact Hexp.
+
+      * apply Rmult_le_compat_r.
+
+        -- exact Hexppos.
+
+        -- exact Hcoef.
+Qed.
 
 Lemma exact_evolution_channel_first_order_bound :
   forall n tau (H rho U : Square n),
@@ -1904,27 +1969,225 @@ Lemma exact_evolution_channel_first_order_bound :
     2 * tau * tau * exp (2 * tau).
 Proof.
   intros n tau H rho U
-         Htau HwfH HwfRho Hherm HnormH HnormRho HU.
+         Htau HwfH HwfRho Hherm
+         HnormH HnormRho HU.
 
   set (A := hamiltonian_generator tau H).
   set (L := I n .+ A).
 
-  (* ---------------------------------------------------------- *)
-  (* Remainder of the matrix exponential                       *)
-  (* ---------------------------------------------------------- *)
+  (* ======================================================== *)
+  (* 1. Second-order approximation of the exact evolution     *)
+  (* ======================================================== *)
 
   assert (Hrem :
     mnorm n (Mminus U L)
-    <= exp tau - 1 - tau).
+    <=
+    (tau * tau / 2) * exp tau).
   {
     unfold L, A.
 
+    apply exact_hamiltonian_second_order_tau_bound.
+    - exact Htau.
+    - exact HwfH.
+    - exact HnormH.
+    - exact HU.
+  }
+
+  (* ======================================================== *)
+  (* 2. Elementary norm facts                                *)
+  (* ======================================================== *)
+
+  assert (HnormH0 :
+    0 <= mnorm n H).
+  {
+    apply mnorm_nonneg.
+  }
+
+  assert (HnormRho0 :
+    0 <= mnorm n rho).
+  {
+    apply mnorm_nonneg.
+  }
+
+  assert (Hexp_tau_pos :
+    0 <= exp tau).
+  {
+    apply Rlt_le.
+    apply exp_pos.
+  }
+
+  assert (HtauH :
+    tau * mnorm n H <= tau).
+  {
+    nra.
+  }
+
+  (* ======================================================== *)
+  (* 3. Norm of the Hamiltonian generator                     *)
+  (* ======================================================== *)
+
+  assert (HnormA :
+    mnorm n A <= tau).
+  {
+    unfold A.
+
+    rewrite mnorm_hamiltonian_generator.
+rewrite Rabs_right.
+- exact HtauH.
+- lra.
+  }
+
+  assert (HnormA0 :
+    0 <= mnorm n A).
+  {
+    apply mnorm_nonneg.
+  }
+
+  (* ======================================================== *)
+  (* 4. Norm of the linear approximation L = I + A            *)
+  (* ======================================================== *)
+
+  assert (HnormL :
+    mnorm n L <= 1 + tau).
+  {
+    unfold L.
+
     eapply Rle_trans.
 
-    - eapply exact_hamiltonian_evolution_second_order.
-      + exact HwfH.
-      + exact HU.
+    - apply mnorm_triangle.
+
+    - assert (HI :
+        mnorm n (I n) <= 1).
+      {
+        destruct n as [|n'].
+
+        - rewrite mnorm_dim0.
+          lra.
+
+        - rewrite mnorm_unitary.
+          + lra.
+          + apply WF_I.
+    + apply Nat.lt_0_succ.
++ rewrite id_adjoint_eq.
+apply Mmult_1_l.
+apply WF_I.
+      }
+
+      nra.
+  }
+
+  (* ======================================================== *)
+  (* 5. Adjoint of A                                          *)
+  (*                                                        *)
+  (* A = -i tau H and H† = H, hence A† = -A.                *)
+  (* ======================================================== *)
+
+  assert (HAadj :
+    A † = Mopp A).
+  {
+    unfold A, hamiltonian_generator.
+
+    rewrite scale_adjoint.
+    rewrite Hherm.
+
+    apply functional_extensionality.
+    intro i.
+    apply functional_extensionality.
+    intro j.
+
+    unfold Mopp, scale.
+    simpl.
+
+    destruct (H i j) as [a b].
+    simpl.
+unfold Cconj, Cmult, Copp.
+simpl.
+f_equal.
+- ring.
+- ring.
+  }
+
+  (* ======================================================== *)
+  (* 6. Adjoint of L                                          *)
+  (*                                                        *)
+  (* L† = I - A.                                             *)
+  (* ======================================================== *)
+
+  assert (HLadj :
+    L † = I n .+ Mopp A).
+  {
+    unfold L.
+
+    rewrite Mplus_adjoint.
+   rewrite id_adjoint_eq.
+rewrite HAadj.
+reflexivity.
+  }
+
+  (* ======================================================== *)
+  (* 7. Norm of U                                             *)
+  (*                                                        *)
+  (* Exact Hamiltonian evolution is unitary.                 *)
+  (*                                                        *)
+  (* If your exact evolution relation already has a          *)
+  (* unitarity theorem, use it here.                          *)
+  (* ======================================================== *)
+assert (HnormU :
+  mnorm n U
+  <=
+  1 + tau + (tau * tau / 2) * exp tau).
+{
+  eapply Rle_trans.
+
+  - (* ||U|| <= ||U-L|| + ||L|| *)
+   assert (HUdecomp :
+  U = Mplus (Mminus U L) L).
+{
+  apply functional_extensionality.
+  intro i.
+  apply functional_extensionality.
+  intro j.
+
+  unfold Mplus, Mminus, Mopp, scale.
+  simpl.
+
+  destruct (U i j) as [ur ui] eqn:HUij.
+  destruct (L i j) as [lr li] eqn:HLij.
+unfold Mplus.
+simpl.
+  rewrite HUij.
+  rewrite HLij.
+
+  unfold Cplus, Cmult.
+  simpl.
+
+  f_equal.
+  - ring.
+  - ring.
+}
+
+
+  (* ======================================================== *)
+  (* 8. Bound ||U† - L†||                                    *)
+  (* ======================================================== *)
+
+assert (Hrem_adj :
+  mnorm n (Mminus (U †) (L †))
+  <=
+  (tau * tau / 2) * exp tau).
+{
+  assert (Hadjdifference :
+    Mminus (U †) (L †)
+    =
+    (Mminus U L) †).
+  {
+    symmetry.
+    apply Mminus_adjoint.
+  }
+
+  rewrite Hadjdifference.
 Admitted.
+
 Lemma qdrift_branch_first_order_bound :
   forall d tau amp f rho U,
 
