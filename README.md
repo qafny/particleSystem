@@ -13,3 +13,6 @@ make clean           # Remove generated CSVs, plots, OCaml build, Python caches
 
 Baseline targets reuse `results/qblue_results.csv`, running QBlue first if it is
 missing. `make all` always reruns all experiments before generating plots.
+Individual job failures are recorded in the CSVs and do not stop the Make
+pipeline; setup errors still stop it. Running either threaded runner directly
+returns a nonzero exit status for failed jobs unless `--allow-job-errors` is set.

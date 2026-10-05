@@ -73,6 +73,8 @@ def run_job(compiler, fields, references):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--allow-job-errors", action="store_true",
+                        help="Exit successfully after saving results even if individual jobs failed.")
     parser.add_argument("--input", type=Path, default=ROOT / "results/qblue_results.csv")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "results")
     parser.add_argument("--workers", type=positive_int, default=1,
@@ -127,7 +129,7 @@ def main():
         executor.shutdown(wait=True)
     failures = sum(row["status"] == "error" for rows in results.values() for row in rows)
     print(f"Saved results to {args.output_dir}; {failures} row(s) failed")
-    return int(failures > 0)
+    return int(failures > 0 and not args.allow_job_errors)
 
 
 if __name__ == "__main__":

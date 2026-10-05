@@ -2,6 +2,8 @@ import subprocess
 import json
 import csv
 import argparse
+import os
+import sys
 from pathlib import Path
 
 
@@ -38,6 +40,10 @@ def get_performance_executable():
 
 
 def call_ocaml(file_name, error, time_value, path_flag):
+    env = os.environ.copy()
+    env.setdefault("QBLUE_API_PY", str(REPO_ROOT.parent / "extract_coq/src/networks/api.py"))
+    # The OCaml bridge launches python3; use the runner's environment and dependencies.
+    env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
     proc = subprocess.run(
         [
             str(get_performance_executable()),
@@ -51,6 +57,7 @@ def call_ocaml(file_name, error, time_value, path_flag):
         ],
         text=True,
         capture_output=True,
+        env=env,
         check=False
     )
 

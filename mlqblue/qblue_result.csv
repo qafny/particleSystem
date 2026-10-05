@@ -1,0 +1,401 @@
+file_name,error,time,path_flag,nqubit,program_size,compilation_time,compilation_terms,single_qubit_gates,multi_qubit_gates,single_qubit_gates_bfopt,multi_qubit_gates_bfopt,trotter_step,status,message
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,1,8,60,0.006433963775634766,1335240,2447940,9346680,13263384,10859952,22254,ok,
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,2,8,60,0.017290830612182617,212160,399568,1403792,2107456,1647776,1768,ok,
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,3,8,60,0.3355681896209717,2655,1317,5658,6071,6367,1,ok,
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,4,8,60,0.5828049182891846,2655,22,2092,4135,3520,1,ok,
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,11,8,60,0.0006098747253417969,1335240,14954688,1335240,14954688,1335240,22254,ok,
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,12,8,60,0.0005750656127929688,106080,2482272,106080,2482272,106080,1768,ok,
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,13,8,60,0.0027899742126464844,2655,21198,2655,21198,2655,1,ok,
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,14,8,60,0.0021898746490478516,2655,20310,2655,20310,2655,1,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,1,8,60,0.006482124328613281,1335240,2447940,9346680,13263384,10859952,22254,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,2,8,60,0.01796698570251465,212160,399568,1403792,2107456,1647776,1768,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,3,8,60,0.17274689674377441,1546,901,3809,3586,4401,1,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,4,8,60,0.4069700241088867,1546,36,1342,2442,2300,1,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,11,8,60,0.0006048679351806641,1335240,14954688,1335240,14954688,1335240,22254,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,12,8,60,0.0005879402160644531,106080,2482272,106080,2482272,106080,1768,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,13,8,60,0.002953052520751953,1546,12790,1546,12790,1546,1,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,14,8,60,0.0015549659729003906,1546,12282,1546,12282,1546,1,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,1,8,60,0.00902104377746582,1335240,2447940,9346680,13263384,10859952,22254,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,2,8,60,0.016373157501220703,212160,399568,1403792,2107456,1647776,1768,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,3,8,60,0.09987592697143555,1366,683,2930,2990,3489,1,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,4,8,60,0.3168320655822754,1366,22,1037,2038,1846,1,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,11,8,60,0.0005409717559814453,1335240,14954688,1335240,14954688,1335240,22254,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,12,8,60,0.0007290840148925781,106080,2482272,106080,2482272,106080,1768,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,13,8,60,0.0021071434020996094,1366,10878,1366,10878,1366,1,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,14,8,60,0.0015249252319335938,1366,10542,1366,10542,1366,1,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,1,14,666,2.1281161308288574,1822584258,3891463686,58733188206,32349502273,61976074611,2736613,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,2,14,666,3.467118978500366,83693556,226198800,2726763701,1485497786,2876243408,62833,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,3,14,666,10.134151935577393,14070,21332,259914,63933,262688,1,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,4,14,666,48.28032302856445,14070,5937,100132,35859,118917,1,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,11,14,666,0.0011010169982910156,1822584258,30004224932,1822584258,30004224932,1822584258,2736613,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,12,14,666,0.0019822120666503906,41846778,1419648802,41846778,1419648802,41846778,62833,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,13,14,666,0.042079925537109375,14070,152934,14070,152934,14070,1,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,14,14,666,0.030186891555786133,14070,143222,14070,143222,14070,1,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,1,16,1177,9.432393074035645,10059078667,17690987970,377758144571,181866774880,398072868438,8546371,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,2,16,1177,18.00998306274414,346040354,805271478,13286538384,6256362560,13985675140,147001,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,3,16,1177,48.4204740524292,79979,77524,1095662,266032,1148775,1,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,4,16,1177,148.6250877380371,79979,40519,536635,215424,590052,1,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,11,16,1177,0.0029060840606689453,10059078667,182328278914,10059078667,182328278914,10059078667,8546371,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,12,16,1177,0.0061910152435302734,173020177,6445258845,173020177,6445258845,173020177,147001,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,13,16,1177,0.23499298095703125,79979,642260,79979,642260,79979,1,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,14,16,1177,0.2501649856567383,79979,595564,79979,595564,79979,1,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,1,18,1884,9.989098072052002,41252840208,82330509120,1886266411740,813911530452,1958480778516,21896412,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,2,18,1884,15.649401903152466,1118734272,2654321760,52511035248,22072437168,54497916816,296904,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,3,18,1884,128.3918981552124,237558,259552,3810263,957274,3963722,1,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,4,18,1884,628.71036195755,237558,120657,1592517,790147,1714863,1,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,11,18,1884,0.0060710906982421875,41252840208,846340116624,41252840208,846340116624,41252840208,21896412,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,12,18,1884,0.013468027114868164,559367136,23511233952,559367136,23511233952,559367136,296904,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,13,18,1884,0.8233959674835205,237558,1921158,237558,1921158,237558,1,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,14,18,1884,0.8376960754394531,237558,1751500,237558,1751500,237558,1,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,1,14,1654,7.826916933059692,27913979100,50680579950,799480663800,502130967450,851882662050,16876650,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,2,14,1654,20.785978078842163,808458660,1753289730,23955842295,14542968870,25546853745,244395,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,3,14,1654,74.07190799713135,182672,177675,1951649,622397,2082050,1,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,4,14,1654,280.4020428657532,182672,69589,783156,440662,954967,1,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,11,14,1654,0.004034996032714844,27913979100,451450387500,27913979100,451450387500,27913979100,16876650,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,12,14,1654,0.008497953414916992,404229330,13479361830,404229330,13479361830,404229330,244395,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,13,14,1654,0.5692667961120605,182672,1565978,182672,1565978,182672,1,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,14,14,1654,0.6227390766143799,182672,1434938,182672,1434938,182672,1,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,1,12,1219,2.446272850036621,11174761945,21313635375,293559804565,190145129010,307457211545,9167155,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,2,12,1219,4.320721864700317,377655952,831369768,9999053200,6426037536,10579168680,154904,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,3,12,1219,7.405833005905151,21888,35188,301587,117823,312301,1,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,4,12,1219,88.30392360687256,21888,12642,102615,78351,117892,1,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,11,12,1219,0.002431154251098633,11174761945,180849633840,11174761945,180849633840,11174761945,9167155,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,12,12,1219,0.0048389434814453125,188827976,6300720200,188827976,6300720200,188827976,154904,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,13,12,1219,0.06669497489929199,21888,200770,21888,200770,21888,1,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,14,12,1219,0.0667870044708252,21888,168806,21888,168806,21888,1,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,1,12,631,1.8422119617462158,1550092515,3193534500,43513135845,26054328390,46303793685,2456565,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,2,12,631,2.8936500549316406,73161926,198035768,2022735943,1229723276,2155957897,57973,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,3,12,631,1.7485179901123047,3810,5058,49968,17488,56527,1,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,4,12,631,37.12154293060303,3810,683,9355,11178,13315,1,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,11,12,631,0.0012319087982177734,1550092515,26019936480,1550092515,26019936480,1550092515,2456565,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,12,12,631,0.0025739669799804688,36580963,1264680995,36580963,1264680995,36580963,57973,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,13,12,631,0.00911402702331543,3810,42450,3810,42450,3810,1,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,14,12,631,0.005738973617553711,3810,34950,3810,34950,3810,1,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,1,16,1177,4.0055131912231445,10059078667,18340512166,390543515587,182208629720,405550943063,8546371,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,2,16,1177,7.7340099811553955,346040354,822764597,13701816209,6268122640,14304226307,147001,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,3,16,1177,38.69222903251648,45441,74577,1083465,235167,1128257,1,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,4,16,1177,143.99186611175537,45441,32434,433211,141332,476762,1,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,11,16,1177,0.001968860626220703,10059078667,186208331348,10059078667,186208331348,10059078667,8546371,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,12,16,1177,0.00407099723815918,173020177,6578735753,173020177,6578735753,173020177,147001,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,13,16,1177,0.1116330623626709,45441,470284,45441,470284,45441,1,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,14,16,1177,0.16398286819458008,45441,404888,45441,404888,45441,1,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,1,18,1884,15.1965970993042,41252840208,84082222080,1948036189992,822757680900,2022111751788,21896412,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,2,18,1884,27.93863582611084,1118734272,2825635368,53813850000,22312335600,55840813608,296904,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,3,18,1884,176.09899592399597,187027,232455,3657206,797965,3775395,1,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,4,18,1884,800.2584638595581,187027,101525,1742044,671707,1805301,1,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,11,18,1884,0.004060983657836914,41252840208,828472644432,41252840208,828472644432,41252840208,21896412,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,12,18,1884,0.008660078048706055,559367136,23026686624,559367136,23026686624,559367136,296904,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,13,18,1884,0.48926806449890137,187027,1634616,187027,1634616,187027,1,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,14,18,1884,0.7508389949798584,187027,1535056,187027,1535056,187027,1,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,1,12,915,2.2116751670837402,4726128720,9545230464,120069495328,83128213792,128044514720,5165168,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,2,12,915,4.433161973953247,184705560,492245364,4767018360,3248799216,5069208768,100932,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,3,12,915,9.601526021957397,18360,30520,264020,98863,273129,1,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,4,12,915,90.3474988937378,18360,11921,116672,79593,123547,1,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,11,12,915,0.001971006393432617,4726128720,75680041536,4726128720,75680041536,4726128720,5165168,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,12,12,915,0.0034651756286621094,92352780,3050064108,92352780,3050064108,92352780,100932,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,13,12,915,0.05305314064025879,18360,171822,18360,171822,18360,1,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,14,12,915,0.0559239387512207,18360,145668,18360,145668,18360,1,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,1,14,1734,2.8776350021362305,32163327888,61488715080,946833469072,598990973176,1002145489696,18548632,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,2,14,1734,5.500002861022949,909562764,2261317806,27533681813,16939163978,29064307041,262273,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,3,14,1734,19.595252990722656,24144,56539,617817,175296,633274,1,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,4,14,1734,388.1827127933502,24144,19426,228474,129876,266158,1,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,11,14,1734,0.003936052322387695,32163327888,518916528832,32163327888,518916528832,32163327888,18548632,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,12,14,1734,0.008538007736206055,454781382,15129480278,454781382,15129480278,454781382,262273,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,13,14,1734,0.09417009353637695,24144,260696,24144,260696,24144,1,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,14,14,1734,0.12234091758728027,24144,228070,24144,228070,24144,1,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,1,16,789,2.9342241287231445,3030281529,5038947232,112454554080,49513801612,118438303918,3840661,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,2,16,789,5.8327648639678955,127674402,302518751,4878974518,2086157656,5136912410,80909,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,3,16,789,17.00458598136902,22062,28245,432116,98127,444987,1,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,4,16,789,83.27651619911194,22062,15782,192990,87363,218446,1,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,11,16,789,0.0017900466918945312,3030281529,56234958362,3030281529,56234958362,3030281529,3840661,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,12,16,789,0.004163980484008789,63837201,2433176357,63837201,2433176357,63837201,80909,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,13,16,789,0.06934499740600586,22062,216420,22062,216420,22062,1,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,14,16,789,0.06624603271484375,22062,188298,22062,188298,22062,1,ok,
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,1,20,2063,10.562995910644531,54163446100,119012555100,3239934998800,1112726695400,3312319206700,26254700,ok,
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,2,20,2063,16.591290950775146,1403066930,4077599505,83622584995,28824422020,86243728935,340055,ok,
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,3,20,2063,125.64142394065857,63452,161317,2882245,436867,2895039,1,ok,
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,4,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt:
+[DBG] Length of Pauli String 2063
+
+[DBG] ---- Trotterization (MarQSim, CNOT matrix) -> IBMDigital circuits: ----
+[DBG] Warning: skipping MarQSim (CNOT matrix) -> IBMDigital because the input has 2063 terms, above the supported limit 2000.
+Fatal error: exception Failure(""skipping MarQSim (CNOT matrix) -> IBMDigital: input term count 2063 exceeds limit 2000"")"
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,11,20,2063,0.0051479339599609375,54163446100,1150165897600,54163446100,1150165897600,54163446100,26254700,ok,
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,12,20,2063,0.009750843048095703,701533465,30495792345,701533465,30495792345,701533465,340055,ok,
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,13,20,2063,0.22979402542114258,63452,749868,63452,749868,63452,1,ok,
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,14,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt:
+[DBG] Length of Pauli String 2063
+
+[DBG] ---- Trotterization (MarQSim, CNOT matrix) -> IndiAnalog circuits: ----
+[DBG] Warning: skipping MarQSim (CNOT matrix) -> IndiAnalog because the input has 2063 terms, above the supported limit 2000.
+Fatal error: exception Failure(""skipping MarQSim (CNOT matrix) -> IndiAnalog: input term count 2063 exceeds limit 2000"")"
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,1,14,666,0.6285810470581055,1822584258,3078689625,23731907936,27850510501,29281759100,2736613,ok,
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,2,14,666,1.6667730808258057,83693556,193965471,1228196651,1278902882,1482293303,62833,ok,
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,3,14,666,6.967267036437988,14070,16303,154115,47574,155453,1,ok,
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,4,14,666,36.05512714385986,14070,1634,37707,12403,43229,1,ok,
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,11,14,666,0.0017139911651611328,1822584258,38684761368,1822584258,38684761368,1822584258,2736613,ok,
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,12,14,666,0.0033538341522216797,41846778,1818261354,41846778,1818261354,41846778,62833,ok,
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,13,14,666,0.03491401672363281,14070,109948,14070,109948,14070,1,ok,
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,14,14,666,0.033228158950805664,14070,77220,14070,77220,14070,1,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,1,16,1177,2.1016550064086914,10059078667,16614145224,135177950107,177354290992,167876365553,8546371,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,2,16,1177,4.369462966918945,346040354,763523194,5303943081,6101129504,6407626589,147001,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,3,16,1177,19.416497945785522,79979,67628,678149,193672,698917,1,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,4,16,1177,296.3244571685791,79979,8239,158219,55640,175608,1,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,11,16,1177,0.002596139907836914,10059078667,227812065376,10059078667,227812065376,10059078667,8546371,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,12,16,1177,0.00498199462890625,173020177,8009937489,173020177,8009937489,173020177,147001,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,13,16,1177,0.14272785186767578,79979,475332,79979,475332,79979,1,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,14,16,1177,0.13298487663269043,79979,340352,79979,340352,79979,1,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,1,18,1884,3.82886004447937,41252840208,63806144568,614260045836,735785132436,755426214000,21896412,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,2,18,1884,9.024906873703003,1118734272,2164133256,19099834320,19953730224,22938209232,296904,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,3,18,1884,161.34063482284546,237558,210251,2203822,637639,2265866,1,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,4,18,1884,957.4042789936066,237558,24763,450094,149971,494689,1,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,11,18,1884,0.007046937942504883,41252840208,1052604317664,41252840208,1052604317664,41252840208,21896412,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,12,18,1884,0.018852949142456055,559367136,29104905312,559367136,29104905312,559367136,296904,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,13,18,1884,0.6626091003417969,237558,1333470,237558,1333470,237558,1,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,14,18,1884,0.5235960483551025,237558,958554,237558,958554,237558,1,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,1,14,1654,3.9201910495758057,27913979100,42748554450,272490390900,464529791250,353380174350,16876650,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,2,14,1654,7.578277111053467,808458660,1544087610,9099559035,13453944750,11427665805,244395,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,3,14,1654,42.23340916633606,182672,130157,1029040,488892,1084461,1,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,4,14,1654,296.6466429233551,182672,12847,196422,128676,224107,1,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,11,14,1654,0.003075838088989258,27913979100,545318314800,27913979100,545318314800,27913979100,16876650,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,12,14,1654,0.007071971893310547,404229330,16198011810,404229330,16198011810,404229330,244395,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,13,14,1654,0.3316049575805664,182672,997470,182672,997470,182672,1,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,14,14,1654,0.4328620433807373,182672,702944,182672,702944,182672,1,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,1,12,1219,0.9288749694824219,11174761945,17280087175,94293356330,177127768910,122042334515,9167155,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,2,12,1219,2.045592784881592,377655952,701095504,3533515144,5986110176,4499496488,154904,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,3,12,1219,4.462963104248047,21888,26419,183916,93684,192304,1,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,4,12,1219,53.709927797317505,21888,1768,33355,17352,41100,1,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,11,12,1219,0.0014209747314453125,11174761945,187523322680,11174761945,187523322680,11174761945,9167155,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,12,12,1219,0.004068851470947266,188827976,6526260424,188827976,6526260424,188827976,154904,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,13,12,1219,0.0413210391998291,21888,154388,21888,154388,21888,1,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,14,12,1219,0.0461270809173584,21888,98016,21888,98016,21888,1,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,1,12,631,0.4250631332397461,1550092515,2377954920,14849935425,23302975590,18913093935,2456565,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,2,12,631,0.8086249828338623,73161926,163020076,796433074,1099863756,988671542,57973,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,3,12,631,0.8193049430847168,3810,4012,28350,12044,30908,1,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,4,12,631,40.19773077964783,3810,448,9409,4715,10737,1,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,11,12,631,0.0009579658508300781,1550092515,27238392720,1550092515,27238392720,1550092515,2456565,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,12,12,631,0.0014889240264892578,36580963,1322190211,36580963,1322190211,36580963,57973,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,13,12,631,0.0059108734130859375,3810,30390,3810,30390,3810,1,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,14,12,631,0.005691051483154297,3810,23280,3810,23280,3810,1,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,1,16,1177,2.2647509574890137,10059078667,16494496030,148168434027,177354290992,181174518829,8546371,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,2,16,1177,4.497876882553101,346040354,744560065,5662184518,6101129504,6806146300,147001,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,3,16,1177,26.83960509300232,45441,62633,701860,179444,732067,1,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,4,16,1177,136.92754793167114,45441,6267,130999,36576,149484,1,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,11,16,1177,0.003523111343383789,10059078667,230273420224,10059078667,230273420224,10059078667,8546371,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,12,16,1177,0.007846832275390625,173020177,8094610065,173020177,8094610065,173020177,147001,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,13,16,1177,0.14252996444702148,45441,381116,45441,381116,45441,1,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,14,16,1177,0.09280896186828613,45441,221994,45441,221994,45441,1,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,1,18,1884,4.563024997711182,41252840208,63565284036,653148073548,735785132436,799985412420,21896412,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,2,18,1884,11.693902969360352,1118734272,2255282784,20384834832,19953730224,24296248128,296904,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,3,18,1884,81.28583288192749,187027,176390,2143027,496995,2204292,1,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,4,18,1884,770.9248938560486,187027,16483,405953,125137,452848,1,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,11,18,1884,0.004783153533935547,41252840208,1073624873184,41252840208,1073624873184,41252840208,21896412,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,12,18,1884,0.01075291633605957,559367136,29674960992,559367136,29674960992,559367136,296904,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,13,18,1884,0.4454162120819092,187027,1244466,187027,1244466,187027,1,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,14,18,1884,0.3990299701690674,187027,787942,187027,787942,187027,1,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,1,12,915,0.6632721424102783,4726128720,7432676752,40980442912,77446528992,52710539440,5165168,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,2,12,915,1.9067349433898926,184705560,411600696,1845137892,3026748816,2312352120,100932,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,3,12,915,5.445452928543091,18360,22173,155842,70883,163352,1,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,4,12,915,72.69245290756226,18360,2544,38077,15180,37293,1,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,11,12,915,0.0019898414611816406,4726128720,77064306560,4726128720,77064306560,4726128720,5165168,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,12,12,915,0.004410982131958008,92352780,3104163660,92352780,3104163660,92352780,100932,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,13,12,915,0.04692792892456055,18360,129180,18360,129180,18360,1,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,14,12,915,0.04062199592590332,18360,84528,18360,84528,18360,1,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,1,14,1734,1.8631751537322998,32163327888,48337734992,312451706040,542603131896,406827145656,18548632,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,2,14,1734,3.726137161254883,909562764,1902528342,10308640265,15344544138,12958122111,262273,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,3,14,1734,15.56506085395813,24144,42934,407221,134874,421867,1,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,4,14,1734,408.13215470314026,24144,3848,77391,26352,82314,1,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,11,14,1734,0.0031239986419677734,32163327888,637776162688,32163327888,637776162688,32163327888,18548632,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,12,14,1734,0.007011890411376953,454781382,18490771046,454781382,18490771046,454781382,262273,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,13,14,1734,0.07150983810424805,24144,235494,24144,235494,24144,1,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,14,14,1734,0.06484699249267578,24144,127178,24144,127178,24144,1,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,1,16,789,1.282109022140503,3030281529,5269386892,50316499761,49636702764,59495679551,3840661,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,2,16,789,2.304042100906372,127674402,315787827,2389970951,2091335832,2774774155,80909,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,3,16,789,10.40175986289978,22062,26605,300352,76082,307400,1,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,4,16,789,115.53162980079651,22062,3066,65473,17711,72706,1,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,11,16,789,0.0015850067138671875,3030281529,69562052032,3030281529,69562052032,3030281529,3840661,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,12,16,789,0.0028228759765625,63837201,2994684817,63837201,2994684817,63837201,80909,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,13,16,789,0.042185068130493164,22062,175826,22062,175826,22062,1,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,14,16,789,0.03603100776672363,22062,108054,22062,108054,22062,1,ok,
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,1,20,2063,3.987182855606079,54163446100,85275265600,1075865096600,943856465000,1274980741400,26254700,ok,
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,2,20,2063,6.9369800090789795,1403066930,3265548165,32514698880,24449954500,37290771355,340055,ok,
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,3,20,2063,73.92273902893066,63452,115537,1787519,330529,1807201,1,ok,
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,4,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt:
+[DBG] Length of Pauli String 2063
+
+[DBG] ---- Trotterization (MarQSim, CNOT matrix) -> IBMDigital circuits: ----
+[DBG] Warning: skipping MarQSim (CNOT matrix) -> IBMDigital because the input has 2063 terms, above the supported limit 2000.
+Fatal error: exception Failure(""skipping MarQSim (CNOT matrix) -> IBMDigital: input term count 2063 exceeds limit 2000"")"
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,11,20,2063,0.005760908126831055,54163446100,1635772828800,54163446100,1635772828800,54163446100,26254700,ok,
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,12,20,2063,0.012598991394042969,701533465,43075106905,701533465,43075106905,701533465,340055,ok,
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,13,20,2063,0.2259838581085205,63452,698704,63452,698704,63452,1,ok,
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,14,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt:
+[DBG] Length of Pauli String 2063
+
+[DBG] ---- Trotterization (MarQSim, CNOT matrix) -> IndiAnalog circuits: ----
+[DBG] Warning: skipping MarQSim (CNOT matrix) -> IndiAnalog because the input has 2063 terms, above the supported limit 2000.
+Fatal error: exception Failure(""skipping MarQSim (CNOT matrix) -> IndiAnalog: input term count 2063 exceeds limit 2000"")"
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,1,12,661,0.5982959270477295,1781845141,3558298920,34658370617,31434336141,39090070181,2695681,ok,
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,2,12,661,1.242257833480835,82137182,220565050,1773405133,1449019182,1956132404,62131,ok,
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,3,12,661,2.334429979324341,5731,12705,89228,43961,98307,1,ok,
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,4,12,661,42.752856969833374,5731,1151,21565,25969,29362,1,ok,
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,11,12,661,0.0006890296936035156,1781845141,22050670580,1781845141,22050670580,1781845141,2695681,ok,
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,12,12,661,0.001035928726196289,41068591,1057531751,41068591,1057531751,41068591,62131,ok,
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,13,12,661,0.013267040252685547,5731,75956,5731,75956,5731,1,ok,
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,14,12,661,0.015945911407470703,5731,79842,5731,79842,5731,1,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,1,14,661,0.5773899555206299,1781845141,3269861053,27760122938,27358466469,33345573970,2695681,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,2,14,661,1.151447057723999,82137182,205591479,1329851924,1261135038,1613542070,62131,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,3,14,661,2.9768412113189697,5731,10275,96458,30399,99082,1,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,4,14,661,55.756187200546265,5731,1358,19264,11683,22966,1,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,11,14,661,0.001043081283569336,1781845141,37890492136,1781845141,37890492136,1781845141,2695681,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,12,14,661,0.002368927001953125,41068591,1787695263,41068591,1787695263,41068591,62131,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,13,14,661,0.013483047485351562,5731,69912,5731,69912,5731,1,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,14,14,661,0.01556396484375,5731,49188,5731,49188,5731,1,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,1,12,550,0.4638509750366211,1026527150,2196768101,12047695915,15883174630,14763326830,1866413,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,2,12,550,0.8220739364624023,51958500,131455005,640081485,803939700,781597545,47235,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,3,12,550,4.62483811378479,9143,17538,128067,57431,135173,1,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,4,12,550,48.97257590293884,9143,3055,40371,32227,49809,1,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,11,12,550,0.0011470317840576172,1026527150,17827976976,1026527150,17827976976,1026527150,1866413,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,12,12,550,0.0023899078369140625,25979250,928356690,25979250,928356690,25979250,47235,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,13,12,550,0.027538061141967773,9143,112290,9143,112290,9143,1,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,14,12,550,0.027578115463256836,9143,95992,9143,95992,9143,1,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,1,10,275,0.1316070556640625,128345800,286561168,1167246712,1786106824,1446340488,466712,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,2,10,275,0.22996902465820312,9256500,22501710,90074160,128816820,110202840,16830,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,3,10,275,1.7293720245361328,7399,7571,42031,25747,47430,1,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,4,10,275,7.970109224319458,7399,2823,22448,17363,21742,1,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,11,10,275,0.0007479190826416016,128345800,1922853440,128345800,1922853440,128345800,466712,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,12,10,275,0.001338958740234375,4628250,143307450,4628250,143307450,4628250,16830,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,13,10,275,0.017696857452392578,7399,70834,7399,70834,7399,1,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,14,10,275,0.016793012619018555,7399,62352,7399,62352,7399,1,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,1,10,275,0.07343101501464844,128345800,284694320,1167246712,1786106824,1446340488,466712,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,2,10,275,0.21621298789978027,9256500,22501710,90074160,128816820,110202840,16830,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,3,10,275,0.21456193923950195,991,1212,7259,4415,8337,1,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,4,10,275,6.149564981460571,991,212,1858,2583,3969,1,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,11,10,275,0.0004868507385253906,128345800,1922853440,128345800,1922853440,128345800,466712,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,12,10,275,0.0007770061492919922,4628250,143307450,4628250,143307450,4628250,16830,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,13,10,275,0.0012621879577636719,991,10556,991,10556,991,1,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,14,10,275,0.0028591156005859375,991,9080,991,9080,991,1,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,1,12,614,0.5792508125305176,1428160930,2342276965,16019127565,21282854250,19743045560,2325995,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,2,12,614,1.0365610122680664,68349252,165362889,794420907,1018559700,971806140,55659,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,3,12,614,0.864109992980957,1900,2743,20570,8164,22133,1,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,4,12,614,51.43574810028076,1900,326,5887,6016,7999,1,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,11,12,614,0.0009181499481201172,1428160930,24748586800,1428160930,24748586800,1428160930,2325995,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,12,12,614,0.0023419857025146484,34174626,1218598146,34174626,1218598146,34174626,55659,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,13,12,614,0.004659891128540039,1900,21226,1900,21226,1900,1,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,14,12,614,0.0049822330474853516,1900,17786,1900,17786,1900,1,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,1,10,275,0.10206103324890137,128345800,290761576,1236320088,1756237256,1498612232,466712,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,2,10,275,0.19113683700561523,9256500,22686840,89013870,126662580,107964450,16830,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,3,10,275,1.228712797164917,4290,6081,32001,21382,34901,1,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,4,10,275,7.316045045852661,4290,297,8146,7210,10765,1,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,11,10,275,0.0007498264312744141,128345800,1878049088,128345800,1878049088,128345800,466712,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,12,10,275,0.0011560916900634766,4628250,140076090,4628250,140076090,4628250,16830,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,13,10,275,0.009326934814453125,4290,43556,4290,43556,4290,1,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,14,10,275,0.010376930236816406,4290,37716,4290,37716,4290,1,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,1,8,210,0.12360095977783203,57161580,228646320,1365617366,863956452,1439383024,272198,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,2,8,210,0.22969293594360352,4735080,19154526,113551728,71567352,119470578,11274,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,3,8,210,77.5576400756836,133965,545343,3328954,2095993,3511491,1,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,4,8,210,31.390626907348633,133965,157456,932946,1910499,1403985,1,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,11,8,210,0.0009169578552246094,57161580,757799232,57161580,757799232,57161580,272198,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,12,8,210,0.001447916030883789,2367540,65141172,2367540,65141172,2367540,11274,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,13,8,210,0.4257009029388428,133965,1755572,133965,1755572,133965,1,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,14,8,210,0.4423089027404785,133965,1710532,133965,1710532,133965,1,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,1,10,210,0.04840087890625,57161580,158691434,578965146,893353836,699821058,272198,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,2,10,210,0.08882308006286621,4735080,13010196,48940434,74002536,59154678,11274,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,3,10,210,30.11867594718933,145168,383648,1447866,2240048,1761778,1,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,4,10,210,22.22683572769165,145168,148320,449086,2185284,979754,1,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,11,10,210,0.0008819103240966797,57161580,524797744,57161580,524797744,57161580,272198,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,12,10,210,0.0010559558868408203,2367540,45840084,2367540,45840084,2367540,11274,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,13,10,210,0.3790881633758545,145168,1381122,145168,1381122,145168,1,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,14,10,210,0.40486598014831543,145168,1372876,145168,1372876,145168,1,ok,
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,1,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,2,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,3,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,4,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,11,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,12,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,13,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,14,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,1,28,8919,75.78817915916443,4376596271742,9780237727558,342295071434444,99515918500036,350176772221160,490704818,ok,
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,2,28,8919,130.20717883110046,54256381884,123246361360,4262894542596,1233692427272,4365010783710,3041618,ok,
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,3,28,8919,1817.7030820846558,599611,1627277,40007592,4178410,40389973,1,ok,
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,4,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt:
+[DBG] Length of Pauli String 8919
+
+[DBG] ---- Trotterization (MarQSim, CNOT matrix) -> IBMDigital circuits: ----
+[DBG] Warning: skipping MarQSim (CNOT matrix) -> IBMDigital because the input has 8919 terms, above the supported limit 2000.
+Fatal error: exception Failure(""skipping MarQSim (CNOT matrix) -> IBMDigital: input term count 8919 exceeds limit 2000"")"
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,11,28,8919,0.051177978515625,4376596271742,102156891830512,4376596271742,102156891830512,4376596271742,490704818,ok,
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,12,28,8919,0.10845088958740234,27128190942,1293560594366,27128190942,1293560594366,27128190942,3041618,ok,
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,13,28,8919,7.527543067932129,599611,7288700,599611,7288700,599611,1,ok,
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,14,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt:
+[DBG] Length of Pauli String 8919
+
+[DBG] ---- Trotterization (MarQSim, CNOT matrix) -> IndiAnalog circuits: ----
+[DBG] Warning: skipping MarQSim (CNOT matrix) -> IndiAnalog because the input has 8919 terms, above the supported limit 2000.
+Fatal error: exception Failure(""skipping MarQSim (CNOT matrix) -> IndiAnalog: input term count 8919 exceeds limit 2000"")"
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,1,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,2,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,3,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,4,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,11,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,12,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,13,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,14,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt:
+Fatal error: exception Dune__exe__Performance.Parse_timeout(30)"
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,1,28,8919,34.734663009643555,4376596271742,6730997988506,103126524550880,81408910715836,122545186313594,490704818,ok,
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,2,28,8919,62.73076915740967,54256381884,87765887390,1523838451528,1009221018872,1771289283918,3041618,ok,
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,3,28,8919,1208.8674929141998,599611,1161143,26907773,3283571,27192071,1,ok,
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,4,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt:
+[DBG] Length of Pauli String 8919
+
+[DBG] ---- Trotterization (MarQSim, CNOT matrix) -> IBMDigital circuits: ----
+[DBG] Warning: skipping MarQSim (CNOT matrix) -> IBMDigital because the input has 8919 terms, above the supported limit 2000.
+Fatal error: exception Failure(""skipping MarQSim (CNOT matrix) -> IBMDigital: input term count 8919 exceeds limit 2000"")"
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,11,28,8919,0.06875205039978027,4376596271742,192843067835456,4376596271742,192843067835456,4376596271742,490704818,ok,
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,12,28,8919,0.16413378715515137,27128190942,2417791273054,27128190942,2417791273054,27128190942,3041618,ok,
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,13,28,8919,7.833906888961792,599611,7640856,599611,7640856,599611,1,ok,
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,14,,,,,,,,,,error,"[DBG] Expected error: 0.100000;   t: 0.785400
+[DBG] Analyzing DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt:
+[DBG] Length of Pauli String 8919
+
+[DBG] ---- Trotterization (MarQSim, CNOT matrix) -> IndiAnalog circuits: ----
+[DBG] Warning: skipping MarQSim (CNOT matrix) -> IndiAnalog because the input has 8919 terms, above the supported limit 2000.
+Fatal error: exception Failure(""skipping MarQSim (CNOT matrix) -> IndiAnalog: input term count 8919 exceeds limit 2000"")"

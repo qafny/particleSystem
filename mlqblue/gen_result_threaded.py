@@ -24,6 +24,8 @@ def parse_args():
     parser.add_argument("-e", "--error", type=float, default=0.1)
     parser.add_argument("-t", "--time", dest="time_value", type=float, default=0.7854)
     parser.add_argument("-p", "--path-flag", type=int, default=0)
+    parser.add_argument("--allow-job-errors", action="store_true",
+                        help="Exit successfully after saving results even if individual jobs failed.")
     parser.add_argument("-w", "--workers", type=positive_int, default=1,
                         help="Concurrent OCaml processes (default: 1).")
     return parser.parse_args()
@@ -108,7 +110,7 @@ def main():
         raise SystemExit("Interrupted. Previously saved results remain in " + args.output)
     failures = sum(row["status"] == "error" for row in rows)
     print(f"Saved to {args.output}; {failures} job(s) failed.")
-    return 1 if failures else 0
+    return int(failures > 0 and not args.allow_job_errors)
 
 
 if __name__ == "__main__":

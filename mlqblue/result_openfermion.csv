@@ -1,0 +1,320 @@
+file_name,error,time,path_flag,nqubit,program_size,compilation_time,compilation_terms,single_qubit_gates,multi_qubit_gates,single_qubit_gates_bfopt,multi_qubit_gates_bfopt,trotter_step,status,message
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,2,8,60,0.025087054000323405,119,350,398,503,528,1,ok,
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Ar_60.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,2,8,60,0.022767984000893193,119,350,398,503,528,1,ok,
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Cl-_60.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,2,8,60,0.022976882999500958,119,350,398,503,528,1,ok,
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/small/MarqSim_Na+_60.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,2,14,666,1.4703677779998543,9303,31638,37652,80311,92596,7,ok,
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,2,16,1177,9.69288570000208,32914,96841,132422,280658,341208,14,ok,
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,2,18,1884,15.188850023998384,97890,207537,289916,982722,1222936,26,ok,
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,2,14,1654,21.73223884500112,109065,191650,182306,945153,1078968,33,ok,
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,2,12,1219,1.268958358999953,9740,16832,15304,80332,93568,4,ok,
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,2,12,631,0.5434925980007392,3777,11881,12094,30417,36360,3,ok,
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,2,16,1177,4.447461605999706,23510,61114,85650,202550,248720,10,ok,
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,2,18,1884,14.827553441999044,86595,224065,327904,876323,1073548,23,ok,
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,2,12,915,1.5356346019998455,10962,30360,32480,93810,107568,6,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,2,14,1734,2.903815427001973,20790,56886,62364,188358,212040,6,ok,
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,2,16,789,2.244150898999578,9450,32909,48590,72042,92616,6,ok,
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/BK_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,2,20,2063,6.796193358997698,41230,153859,236218,446830,555600,10,ok,
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,2,14,666,1.7160371689988096,7974,27060,31240,51750,77064,6,ok,
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_BeH2_sto3g_6_electrons_14_spin_orbitals_Hamiltonian_666_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,2,16,1177,4.475720033999096,25861,83302,103810,195525,285120,11,ok,
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,2,18,1884,11.939881233003689,82830,188907,233118,631950,996952,22,ok,
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_C2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,2,14,1654,12.082092254997406,105760,185345,168876,745760,1011072,32,ok,
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_10_electrons_14_spin_orbitals_Hamiltonian_1654_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,2,12,1219,1.6316154720007034,9740,17297,14624,65548,81568,4,ok,
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_H2O_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_1219_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,2,12,631,0.7222502420008823,3777,11796,10323,23937,31416,3,ok,
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_LiH_sto3g_4_electrons_12_spin_orbitals_Hamiltonian_631_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,2,16,1177,2.2789525010011857,14106,35532,56146,106650,156672,6,ok,
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_N2_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_1177_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,2,18,1884,11.556536873998994,75300,202811,281332,574500,919120,20,ok,
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_N2_sto3g_12_electrons_18_spin_orbitals_Hamiltonian_1884_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,2,12,915,0.9459515759990609,7308,20756,20638,50956,61536,4,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_12_spin_orbitals_Hamiltonian_915_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,2,14,1734,1.9278247360052774,17325,49684,50262,124685,169420,5,ok,
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_NH3_sto3g_8_electrons_14_spin_orbitals_Hamiltonian_1734_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,2,16,789,0.9950587320017803,6300,22360,37406,44188,67264,4,ok,
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/JW_ethylene_sto3g_10_electrons_16_spin_orbitals_Hamiltonian_789_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_12_electrons_20_spin_orbitals_Hamiltonian_2063_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,2,12,661,2.0474915730010252,9247,30480,31914,83055,86940,7,ok,
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_f_661.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,2,14,661,1.6713972270008526,7926,26298,30760,51510,76680,6,ok,
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_BeH2_unf_661.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,2,12,550,1.055906479999976,5495,18152,21500,36215,46440,5,ok,
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_H2O_550.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,2,10,275,0.3695128100007423,2196,6943,6698,12820,15440,4,ok,
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_HF_275.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,2,10,275,0.11515231399971526,549,1793,1679,3205,3860,1,ok,
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_f_275.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,2,12,614,0.6858891779993428,3681,11904,10359,23073,30072,3,ok,
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_LiH_unf_614.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,2,10,275,0.3054393460006395,1647,5147,5742,9615,11388,3,ok,
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_OH-_275.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,2,8,210,5.420478410000214,32263,83327,85016,242935,253792,77,ok,
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK1_210.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,2,10,210,4.945924113999354,36872,55720,33536,250888,217360,88,ok,
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/middle/MarqSim_SYK2_210.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,2,72,368021,,,,,,,,error,368020 terms exceeds --max-terms=5000
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,2,28,8919,,,,,,,,error,8918 terms exceeds --max-terms=5000
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/BK_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,2,72,368021,,,,,,,,error,368020 terms exceeds --max-terms=5000
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_benzene_sto3g_42_electrons_72_spin_orbitals_Hamiltonian_368021_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,1,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,2,28,8919,,,,,,,,error,8918 terms exceeds --max-terms=5000
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,3,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,4,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,11,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,12,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,13,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported
+DataSet1/large/JW_ethylene_sto3g_16_electrons_28_spin_orbitals_Hamiltonian_8919_paulis.txt,0.1,0.7854,14,,,,,,,,,,unsupported,Only path_flag=2 (second-order digital Trotter) is supported

@@ -11,7 +11,7 @@ from time import perf_counter
 
 ROOT = Path(__file__).resolve().parents[1]
 os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "qblue-matplotlib"))
-MAX_TERMS = 5000
+MAX_TERMS = 10000
 
 
 @dataclass(frozen=True)

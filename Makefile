@@ -13,17 +13,17 @@ all: qblue
 qblue:
 	cd mlqblue && dune build performance.exe
 	mkdir -p results
-	cd mlqblue && "$(PYTHON)" gen_result_threaded.py --input job.csv --output ../results/qblue_results.csv --workers $(WORKERS)
+	cd mlqblue && "$(PYTHON)" gen_result_threaded.py --input job.csv --output ../results/qblue_results.csv --workers $(WORKERS) --allow-job-errors
 
 # Standalone baseline targets reuse existing QBlue results, or create them.
 results/qblue_results.csv:
 	$(MAKE) qblue
 
 phoenix: results/qblue_results.csv
-	"$(PYTHON)" scripts/benchmark_threaded.py --compiler phoenix --workers $(WORKERS)
+	"$(PYTHON)" scripts/benchmark_threaded.py --compiler phoenix --workers $(WORKERS) --allow-job-errors
 
 openfermion: results/qblue_results.csv
-	"$(PYTHON)" scripts/benchmark_threaded.py --compiler openfermion --workers $(WORKERS)
+	"$(PYTHON)" scripts/benchmark_threaded.py --compiler openfermion --workers $(WORKERS) --allow-job-errors
 
 thirdparty: phoenix openfermion
 
