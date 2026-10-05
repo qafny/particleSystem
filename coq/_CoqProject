@@ -1,5 +1,5 @@
 -R . QBlue
-
+-Q /home/tagba/projects/SQIR/_build/default/VOQC VOQC
 QBlueUtility.v
 QBlueMatNorm.v
 QBlueProofUtility.v
@@ -31,4 +31,9 @@ QBlueQubitization_opt.v
 QBlueQSVT.v
 QBlueQSVT_opt.v
 
+QBlueHamiltonian.v
+QBlueMatrixExp.v
+QBlueQdrift_01.v
+QBlueMarQSim_Fixed.v
 Main.v
+
