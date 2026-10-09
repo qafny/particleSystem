@@ -24,13 +24,17 @@ the scripts that reproduce our benchmarks, including comparisons with
 
 ## Requirements
 
-Linux or WSL2 with:
+Linux, macOS, or WSL2 on Windows (native Windows is not supported), with:
 
 - [opam](https://opam.ocaml.org/) and Coq 8.16.1, plus `coq-quantumlib`, `coq-sqir`, `coq-voqc`
 - `dune`, `menhir`, `yojson`, `zarith`
 - Python 3.10+
 
+Install opam with your package manager (`sudo apt install opam libgmp-dev` on
+Ubuntu, `brew install opam gmp` on macOS), then:
+
 ```sh
+opam init
 opam switch create qblue ocaml-base-compiler.4.12.0
 eval $(opam env --switch=qblue)
 opam repo add coq-released https://coq.inria.fr/opam/released
