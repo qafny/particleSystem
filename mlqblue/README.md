@@ -11,13 +11,10 @@
 
 ## Setup
 
-1. if you have not extracted coq yet, go to extract\_coq/README.md.
+From the repository root, `make extract` extracts the compiler into `qbluelib/`
+and `make build` builds `performance.exe` (see the top-level README).
 
-2. copy extracted code to qbluelib, run ```cp -r ../extract\_coq/ml qbluelib```
-
-3. compile, run ```dune build```
-
-4. run performance: `dune exec -- ./performance.exe <file/path> [-e <float>] [-t <float>] [-p <int>]`
+Run: `./_build/default/performance.exe <file> [-e <float>] [-t <float>] [-p <int>] [-arch ring|a2a] [-sort]`
 
 - the first argument should be a txt-format file containing a Hamiltonian. The program prints JSON results to `stdout`.
 
@@ -25,7 +22,11 @@
 
 - flag `-t`, followed by the input phase `t` in `exp(-itH)`. If not set, the default error is 0.01.
 
-- flag `-p`, followed by the path flag to control which algorithm to use for compilation. If not set, default is 0.
+- flag `-arch`: `a2a` compiles for all-to-all connectivity; `ring` (default) routes onto a linear ring.
+
+- flag `-sort`: orders the terms of each Trotter step lexicographically, so neighbouring CNOT ladders cancel during optimization.
+
+- flag `-p`, followed by the path flag to control which algorithm to use for compilation. If not set, default is 0. Paths 4, 5, 14, 15, 24 and 25 sample only from P_gc; the benchmarks use the mixed MarQSim variants (6, 7, 16, 26).
   1. Trotterization (1st-order) -> IBMDigital circuits
   2. Trotterization (2nd-order) -> IBMDigital circuits
   3. qdrift -> IBMDigital circuits 
@@ -42,7 +43,7 @@
   14. MarQSim (CNOT for P_gc) -> Indiana Analog circuits
   15. MarQSim (CNOT+SingleQ for P_gc) -> Indiana Analog circuits
   16. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> Indiana Analog circuits
-  17. MarQSim (CNOT+SingleQ for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> Indiana Analog circuits
+  17. Taylor-series LCU -> Indiana Analog circuits
   10. Optimal among 10-17
   21. Trotterization (1st-order) -> IBM Analog circuits
   22. Trotterization (2nd-order) -> IBM Analog circuits
@@ -50,7 +51,7 @@
   24. MarQSim (CNOT for P_gc) -> IBM Analog circuits
   25. MarQSim (CNOT+SingleQ for P_gc) -> IBM Analog circuits
   26. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBM Analog circuits
-  27. MarQSim (CNOT+SingleQ for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBM Analog circuits
+  27. Taylor-series LCU -> IBM Analog circuits
   20. Optimal among 20-27
 
 

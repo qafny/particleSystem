@@ -10,11 +10,19 @@ Require Import QBlue.QBlueSyntax.
 
 
 (* Use "Toward the first quantum simulation with quantum speedup" by Andrew M. Childs etc.
-Proposition F.3: err = (L Lamda t)^2 / r exp(L Lamda t / r) *)
-(* Lamda = largest norm of Hi, it is 1 for pauli tensors *)
-(* r = N/L; L: number of terms *)
+Proposition F.3: err = (L Lamda t)^2 / r exp(L Lamda t / r), where L*Lamda bounds the
+sum of the term norms. The norm of the term h_j P_j is |h_j| (not 1), so we use
+lambda = sum_j |h_j| <= L * max_j |h_j|. The previous version took Lamda = 1 and
+L = number of terms, which ignores the coefficients: it is not a valid bound when
+some |h_j| > 1 and is far too loose otherwise. *)
+Fixpoint trotter_lambda (input : norm_prog) : R :=
+  match input with
+  | [] => R0
+  | (amp, _) :: rem => (Rabs amp + trotter_lambda rem)%R
+  end.
+
 Definition trotter_step (err t : R) (input : norm_prog) : nat :=
-  let L := INR (length input) in
+  let L := trotter_lambda input in
   let n1 := (L * L * t * t / err)%R in
   ceilR_N (n1 * (exp (t * L / n1))).
 
@@ -44,10 +52,9 @@ Definition trotter (err t: R) (input : norm_prog) : norm_prog :=
 (* 2nd order trotterization *)
 (* Use "Toward the first quantum simulation with quantum speedup" by Andrew M. Childs etc.
 Proposition F.4: err = (2L Lamda t)^3 / 3r^2 * exp(2L Lamda t / r) *)
-(* Lamda = largest norm of Hi, it is 1 for pauli tensors *)
-(* r = N/L; L: number of terms *)
+(* L*Lamda replaced by lambda = sum_j |h_j|, as for trotter_step above *)
 Definition trotter_step_2nd_order (err t : R) (input : norm_prog) : nat :=
-  let L := INR (length input) in
+  let L := trotter_lambda input in
   let n1 := sqrt ((pow (R2 * L * Rabs t) 3%nat) / ((R2 + R1) * err)) in
   ceilR_N (n1 * (exp (R2 * t * L / n1))).
 

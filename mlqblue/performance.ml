@@ -7,10 +7,26 @@ open Qblue_util
 
 exception Parse_timeout of int
 
+(* -sort: order the terms of a Trotter step lexicographically by Pauli string
+   (qubit 0 first). Adjacent terms then share the low end of their CNOT
+   ladders, which VOQC cancels. Any term order is a valid product formula and
+   the step-count bound does not depend on it. *)
+let sort_terms = ref false
+
+let sort_lowprog (nq : int) (lp : QBlueSyntax.lowprog) : QBlueSyntax.lowprog =
+  let key (_, f) =
+    String.init nq (fun i ->
+        match f i with
+        | QBlueSyntax.Coq_paulix -> 'X' | QBlueSyntax.Coq_pauliy -> 'Y'
+        | QBlueSyntax.Coq_pauliz -> 'Z' | _ -> 'I') in
+  List.stable_sort (fun a b -> compare (key a) (key b)) lp
+
 let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_path : int) : (int * int * int * int * int * int * float * int * int) =
     let to_second = 30 in
     let lp = with_timeout (fun s -> Parse_timeout s) to_second (fun () -> parse_pauli str_input) in
 	let nqbit = get_dim_pauli str_input in
+    let trotter_path = List.mem flag_path [1; 2; 11; 12; 21; 22] in
+    let lp = if !sort_terms && trotter_path then sort_lowprog nqbit lp else lp in
     let (nq1, nqm, nq1_bf, nqm_bf, tc, npau, r) = 
     if flag_path = 0 then
       let (cc, cir_bf, tc, r, npau) = translation_lowprog_optimize lp nqbit err t in
@@ -121,6 +137,9 @@ let () =
       ("-e", Arg.Set_float err, "Set err (float). Default: 1.0");
       ("-t", Arg.Set_float t,   "Set t (float). Default: 0.01");
       ("-p", Arg.Set_int path_flag, "Set p (int). Default: 0");
+      ("-arch", Arg.Symbol (["ring"; "a2a"], fun s -> target_a2a := (s = "a2a")),
+       " Target connectivity for IBMDigital paths: ring (routed, default) or a2a (all-to-all)");
+      ("-sort", Arg.Set sort_terms, " Order Trotter terms lexicographically (enables CNOT-ladder cancellation)");
     ]
   in
 
@@ -145,6 +164,8 @@ let () =
         ("error", `Float !err);
         ("simu_time", `Float !t);
         ("path_flag", `Int !path_flag);
+        ("arch", `String (if !target_a2a then "a2a" else "ring"));
+        ("sorted_terms", `Bool !sort_terms);
 		("nqubit", `Int nqubit);
 		("program_size", `Int nterm);
         ("compilation_time", `Float tc);

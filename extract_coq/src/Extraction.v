@@ -138,6 +138,25 @@ Extract Inlined Constant Coq.Reals.Rdefinitions.Q2R =>
    (Float.of_int q.QArith_base.coq_Qnum) /.
    (Float.of_int q.QArith_base.coq_Qden))".
 
+(* Q is extracted over machine ints (ExtrOcamlZInt), and Coq's Qplus/Qmult never
+   reduce, so VOQC's rotation merging multiplied denominators (1e9 -> 1e18 -> 1e27)
+   and silently overflowed after a few merges, giving wrong angles. Return the
+   gcd-reduced fraction instead: it is Qeq-equal to Coq's result (VOQC compares
+   with Qeq_bool), and keeps denominators near 1e9. *)
+Extract Constant Qplus =>
+"(fun x y ->
+   let rec gcd a b = if b = 0 then abs a else gcd b (a mod b) in
+   let n = x.coq_Qnum * y.coq_Qden + y.coq_Qnum * x.coq_Qden in
+   let d = x.coq_Qden * y.coq_Qden in
+   let g = gcd n d in let g = if g = 0 then 1 else g in
+   { coq_Qnum = n / g; coq_Qden = d / g })".
+Extract Constant Qmult =>
+"(fun x y ->
+   let rec gcd a b = if b = 0 then abs a else gcd b (a mod b) in
+   let n = x.coq_Qnum * y.coq_Qnum and d = x.coq_Qden * y.coq_Qden in
+   let g = gcd n d in let g = if g = 0 then 1 else g in
+   { coq_Qnum = n / g; coq_Qden = d / g })".
+
 Extract Inlined Constant FullGateSet.R2Q =>
 "(fun x ->
    let scale = 1000000000 in
@@ -216,6 +235,8 @@ Separate Extraction
 (* VOQC functions you want in the same local type universe *)
   QBlueSynthDigital.ibmdigi_to_rzq
   QBlueSynthDigital.ibmdigi_voqc_optimize
+  QBlueSynthDigital.ibmdigi_to_rzq_a2a
+  QBlueSynthDigital.ibmdigi_voqc_optimize_a2a
   QBlueSynthDigital.cvt_egate_fullgate
   QBlueSynthDigital.voqc_count_total
   QBlueSynthDigital.voqc_count_H

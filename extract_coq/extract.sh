@@ -18,8 +18,10 @@ cd $dir_src
 
 # make coq project first
 cd $dir_coq
-make
+coq_makefile -f _CoqProject -o CoqMakefile
+make -f CoqMakefile -j${JOBS:-4}
 cd -
+mkdir -p $dir_ml_ori
 
 # Perform extraction.
 echo "Extracting code..."

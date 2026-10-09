@@ -13,7 +13,7 @@ Require Import QuantumLib.Matrix.
 Require Import QuantumLib.Quantum.
 
 Require Import QBlue.QBlueSyntax.
-Require Import QBlue.QBlueMatrixNorm.
+Require Import QBlue.QBlueMatNorm.
 
 Local Open Scope R_scope.
 

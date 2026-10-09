@@ -1,4 +1,7 @@
 
+(* Target connectivity for IBMDigital paths: false = LNN ring (routed), true = all-to-all *)
+let target_a2a = ref false
+
 let with_timeout (exp_info : int -> exn) (seconds : int) (f : unit -> 'a) : 'a =
   if seconds <= 0 then f ()
   else

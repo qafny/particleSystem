@@ -12,12 +12,15 @@ Module EG := ExtractionGateSet.
 Module FG := FullGateSet.
 
 
-(* convert X and Y to Z base *)
-Definition cvt2base (curbit: nat) (s : paulimat) : 
+(* convert X and Y to Z base: the circuit V applied here must satisfy V P V^dag = Z.
+   For Y that is V = H S^dag, i.e. U1(-pi/2) then H. (U1(pi/2) then H gives
+   V Y V^dag = -Z, which compiled every term with an odd number of Y's as
+   exp(+i t P) instead of exp(-i t P).) *)
+Definition cvt2base (curbit: nat) (s : paulimat) :
   EG.ucom EG.U :=
-  match s with 
+  match s with
   | paulix => EG.H curbit
-  | pauliy => EG.useq (EG.U1 (PI / R2) curbit) (EG.H curbit) 
+  | pauliy => EG.useq (EG.U1 (- (PI / R2)) curbit) (EG.H curbit)
   | _ => EG.SKIP
   end.
 
@@ -36,10 +39,15 @@ Definition abit_cx (curbit tarbit : nat) (s : paulimat) :
   | _ => EG.CX curbit tarbit 
   end.
 
+(* Parity ladder: accumulate the parity of the non-identity bits below curbit
+   into tarbit. Each non-identity bit m first collects the parity of the bits
+   below it, then is CX'd into tarbit. The recursion must target m itself:
+   targeting curbit (= m+1) breaks when bit m+1 is an identity that was
+   skipped, since that bit's parity never reaches tarbit (e.g. XXIYYXII). *)
 Fixpoint abit_cx_all (curbit tarbit:nat) (f : nat -> paulimat) :=
   match curbit with
    | 0 => EG.SKIP
-   | S m => if is_i (f m) then abit_cx_all m tarbit f else EG.useq (abit_cx_all m curbit f) (EG.CX m tarbit)
+   | S m => if is_i (f m) then abit_cx_all m tarbit f else EG.useq (abit_cx_all m m f) (EG.CX m tarbit)
   end.
 
 Fixpoint find_last_abit (n : nat) (f : nat -> paulimat) :=
@@ -207,3 +215,12 @@ Definition ibmdigi_voqc_optimize (nbit : nat) (circ : EG.ucom EG.U) : VOQC.Main.
   let la := voqc_trivial_layout nbit in
   let c3 := voqc_decompose_swaps nbit (voqc_swap_route nbit c2 la cg (voqc_lnn_ring_path_finding_fun nbit)) cg in
   voqc_optimize nbit c3.
+
+(* Same as above for an all-to-all device (no routing onto the LNN ring).
+   This is the connectivity OpenFermion/Qiskit baselines assume, so gate
+   counts are only comparable to theirs in this mode. *)
+Definition ibmdigi_to_rzq_a2a (nbit : nat) (circ : EG.ucom EG.U) : VOQC.Main.circ nbit :=
+  voqc_convert_to_rzq nbit (cvt_egate_fullgate nbit (decompose_to_voqc_gates circ)).
+
+Definition ibmdigi_voqc_optimize_a2a (nbit : nat) (circ : EG.ucom EG.U) : VOQC.Main.circ nbit :=
+  voqc_optimize nbit (ibmdigi_to_rzq_a2a nbit circ).
