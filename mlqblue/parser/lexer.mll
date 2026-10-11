@@ -14,10 +14,10 @@ let string_char = ident_char | ' ' | '~' | '`' | '!' | '@' | '#' | '$' | '%' | '
 
 let open_comment = "(*"
 let close_comment = "*)"
-let whitespace = [' ' '\t' '\n']
+let whitespace = [' ' '\t' '\r' '\n']
 
 rule token = parse
-        | [' ' '\t' '\n'] { token lexbuf }  (* skip over whitespace *)
+        | [' ' '\t' '\r' '\n'] { token lexbuf }  (* skip over whitespace (incl. CRLF line endings) *)
         | eof             { EOF }
           (* binary operators *)
         | "+"    { PLUS }

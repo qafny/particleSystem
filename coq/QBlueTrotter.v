@@ -9,14 +9,59 @@ Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
 
 
-(* Use "Toward the first quantum simulation with quantum speedup" by Andrew M. Childs etc.
-Proposition F.3: err = (L Lamda t)^2 / r exp(L Lamda t / r) *)
-(* Lamda = largest norm of Hi, it is 1 for pauli tensors *)
-(* r = N/L; L: number of terms *)
-Definition trotter_step (err t : R) (input : norm_prog) : nat :=
-  let L := INR (length input) in
-  let n1 := (L * L * t * t / err)%R in
-  ceilR_N (n1 * (exp (t * L / n1))).
+(* Step counts come from the commutator error bounds proved in QBlueTrotterProof.v
+   (trotter_first_order_error, trotter_second_order_error): N steps of the product
+   formula err at most N * bound(t/N). For Pauli terms h_j P_j these bounds have
+   cheap upper bounds, because two Pauli strings either commute or satisfy
+   ||[P, Q]|| = 2 and ||P|| = 1. Each Pauli string is first turned into a list of
+   its n single-qubit factors. *)
+Definition pauli_terms (n : nat) (input : norm_prog) : list (R * list paulimat) :=
+  map (fun x => (Rabs (fst x), map (snd x) (seq 0 n))) input.
+
+(* number of sites where both strings are non-identity and differ;
+   the strings anticommute exactly when this is odd *)
+Fixpoint anti_count (a b : list paulimat) : nat :=
+  match a, b with
+  | x :: xs, y :: ys =>
+      (if andb (andb (negb (is_i x)) (negb (is_i y))) (negb (paulimat_eqb x y))
+       then 1 else 0) + anti_count xs ys
+  | _, _ => 0
+  end.
+
+(* D_k = sum over later terms j of ||[c_j P_j, c_k P_k]|| <= 2 |c_j c_k| for anticommuting pairs *)
+Fixpoint comm_weight (c : R) (p : list paulimat) (rest : list (R * list paulimat)) : R :=
+  match rest with
+  | [] => R0
+  | (c', p') :: r =>
+      ((if Nat.odd (anti_count p p') then R2 * c * c' else R0) + comm_weight c p r)%R
+  end.
+
+Fixpoint weight_sum (l : list (R * list paulimat)) : R :=
+  match l with
+  | [] => R0
+  | (c, _) :: r => (c + weight_sum r)%R
+  end.
+
+(* first order: sum_k ||[sum_{j>k} H_j, H_k]|| <= C1 *)
+Fixpoint comm_sum1 (l : list (R * list paulimat)) : R :=
+  match l with
+  | [] => R0
+  | (c, p) :: rest => (comm_weight c p rest + comm_sum1 rest)%R
+  end.
+
+(* second order, per suffix (X = c_k P_k, R = rest):
+   ||[R,[R,X]]|| / 12 + ||[X,[X,R]]|| / 24 <= D_k (lambda_rest / 6 + c_k / 12) *)
+Fixpoint comm_sum2 (l : list (R * list paulimat)) : R :=
+  match l with
+  | [] => R0
+  | (c, p) :: rest =>
+      (comm_weight c p rest * (weight_sum rest / 6 + c / 12) + comm_sum2 rest)%R
+  end.
+
+(* N steps of first-order Trotter err at most t^2 C1 / (2N) *)
+Definition trotter_step (err t : R) (n : nat) (input : norm_prog) : nat :=
+  let C1 := comm_sum1 (pauli_terms n input) in
+  Nat.max 1 (ceilR_N (t * t * C1 / (R2 * err))).
 
 
 (* split input into small steps by standard trotterization
@@ -36,23 +81,19 @@ Definition trotter_nstep (N : nat) (ap : norm_prog) : norm_prog :=
   trotter_nstep_acc N ap [].
 
 (* Low-level Hamiltonian after being trottered into more steps. *)
-Definition trotter (err t: R) (input : norm_prog) : norm_prog :=
-  let N := trotter_step err t input in
+Definition trotter (err t: R) (n : nat) (input : norm_prog) : norm_prog :=
+  let N := trotter_step err t n input in
   let astep := trotter_astep (INR N) input in
   trotter_nstep N astep.
 
-(* 2nd order trotterization *)
-(* Use "Toward the first quantum simulation with quantum speedup" by Andrew M. Childs etc.
-Proposition F.4: err = (2L Lamda t)^3 / 3r^2 * exp(2L Lamda t / r) *)
-(* Lamda = largest norm of Hi, it is 1 for pauli tensors *)
-(* r = N/L; L: number of terms *)
-Definition trotter_step_2nd_order (err t : R) (input : norm_prog) : nat :=
-  let L := INR (length input) in
-  let n1 := sqrt ((pow (R2 * L * Rabs t) 3%nat) / ((R2 + R1) * err)) in
-  ceilR_N (n1 * (exp (R2 * t * L / n1))).
+(* 2nd order trotterization: N steps err at most |t|^3 C2 / N^2, with C2 taken on
+   (rev input), the list the second-order bound is proved for *)
+Definition trotter_step_2nd_order (err t : R) (n : nat) (input : norm_prog) : nat :=
+  let C2 := comm_sum2 (pauli_terms n (rev input)) in
+  Nat.max 1 (ceilR_N (sqrt (Rabs t * Rabs t * Rabs t * C2 / err))).
 
-Definition trotter_2nd_order (err t: R) (input : norm_prog) : norm_prog :=
-  let N := trotter_step_2nd_order err t input in
+Definition trotter_2nd_order (err t: R) (n : nat) (input : norm_prog) : norm_prog :=
+  let N := trotter_step_2nd_order err t n input in
   let astep1 := trotter_astep ((INR N) * R2) (rev input) in
   let astep2 := trotter_astep ((INR N) * R2) input in
   trotter_nstep N (astep1 ++ astep2).

@@ -13,6 +13,7 @@ extra/*
 .lia.cache
 compile_coq.*
 Makefile
+!/Makefile
 *_build*
 mlqblue/qbluelib
 extract_coq/ml
@@ -29,3 +30,10 @@ CoqMakefile.conf
 .CoqMakefile.d
 .nia.cache
 .nra.cache
+
+# Python, local tools and experiment output
+thirdparty/
+results/
+__pycache__/
+.venv/
+*.swp
