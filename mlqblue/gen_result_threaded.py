@@ -24,6 +24,8 @@ def parse_args():
     parser.add_argument("-e", "--error", type=float, default=0.1)
     parser.add_argument("-t", "--time", dest="time_value", type=float, default=0.7854)
     parser.add_argument("-p", "--path-flag", type=int, default=0)
+    parser.add_argument("--resume", action="store_true",
+                        help="Keep successful rows already in the output CSV and run only the rest.")
     parser.add_argument("--allow-job-errors", action="store_true",
                         help="Exit successfully after saving results even if individual jobs failed.")
     parser.add_argument("-w", "--workers", type=positive_int, default=1,
@@ -68,19 +70,35 @@ def save_results(output, rows):
             temporary.unlink(missing_ok=True)
 
 
-def run_jobs(jobs, output, workers):
-    rows = [None] * len(jobs)
+def previous_results(output):
+    """Successful rows from an earlier run, keyed like the jobs."""
+    done = {}
+    if Path(output).exists():
+        with open(output, newline="", encoding="utf-8") as handle:
+            for row in csv.DictReader(handle):
+                if row.get("status") == "ok":
+                    key = (row["file_name"], float(row["error"]), float(row["time"]), int(row["path_flag"]))
+                    done[key] = row
+    return done
+
+
+def run_jobs(jobs, output, workers, resume=False):
+    done = previous_results(output) if resume else {}
+    rows = [done.get((job[0], float(job[1]), float(job[2]), int(job[3]))) for job in jobs]
+    pending = [i for i, row in enumerate(rows) if row is None]
+    if resume:
+        print(f"Resuming: {len(jobs) - len(pending)} job(s) already done.", flush=True)
     save_results(output, rows)
     executor = ThreadPoolExecutor(max_workers=workers)
     futures = {}
     try:
-        futures = {executor.submit(run_job, job): i for i, job in enumerate(jobs)}
+        futures = {executor.submit(run_job, jobs[i]): i for i in pending}
         for completed, future in enumerate(as_completed(futures), 1):
             index = futures[future]
             rows[index] = future.result()
             save_results(output, rows)
             row = rows[index]
-            print(f"[{completed}/{len(jobs)}] {row['status']}: "
+            print(f"[{completed}/{len(pending)}] {row['status']}: "
                   f"{row['file_name']} (path {row['path_flag']})", flush=True)
     finally:
         for future in futures:
@@ -105,7 +123,7 @@ def main():
           "Concurrent jobs share CPU and memory; compilation timings reflect this load.",
           flush=True)
     try:
-        rows = run_jobs(jobs, args.output, args.workers)
+        rows = run_jobs(jobs, args.output, args.workers, args.resume)
     except KeyboardInterrupt:
         raise SystemExit("Interrupted. Previously saved results remain in " + args.output)
     failures = sum(row["status"] == "error" for row in rows)

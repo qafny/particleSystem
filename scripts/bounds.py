@@ -54,11 +54,12 @@ def _product(x1, z1, e1, x2, z2):
 def tight_bound(x, z, c, nq):
     """sum |coef| of OpenFermion's error_operator:
     1/12 sum_beta sum_{alpha<=beta} sum_{alpha'<beta} [H_alpha (1 - delta/2), [H_beta, H_alpha']]."""
-    if 2 * nq > 62:
-        raise ValueError("tight bound supports at most 31 qubits")
+    # one 64-bit key per Pauli string when it fits, otherwise an (x, z) pair
+    wide = 2 * nq > 62
     phase = np.array([1, 1j, -1, -1j])
     keys_acc, vals_acc = [], []
-    acc_keys, acc_vals = np.zeros(0, np.int64), np.zeros(0, complex)
+    acc_keys = np.zeros((0, 2), np.uint64) if wide else np.zeros(0, np.int64)
+    acc_vals = np.zeros(0, complex)
     for b in range(len(c)):
         s = np.nonzero(_anticommute(x[b], z[b], x[:b], z[:b]))[0]
         if s.size == 0:
@@ -76,7 +77,7 @@ def tight_bound(x, z, c, nq):
         pe = (pe + re[ir]) % 4
         weight = np.where(ia == b, 0.5, 1.0)
         vals = 2 * c[ia] * weight * rc[ir] * phase[pe]
-        keys = (px.astype(np.int64) << nq) | pz.astype(np.int64)
+        keys = np.stack([px, pz], axis=1) if wide else (px.astype(np.int64) << nq) | pz.astype(np.int64)
         keys_acc.append(keys)
         vals_acc.append(vals)
         if sum(k.size for k in keys_acc) > 5_000_000:
@@ -89,8 +90,9 @@ def tight_bound(x, z, c, nq):
 def _merge(acc_keys, acc_vals, keys_list, vals_list):
     keys = np.concatenate([acc_keys, *keys_list])
     vals = np.concatenate([acc_vals, *vals_list])
-    uniq, inv = np.unique(keys, return_inverse=True)
-    out = np.zeros(uniq.size, complex)
+    uniq, inv = np.unique(keys, return_inverse=True, axis=0 if keys.ndim == 2 else None)
+    inv = inv.reshape(-1)
+    out = np.zeros(len(uniq), complex)
     np.add.at(out, inv, vals)
     return uniq, out
 
@@ -115,36 +117,42 @@ def openfermion_reference(ph):
     return error_bound(terms, tight=True), error_bound(terms, tight=False)
 
 
-def job(reference, check):
+def job(references, check):
+    """All rows of one Hamiltonian: the bounds depend only on the Hamiltonian,
+    the step counts on each row's error and time."""
     from openfermion.circuits.trotter.trotter_error import trotter_steps_required_propagator
-    row = dict.fromkeys(FIELDS, "")
-    for field in ("file_name", "error", "time", "nqubit"):
-        row[field] = reference[field]
-    row["qblue_r2"] = reference["trotter_step"]
+    rows = []
+    for reference in references:
+        row = dict.fromkeys(FIELDS, "")
+        for field in ("file_name", "error", "time", "nqubit"):
+            row[field] = reference[field]
+        row["qblue_r2"] = reference["trotter_step"]
+        rows.append(row)
     try:
-        path = Path(reference["file_name"])
+        path = Path(references[0]["file_name"])
         if not path.is_absolute():
             path = ROOT / "mlqblue" / path
         ph = parse_hamiltonian(path)
         n = len(ph.paulis)
-        row["nterms"] = n
         if n > MAX_LOOSE_TERMS:
             raise ValueError(f"more than {MAX_LOOSE_TERMS} terms")
         x, z, c = _encode(ph)
-        t, eps = float(reference["time"]), float(reference["error"])
         loose = loose_bound(x, z, c)
-        row.update(of_bound_loose=loose, of_r2_loose=trotter_steps_required_propagator(loose, t, eps))
-        if n <= MAX_TIGHT_TERMS:
-            tight = tight_bound(x, z, c, ph.n_qubits)
-            row.update(of_bound_tight=tight, of_r2_tight=trotter_steps_required_propagator(tight, t, eps))
+        tight = tight_bound(x, z, c, ph.n_qubits) if n <= MAX_TIGHT_TERMS else None
         if check and n <= 300:
             ref_tight, ref_loose = openfermion_reference(ph)
             if not (np.isclose(ref_tight, tight, rtol=1e-6) and np.isclose(ref_loose, loose, rtol=1e-6)):
                 raise AssertionError(f"mismatch with OpenFermion: tight {tight} vs {ref_tight}, loose {loose} vs {ref_loose}")
-        row["status"] = "ok"
+        for row in rows:
+            t, eps = float(row["time"]), float(row["error"])
+            row.update(nterms=n, of_bound_loose=loose, of_r2_loose=trotter_steps_required_propagator(loose, t, eps))
+            if tight is not None:
+                row.update(of_bound_tight=tight, of_r2_tight=trotter_steps_required_propagator(tight, t, eps))
+            row["status"] = "ok"
     except Exception as error:
-        row.update(status="error", message=str(error))
-    return row
+        for row in rows:
+            row.update(status="error", message=str(error))
+    return rows
 
 
 def main():
@@ -154,16 +162,19 @@ def main():
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--check", action="store_true", help="compare with OpenFermion's error_bound (<= 300 terms)")
     args = parser.parse_args()
+    by_file = {}
     with args.input.open(newline="") as source:
-        references = [r for r in csv.DictReader(source) if r["path_flag"] == "2" and r["status"] == "ok"]
+        for r in csv.DictReader(source):
+            if r["path_flag"] == "2" and r["status"] == "ok":
+                by_file.setdefault(r["file_name"], []).append(r)
     with ProcessPoolExecutor(args.workers) as pool:
-        rows = list(pool.map(job, references, [args.check] * len(references)))
+        rows = [row for group in pool.map(job, by_file.values(), [args.check] * len(by_file)) for row in group]
     with args.output.open("w", newline="") as target:
         writer = csv.DictWriter(target, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(rows)
     for row in rows:
-        print(f"bounds: {row['file_name']}: {row['status']} {row['message']}", flush=True)
+        print(f"bounds: {row['file_name']} (eps {row['error']}, t {row['time']}): {row['status']} {row['message']}", flush=True)
     return int(any(row["status"] != "ok" for row in rows))
 
 

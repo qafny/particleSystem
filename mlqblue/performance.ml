@@ -9,8 +9,9 @@ exception Parse_timeout of int
 
 (* -sort: order the terms of a Trotter step lexicographically by Pauli string
    (qubit 0 first). Adjacent terms then share the low end of their CNOT
-   ladders, which VOQC cancels. Any term order is a valid product formula and
-   the step-count bound does not depend on it. *)
+   ladders, which VOQC cancels. Any term order is a valid product formula; the
+   first-order step bound does not depend on it, the second-order one does
+   slightly (it sums over each term's predecessors). *)
 let sort_terms = ref false
 
 let sort_lowprog (nq : int) (lp : QBlueSyntax.lowprog) : QBlueSyntax.lowprog =

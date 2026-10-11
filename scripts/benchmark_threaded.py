@@ -81,6 +81,8 @@ def main():
                         help="Concurrent compiler processes (default: 1)")
     parser.add_argument("--compiler", choices=COMPILERS,
                         help="Run only this compiler (default: both)")
+    parser.add_argument("--resume", action="store_true",
+                        help="Keep successful rows already in the output CSVs and run only the rest.")
     args = parser.parse_args()
     compilers = (args.compiler,) if args.compiler else COMPILERS
     outputs = {name: args.output_dir / f"{name}_results.csv" for name in compilers}
@@ -100,7 +102,16 @@ def main():
             path = ROOT / "mlqblue" / path
         groups.setdefault((path.resolve(), float(row["time"])), []).append(index)
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    def key(row):
+        return row["file_name"], float(row["error"]), float(row["time"]), int(row["path_flag"])
+
     results = {name: [None] * len(references) for name in compilers}
+    if args.resume:
+        for name, path in outputs.items():
+            if path.exists():
+                with path.open(newline="") as handle:
+                    done = {key(row): row for row in csv.DictReader(handle) if row.get("status") == "ok"}
+                results[name] = [done.get(key(row)) for row in references]
     for name, path in outputs.items():
         save_results(path, fields, results[name])
     print(f"Running {len(groups) * len(compilers)} jobs with {args.workers} worker(s). "
@@ -110,6 +121,8 @@ def main():
     try:
         for name in compilers:
             for indices in groups.values():
+                if all(results[name][i] is not None for i in indices):
+                    continue
                 future = executor.submit(run_job, name, fields, [references[i] for i in indices])
                 futures[future] = name, indices
         for completed, future in enumerate(as_completed(futures), 1):
