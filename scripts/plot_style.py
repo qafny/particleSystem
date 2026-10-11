@@ -23,15 +23,15 @@ T_NAMES = {0.7854: "π/4", 0.1963: "π/16"}
 
 
 def _gate_label(value, _=None):
-    for limit, suffix in ((1e9, "B"), (1e6, "M"), (1e3, "K")):
+    for limit, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
         if value >= limit:
             return f"{value / limit:g}{suffix}"
     return f"{value:g}"
 
 
 def plot_overall(rows: list[tuple[str, str, pd.DataFrame]], out: Path, title: str, note: str = '') -> None:
-    """Total gates per program, QBlue's best circuit (dark gray) over the
-    baseline (light gray), one panel per error bound and one row per
+    """Total gates per program, QBlue's circuit (purple) over the
+    baseline (light purple), one panel per error bound and one row per
     (row label, baseline label, savings rows of one time period). Programs are
     grouped Large | Medium | Small and sorted by the baseline's gate count."""
     errs = sorted(set().union(*(df['error'].unique() for _, _, df in rows)))
@@ -46,10 +46,10 @@ def plot_overall(rows: list[tuple[str, str, pd.DataFrame]], out: Path, title: st
             sub = sub.sort_values(['order', 'theirs'], ascending=[True, False])
             x = np.arange(len(sub))
             theirs, ours = sub['theirs'].clip(lower=1).to_numpy(), sub['ours'].clip(lower=1).to_numpy()
-            ax.fill_between(x, 1, theirs, color='#C8C8C8', step='mid', label=baseline)
-            ax.plot(x, theirs, color='#9A9A9A', linewidth=1.0, drawstyle='steps-mid')
-            ax.fill_between(x, 1, ours, color='#5A5A5A', alpha=0.75, step='mid', label='QBlue (best algorithm)')
-            ax.plot(x, ours, color='#262626', linewidth=1.0, drawstyle='steps-mid')
+            ax.fill_between(x, 1, theirs, color='#D9C8EE', step='mid', label=baseline)
+            ax.plot(x, theirs, color='#B39DDB', linewidth=1.0, drawstyle='steps-mid')
+            ax.fill_between(x, 1, ours, color='#6A3D9A', alpha=0.85, step='mid', label='QBlue')
+            ax.plot(x, ours, color='#3F1F66', linewidth=1.0, drawstyle='steps-mid')
             start, ticks, names = 0, [], []
             for size in SIZE_ORDER:
                 group = sub[sub['size'] == size]

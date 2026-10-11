@@ -7,10 +7,10 @@ from benchmark import ROOT
 import plot_style as style
 
 KEY = ["file_name", "error", "time", "path_flag"]
-SUMMARY = [("E0", "Best QBlue vs OpenFermion (2nd order, OF steps)"),
-           ("E0Q", "Best QBlue vs OpenFermion (2nd order, QBlue steps)"),
-           ("E0P", "Best QBlue vs PHOENIX (1st order, QBlue steps)"),
-           ("E3", "Best QBlue vs QBlue Trotter-1"),
+SUMMARY = [("E0", "QBlue vs OpenFermion (2nd order, OF steps)"),
+           ("E0Q", "QBlue vs OpenFermion (2nd order, QBlue steps)"),
+           ("E0P", "QBlue vs PHOENIX (1st order, QBlue steps)"),
+           ("E3", "QBlue vs its own Trotter-1"),
            ("E1a", "Trotter-1, same steps: vs OpenFermion"),
            ("E1c", "Trotter-1, same steps: vs PHOENIX"),
            ("E2", "Trotter-2, own step functions: vs OpenFermion")]
@@ -58,11 +58,11 @@ def main():
         style.plot_overall([("PHOENIX, ", "PHOENIX (1st order)", at[at.experiment == "E0P"]),
                             ("OpenFermion, ", "OpenFermion (2nd order)", at[at.experiment == "E0Q"])],
                            args.out_dir / f"fig13_overall_qblue_steps_{name}.png",
-                           f"QBlue (best algorithm) vs. PHOENIX and OpenFermion, both at QBlue's step count (t = {label})",
+                           f"QBlue vs. PHOENIX and OpenFermion, both at QBlue's step count (t = {label})",
                            "PHOENIX: first-order Trotter; OpenFermion: second-order Trotter; each repeated QBlue's step count of that order.")
         style.plot_overall([("", "OpenFermion (2nd order)", at[at.experiment == "E0"])],
                            args.out_dir / f"overall_openfermion_own_steps_{name}.png",
-                           f"QBlue (best algorithm) vs. OpenFermion at OpenFermion's own step count (t = {label})",
+                           f"QBlue vs. OpenFermion at OpenFermion's own step count (t = {label})",
                            "OpenFermion steps: error_bound + trotter_steps_required_propagator.")
     style.plot_summary(savings, SUMMARY, args.out_dir / "summary.png")
 
