@@ -1,4 +1,4 @@
-"""Render the original comparison figures from the shared CSV schema."""
+"""Render the comparison figures from results/*.csv and results/savings.csv (written by tables.py)."""
 
 import argparse
 from pathlib import Path
@@ -7,6 +7,13 @@ from benchmark import ROOT
 import plot_style as style
 
 KEY = ["file_name", "error", "time", "path_flag"]
+SUMMARY = [("E0", "Best QBlue vs OpenFermion (2nd order, OF steps)"),
+           ("E0Q", "Best QBlue vs OpenFermion (2nd order, QBlue steps)"),
+           ("E0P", "Best QBlue vs PHOENIX (1st order, QBlue steps)"),
+           ("E3", "Best QBlue vs QBlue Trotter-1"),
+           ("E1a", "Trotter-1, same steps: vs OpenFermion"),
+           ("E1c", "Trotter-1, same steps: vs PHOENIX"),
+           ("E2", "Trotter-2, own step functions: vs OpenFermion")]
 
 
 def load(path):
@@ -15,8 +22,8 @@ def load(path):
     if frame.duplicated(KEY).any():
         raise ValueError(f"Duplicate experiment keys in {path}")
     frame["input_name"] = frame.file_name
-    frame["dataset"] = style.np.select(
-        [frame.program_size < 100, frame.program_size < 1200], ["S", "M"], default="L")
+    frame["dataset"] = frame.file_name.str.extract(r"/(small|middle|large)/")[0].map(
+        {"small": "S", "middle": "M", "large": "L"})
     frame["err"] = frame.error
     frame["t"] = frame.time
     frame["n_terms"] = frame.program_size
@@ -28,12 +35,12 @@ def load(path):
 
 
 def join(qblue, baseline, name):
-    columns = KEY + ["single_qubit_gates", "multi_qubit_gates",
-                     "single_qubit_gates_bfopt", "multi_qubit_gates_bfopt"]
-    renamed = baseline[columns].rename(columns={c: f"{name}_{c}" for c in columns if c not in KEY})
-    merged = qblue.merge(renamed, on=KEY, validate="one_to_one")
-    merged[f"{name}_fair_total"] = merged[f"{name}_single_qubit_gates"] + merged[f"{name}_multi_qubit_gates"]
-    merged[f"{name}_fair_pre_total"] = merged[f"{name}_single_qubit_gates_bfopt"] + merged[f"{name}_multi_qubit_gates_bfopt"]
+    """OpenFermion as generated (it has no optimizer); PHOENIX after its own optimization."""
+    suffix = "_bfopt" if name == "openfermion" else ""
+    columns = KEY + [f"single_qubit_gates{suffix}", f"multi_qubit_gates{suffix}"]
+    merged = qblue.merge(baseline[columns], on=KEY, suffixes=("", f"_{name}"), validate="one_to_one")
+    merged[f"{name}_fair_total"] = (merged[f"single_qubit_gates{suffix}_{name}"]
+                                    + merged[f"multi_qubit_gates{suffix}_{name}"])
     return merged
 
 
@@ -42,6 +49,23 @@ def main():
     parser.add_argument("--csv-dir", type=Path, default=ROOT / "results")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "results/plots")
     args = parser.parse_args()
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    savings = style.pd.read_csv(args.csv_dir / "savings.csv")
+    savings["time"] = savings.time.round(4)
+    for t, name in ((0.1963, "pi16"), (0.7854, "pi4")):
+        at = savings[savings.time == t]
+        label = style.T_NAMES[t]
+        style.plot_overall([("PHOENIX, ", "PHOENIX (1st order)", at[at.experiment == "E0P"]),
+                            ("OpenFermion, ", "OpenFermion (2nd order)", at[at.experiment == "E0Q"])],
+                           args.out_dir / f"fig13_overall_qblue_steps_{name}.png",
+                           f"QBlue (best algorithm) vs. PHOENIX and OpenFermion, both at QBlue's step count (t = {label})",
+                           "PHOENIX: first-order Trotter; OpenFermion: second-order Trotter; each repeated QBlue's step count of that order.")
+        style.plot_overall([("", "OpenFermion (2nd order)", at[at.experiment == "E0"])],
+                           args.out_dir / f"overall_openfermion_own_steps_{name}.png",
+                           f"QBlue (best algorithm) vs. OpenFermion at OpenFermion's own step count (t = {label})",
+                           "OpenFermion steps: error_bound + trotter_steps_required_propagator.")
+    style.plot_summary(savings, SUMMARY, args.out_dir / "summary.png")
+
     qblue = load(args.csv_dir / "qblue_results.csv")
     baselines = {name: load(path) for name in ("phoenix", "openfermion")
                  if (path := args.csv_dir / f"{name}_results.csv").exists()}
@@ -64,21 +88,10 @@ def main():
                                   out / f"tab2_gate_count_err{error}.png", err_label=str(error))
             style.plot_compile_time(subset, available.get("phoenix"), available.get("openfermion"),
                                     out / f"tab2_compile_time_err{error}.png", err_label=str(error))
-            for name, frame in merged.items():
-                if frame.empty:
-                    continue
-                style.plot_scatter_vs_competitor(frame, name, name.title(),
-                    out / f"fig2_scatter_qblue_vs_{name}_err{error}.png", err_label=str(error))
-        for name, baseline in baselines.items():
-            merged = join(std, baseline, name)
-            if not merged.empty:
-                style.plot_gate_reduction(merged, name, name.title(),
-                    out / f"tab2_gate_reduction_{name}.png", t_label=label)
-        digital = all_rows[all_rows.path_flag == 1]
         analog = all_rows[all_rows.path_flag == 11].copy()
         analog["path_flag"] = 1
         columns = KEY + ["single_qubit_gates_bfopt", "multi_qubit_gates_bfopt"]
-        matched = digital.merge(analog[columns], on=KEY, suffixes=("_ibm", "_ind"), validate="one_to_one")
+        matched = std.merge(analog[columns], on=KEY, suffixes=("_ibm", "_ind"), validate="one_to_one")
         for column, label in [("single_qubit_gates_bfopt", "1-qubit"), ("multi_qubit_gates_bfopt", "multi-qubit")]:
             style.plot_analog_vs_digital_polar(matched, column + "_ibm", column + "_ind", label,
                 out / f"tab_analog_vs_digital_{label}_polar.png")

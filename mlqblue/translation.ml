@@ -42,7 +42,7 @@ let print_optimization_detail n c0 c1 c2 c3 =
 
 
 let trotterStd_IBMDigi_est (lp : lowprog) (nbit : int) (err : float) (t : float) f_opt =
-  let r = trotter_step err t (lowprog2norm_prog lp) in
+  let r = trotter_step err t nbit (lowprog2norm_prog lp) in
   let nt = Stdlib.List.length lp in
   let totw = sum_w (lowprog2norm_prog lp) nt in
   let scale = 1.0 /. Float.of_int r in
@@ -57,7 +57,7 @@ let trotterStd_IBMDigi_est (lp : lowprog) (nbit : int) (err : float) (t : float)
 (* std trotterization; decompose to IBM digital *)
 let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Trotterization (1st-order) -> IBMDigital circuits: ----";
-  let r = trotter_step err t (lowprog2norm_prog lp) in
+  let r = trotter_step err t nq (lowprog2norm_prog lp) in
   let nterm = Stdlib.List.length lp in
   let npau = r * nterm in
 
@@ -172,7 +172,7 @@ let qsvt_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t 
 (* 2nd-order trotterization; decompose to IBM digital *)
 let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
   if verbose then dbg "---- Trotterization (2nd-order) -> IBMDigital circuits: ----";
-  let r = trotter_step_2nd_order err t (lowprog2norm_prog lp) in
+  let r = trotter_step_2nd_order err t nq (lowprog2norm_prog lp) in
   let nterm = Stdlib.List.length lp in
   let npau = r * nterm * 2 in
 
@@ -234,7 +234,7 @@ let trotterQDrift_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : f
     let cc, ts =
       time_call (fun () -> translate_lowp2circ_qdrift err t lp nq (ibmdigi_voqc_optimize nq))
     in
-    (cc, cir_bf, ts, 1, npau)
+    (cc, cir_bf, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterQDrift_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -255,7 +255,7 @@ let trotterMarQSim_CNOT_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (e
     let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
     let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
     let ts = ts1 +. ts2 in
-    (cc, cir_bf, ts, 1, npau)
+    (cc, cir_bf, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterMarQSim_CNOT_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -277,7 +277,7 @@ let trotterMarQSim_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (er
     let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
     let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
     let ts = ts1 +. ts2 in
-    (cc, cir_bf, ts, 1, npau)
+    (cc, cir_bf, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterMarQSim_mix_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -300,7 +300,7 @@ let trotterMarQdrift_CNOT_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) 
 	let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
     let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
     let ts = ts1 +. ts2 +. ts3 in
-    (cc, cir_bf, ts, 1, npau)
+    (cc, cir_bf, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterMarQdrift_CNOT_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -323,7 +323,7 @@ let trotterMarQdrift_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (
     let cir_bf = translate_lowp2circ_marqsim err t lp nq (ibmdigi_to_rzq nq) transition_mat in
     let cc, ts2 = time_call (fun () -> translate_lowp2circ_marqsim err t lp nq (ibmdigi_voqc_optimize nq) transition_mat) in
     let ts = ts1 +. ts2 +. ts3 in
-    (cc, cir_bf, ts, 1, npau)
+    (cc, cir_bf, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterMarQdrift_mix_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -332,7 +332,7 @@ let trotterMarQdrift_mix_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (
 (* std trotterization; decompose to Indiana Analog *)
 let trotterStd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Trotterization (1st-order) -> Indiana analog circuits: ----";
-  let r = trotter_step err t (lowprog2norm_prog lp) in
+  let r = trotter_step err t nq (lowprog2norm_prog lp) in
   let nterm = Stdlib.List.length lp in
   let npau = r * nterm in
 
@@ -357,7 +357,7 @@ let tts_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t :
 (* 2nd-order trotterization; decompose to Indiana Analog *)
 let trotter2nd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
   if verbose then dbg "---- Trotterization (2nd-order) -> IndiAnalog circuits: ----";
-  let r = trotter_step_2nd_order err t (lowprog2norm_prog lp) in
+  let r = trotter_step_2nd_order err t nq (lowprog2norm_prog lp) in
   let nterm = Stdlib.List.length lp in
   let npau = r * nterm in
 
@@ -384,7 +384,7 @@ let trotterQDrift_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : f
   if verbose then dbg "Dealing with %d pauli strings; lambda = %f; relaxation factor: %f." npau lambda rfactor;
   try
     let cc, ts = time_call (fun () -> translate_lowp2IndiAna_qdrift err t lp nq) in
-    (cc, ts, 1, npau)
+    (cc, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterQDrift_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -404,7 +404,7 @@ let trotterMarQSim_CNOT_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (e
   try
     let transition_mat = get_trans_CNOT lp nq in
     let cc, ts = time_call (fun () -> translate_lowp2IndiAna_marqsim err t lp nq transition_mat) in
-    (cc, ts, 1, npau)
+    (cc, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterMarQSim_CNOT_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -424,7 +424,7 @@ let trotterMarQSim_mix_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (er
   try
     let transition_mat = get_trans_mixed lp nq in
     let cc, ts = time_call (fun () -> translate_lowp2IndiAna_marqsim err t lp nq transition_mat) in
-    (cc, ts, 1, npau)
+    (cc, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterMarQSim_mix_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -445,7 +445,7 @@ let trotterMarQdrift_CNOT_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) 
     let f_mat = get_trans_CNOT lp nq in
     let transition_mat = get_trans_MarQdrift lp 0.6 f_mat in
     let cc, ts = time_call (fun () -> translate_lowp2IndiAna_marqsim err t lp nq transition_mat) in
-    (cc, ts, 1, npau)
+    (cc, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterMarQdrift_CNOT_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -466,7 +466,7 @@ let trotterMarQdrift_mix_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (
     let f_mat = get_trans_mixed lp nq in
     let transition_mat = get_trans_MarQdrift lp 0.6 f_mat in
     let cc, ts = time_call (fun () -> translate_lowp2IndiAna_marqsim err t lp nq transition_mat) in
-    (cc, ts, 1, npau)
+    (cc, ts, sample_repeats npau, npau)
   with exn -> dbg "trotterMarQdrift_mix_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
@@ -474,7 +474,7 @@ let trotterMarQdrift_mix_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (
 (* std trotterization; decompose to IBM Analog *)
 let trotterStd_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Trotterization (1st-order) -> IBM analog circuits: ----";
-  let r = trotter_step err t (lowprog2norm_prog lp) in
+  let r = trotter_step err t nq (lowprog2norm_prog lp) in
   let nterm = Stdlib.List.length lp in
   let npau = r * nterm in
 
@@ -505,7 +505,7 @@ let tts_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : 
 (* 2nd-order trotterization; decompose to IBM Analog *)
 let trotter2nd_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
   if verbose then dbg "---- Trotterization (2nd-order) -> IBM analog circuits: ----";
-  let r = trotter_step_2nd_order err t (lowprog2norm_prog lp) in
+  let r = trotter_step_2nd_order err t nq (lowprog2norm_prog lp) in
   let nterm = Stdlib.List.length lp in
   let npau = r * nterm in
 

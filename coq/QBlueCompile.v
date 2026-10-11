@@ -26,7 +26,18 @@ Module EG := ExtractionGateSet.
 (* number of samples used to estimate the # of gates per sample: 100 *)
 Parameter nsampe_gatesize_est : nat.
 (* # of gates in one chunk: 20000 *)
-Parameter ngates_per_chunk : nat. 
+Parameter ngates_per_chunk : nat.
+(* QDrift / MarQSim samples are i.i.d., so for N above this cap the sampling
+   compilers emit ceil(N / k) samples with k = ceil(N / cap), keeping the
+   per-sample angle of the full N; gate counts are then reported as k times
+   the emitted ones (sample_repeats), like Trotter's one step times r. *)
+Parameter qdrift_sample_cap : nat.
+
+Definition sample_repeats (N : nat) : nat :=
+  Nat.max 1 (Nat.div (N + qdrift_sample_cap - 1) qdrift_sample_cap).
+
+Definition capped_samples (N : nat) : nat :=
+  let k := sample_repeats N in Nat.div (N + k - 1) k.
 
 (* Translate from high-level hamiltonian to IBM digital gates
 err: tolerance; t: time;
@@ -39,16 +50,16 @@ nbit: number of qubits for exp, length of it *)
    lowprog-based. See QBlueUtility.v for why. *)
 Definition translate_highp2circ (err t : R) (exp : blueExp) (it : iota) (nbit : nat) : EG.ucom EG.U :=
   let lowp1 : lowprog := bexp_to_lowprog exp it in
-  let lowp : lowprog := norm_prog2lowprog (trotter err t (lowprog2norm_prog lowp1)) in
+  let lowp : lowprog := norm_prog2lowprog (trotter err t nbit (lowprog2norm_prog lowp1)) in
   synth_digital_ibm t nbit lowp.
 
 
 Definition translate_lowp2circ_std (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
-  let lowp : lowprog := norm_prog2lowprog (trotter err t (lowprog2norm_prog lp)) in
+  let lowp : lowprog := norm_prog2lowprog (trotter err t nbit (lowprog2norm_prog lp)) in
   synth_digital_ibm t nbit lowp.
 
 Definition translate_lowp2circ_std_2nd_order (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
-  let lowp : lowprog := norm_prog2lowprog (trotter_2nd_order err t (lowprog2norm_prog lp)) in
+  let lowp : lowprog := norm_prog2lowprog (trotter_2nd_order err t nbit (lowprog2norm_prog lp)) in
   synth_digital_ibm t nbit lowp.
 
 Definition ngates_per_term (t : R) (lp : lowprog) (nbit : nat) (totw : R) : nat :=
@@ -96,7 +107,7 @@ Definition translate_stdTrotter_ibmdigi (lp : lowprog) (ist nbit : nat)
 
 Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat)
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
-  let r := trotter_step err t (lowprog2norm_prog lp) in
+  let r := trotter_step err t nbit (lowprog2norm_prog lp) in
   let nt := length lp in
   let totw := sum_w (lowprog2norm_prog lp) nt in
   let scale := (R1 / INR r) % R in
@@ -110,7 +121,7 @@ Definition translate_lowp2circ_stdTrotter (err t : R) (lp : lowprog) (nbit : nat
 
 Definition translate_lowp2circ_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) 
   (f_opt : EG.ucom EG.U -> full_ucom_l nbit) : full_ucom_l nbit :=
-  let r := trotter_step_2nd_order err t (lowprog2norm_prog lp) in
+  let r := trotter_step_2nd_order err t nbit (lowprog2norm_prog lp) in
   let nt := length lp in
   let totw := sum_w (lowprog2norm_prog lp) nt in
   let scale := (R1 / R2 / INR r) % R in
@@ -140,11 +151,11 @@ Definition translate_lowp2circ_qdrift (err t : R) (lp : lowprog) (nbit : nat)
   let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
-  let nch := S ((Nat.div N ns)%nat) in
+  let nch := S ((Nat.div (capped_samples N) ns)%nat) in
   match ns with
   | O => []
   | S _ => translate_lowp2circ_chunks t lp 0%nat nbit scale 
-  (translate_qdrift_ibmdigi totw) f_opt nch N ns []
+  (translate_qdrift_ibmdigi totw) f_opt nch (capped_samples N) ns []
   end.
 
 
@@ -162,11 +173,11 @@ Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat)
   let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
-  let nch := S ((Nat.div N ns)%nat) in
+  let nch := S ((Nat.div (capped_samples N) ns)%nat) in
   match ns with
   | O => []
   | S _ => translate_lowp2circ_chunks t lp 0%nat nbit scale
-    (translate_marqsim_ibmdigi prob_init f_mat) f_opt nch N ns []
+    (translate_marqsim_ibmdigi prob_init f_mat) f_opt nch (capped_samples N) ns []
   end.
 
 Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
@@ -248,7 +259,7 @@ Definition translate_stdTrotter_indiAna (lp : lowprog) (ist nbit : nat)
 
 
 Definition translate_lowp2IndiAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let r := trotter_step err t (lowprog2norm_prog lp) in
+  let r := trotter_step err t nbit (lowprog2norm_prog lp) in
   let nt := length lp in
   let totw := sum_w (lowprog2norm_prog lp) nt in
   let scale := (R1 / INR r) % R in
@@ -261,7 +272,7 @@ Definition translate_lowp2IndiAna_stdTrotter (err t : R) (lp : lowprog) (nbit : 
   end.
 
 Definition translate_lowp2IndiAna_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let r := trotter_step_2nd_order err t (lowprog2norm_prog lp) in
+  let r := trotter_step_2nd_order err t nbit (lowprog2norm_prog lp) in
   let nt := length lp in
   let totw := sum_w (lowprog2norm_prog lp) nt in
   let scale := (R1 / R2 / INR r) % R in
@@ -289,11 +300,11 @@ Definition translate_lowp2IndiAna_qdrift (err t : R) (lp : lowprog) (nbit : nat)
   let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
-  let nch := S ((Nat.div N ns)%nat) in
+  let nch := S ((Nat.div (capped_samples N) ns)%nat) in
   match ns with
   | O => []
   | S _ => translate_lowp2IndiAna_chunks t lp 0%nat nbit scale 
-  (translate_qdrift_indiAna totw) nch N ns []
+  (translate_qdrift_indiAna totw) nch (capped_samples N) ns []
   end.
 
 
@@ -310,11 +321,11 @@ Definition translate_lowp2IndiAna_marqsim (err t : R) (lp : lowprog) (nbit : nat
   let totw := sum_w (lowprog2norm_prog lp) (length lp) in
   let scale := (totw / INR N)%R in
   let ns := Nat.div ngates_per_chunk (ngates_per_term t lp nbit totw) in
-  let nch := S ((Nat.div N ns)%nat) in
+  let nch := S ((Nat.div (capped_samples N) ns)%nat) in
   match ns with
   | O => []
   | S _ => translate_lowp2IndiAna_chunks t lp 0%nat nbit scale
-    (translate_marqsim_indiAna prob_init f_mat) nch N ns []
+    (translate_marqsim_indiAna prob_init f_mat) nch (capped_samples N) ns []
   end.
 
 Definition translate_lowp2IndiAna_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
@@ -324,11 +335,11 @@ Definition translate_lowp2IndiAna_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat
   
 (* Translate to IBM Analog *)
 Definition translate_lowp2IBMAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let lowp : lowprog := norm_prog2lowprog (trotter err t (lowprog2norm_prog lp)) in
+  let lowp : lowprog := norm_prog2lowprog (trotter err t nbit (lowprog2norm_prog lp)) in
   synth_analog_ibm t nbit lowp.
 
 Definition translate_lowp2IBMAna_std_2ndTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let lowp : lowprog := norm_prog2lowprog (trotter_2nd_order err t (lowprog2norm_prog lp)) in
+  let lowp : lowprog := norm_prog2lowprog (trotter_2nd_order err t nbit (lowprog2norm_prog lp)) in
   synth_analog_ibm t nbit lowp.
 
 Definition translate_lowp2IBMAna_qdrift (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=

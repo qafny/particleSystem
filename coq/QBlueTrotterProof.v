@@ -1176,8 +1176,8 @@ Qed.
 
 (* error of what trotter actually outputs (first order) *)
 Theorem trotter_first_order_error : forall (d : nat) (err t : R) (input : norm_prog) (N' : nat),
-  trotter_step err t input = S N' ->
-  norm (2^d) (Mminus (mult_exp_list t d (trotter err t input))
+  trotter_step err t d input = S N' ->
+  norm (2^d) (Mminus (mult_exp_list t d (trotter err t d input))
                       (expH (2^d) t (norm_prog2mat input d)))
   <= INR (S N') * cal_1st_trotter_error_bound (t / INR (S N')) d input.
 Proof.
@@ -1194,8 +1194,8 @@ Qed.
 (* same for trotter_2nd_order; its block is the second-order formula on (rev input) *)
 Theorem trotter_second_order_error : forall (d : nat) (err t : R) (input : norm_prog) (N' : nat),
   input <> [] ->
-  trotter_step_2nd_order err t input = S N' ->
-  norm (2^d) (Mminus (mult_exp_list t d (trotter_2nd_order err t input))
+  trotter_step_2nd_order err t d input = S N' ->
+  norm (2^d) (Mminus (mult_exp_list t d (trotter_2nd_order err t d input))
                       (expH (2^d) t (norm_prog2mat input d)))
   <= INR (S N') * cal_2nd_trotter_error_bound (t / INR (S N')) d (rev input).
 Proof.

@@ -16,54 +16,103 @@ ERR_ORDER = [0.02, 0.1, 0.5]
 ERR_LABELS = {e: f"ε={e}" for e in ERR_ORDER}
 T_LABEL_PI16 = "t = π/16"
 
-def _smooth_curve(values: np.ndarray) -> np.ndarray:
-    values = np.asarray(values, dtype=float)
-    if len(values) < 5:
-        return values
-    window = max(7, int(len(values) * 0.06))
-    if window % 2 == 0:
-        window += 1
-    log_values = np.log10(np.clip(values, 1.0, None))
-    pad = window // 2
-    padded = np.pad(log_values, (pad, pad), mode='edge')
-    kernel = np.ones(window, dtype=float) / window
-    smoothed = np.convolve(padded, kernel, mode='valid')
-    return np.power(10.0, smoothed)
+SIZE_ORDER = ["large", "middle", "small"]
+SIZE_LABELS = {"small": "Small", "middle": "Medium", "large": "Large"}
+SIZE_COLORS = {"small": DATASET_COLORS["S"], "middle": DATASET_COLORS["M"], "large": DATASET_COLORS["L"], "all": "#333333"}
+T_NAMES = {0.7854: "π/4", 0.1963: "π/16"}
 
-def _dense_curve(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
-    if len(x) < 3:
-        return (x, y)
-    x_dense = np.linspace(x[0], x[-1], len(x) * 8)
-    y_dense = np.interp(x_dense, x, y)
-    return (x_dense, y_dense)
 
-def plot_scatter_vs_competitor(merged: pd.DataFrame, competitor_key: str, competitor_label: str, out: Path, err_label: str='') -> None:
-    xcol = f'{competitor_key}_fair_total'
-    if merged.empty or xcol not in merged.columns:
-        print(f'  [skip] {out.name}: no joined {competitor_label} rows')
-        return
-    fig, ax = plt.subplots(figsize=(6, 6))
-    for ds in DATASET_ORDER:
-        sub = merged[merged['dataset'] == ds]
-        if sub.empty:
-            continue
-        ax.scatter(sub[xcol].clip(lower=1), sub['qblue_full_total'].clip(lower=1), label=DATASET_LABELS[ds], color=DATASET_COLORS[ds], alpha=0.6, s=18, linewidths=0)
-    lims = [10.0, max(merged[xcol].max(), merged['qblue_full_total'].max()) * 2]
-    ax.plot(lims, lims, 'k--', linewidth=0.8, label='parity')
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlim(lims)
-    ax.set_ylim(lims)
-    ax.set_xlabel(f'{competitor_label} × r (total gates)', fontsize=11)
-    ax.set_ylabel('QBlue std total gates', fontsize=11)
-    title = f'QBlue std vs. {competitor_label}  ({err_label}, {T_LABEL_PI16})' if err_label else f'QBlue std vs. {competitor_label}'
-    ax.set_title(title, fontsize=12)
-    ax.legend(fontsize=9)
-    ax.grid(True, which='both', linestyle=':', linewidth=0.4)
-    fig.tight_layout()
-    fig.savefig(out, dpi=150, bbox_inches="tight")
+def _gate_label(value, _=None):
+    for limit, suffix in ((1e9, "B"), (1e6, "M"), (1e3, "K")):
+        if value >= limit:
+            return f"{value / limit:g}{suffix}"
+    return f"{value:g}"
+
+
+def plot_overall(rows: list[tuple[str, str, pd.DataFrame]], out: Path, title: str, note: str = '') -> None:
+    """Total gates per program, QBlue's best circuit (dark gray) over the
+    baseline (light gray), one panel per error bound and one row per
+    (row label, baseline label, savings rows of one time period). Programs are
+    grouped Large | Medium | Small and sorted by the baseline's gate count."""
+    errs = sorted(set().union(*(df['error'].unique() for _, _, df in rows)))
+    fig, axes = plt.subplots(len(rows), len(errs), figsize=(5.0 * len(errs), 3.4 * len(rows)), sharey=True, squeeze=False)
+    peak = max(max(df["ours"].max(), df["theirs"].max()) for _, _, df in rows)
+    top = 100 ** np.ceil(np.log(peak * 1.5) / np.log(100))  # next labelled tick (ticks every 100x)
+    for row, (row_label, baseline, df) in enumerate(rows):
+        for col, err in enumerate(errs):
+            ax = axes[row, col]
+            sub = df[df['error'] == err].copy()
+            sub['order'] = sub['size'].map({s: i for i, s in enumerate(SIZE_ORDER)})
+            sub = sub.sort_values(['order', 'theirs'], ascending=[True, False])
+            x = np.arange(len(sub))
+            theirs, ours = sub['theirs'].clip(lower=1).to_numpy(), sub['ours'].clip(lower=1).to_numpy()
+            ax.fill_between(x, 1, theirs, color='#C8C8C8', step='mid', label=baseline)
+            ax.plot(x, theirs, color='#9A9A9A', linewidth=1.0, drawstyle='steps-mid')
+            ax.fill_between(x, 1, ours, color='#5A5A5A', alpha=0.75, step='mid', label='QBlue (best algorithm)')
+            ax.plot(x, ours, color='#262626', linewidth=1.0, drawstyle='steps-mid')
+            start, ticks, names = 0, [], []
+            for size in SIZE_ORDER:
+                group = sub[sub['size'] == size]
+                if group.empty:
+                    continue
+                end = start + len(group)
+                if start:
+                    ax.axvline(start - 0.5, color='#444444', linestyle=':', linewidth=0.8)
+                ticks.append((start + end - 1) / 2)
+                names.append(f"{SIZE_LABELS[size][0] if len(group) < 0.2 * len(sub) else SIZE_LABELS[size]}\n"
+                             f"{100 * group['saving'].median():+.0f}%")
+                start = end
+            ax.set_xlim(-0.5, len(sub) - 0.5)
+            ax.set_yscale('log')
+            ax.set_ylim(1, top)
+            ax.set_xticks(ticks, names, fontsize=8)
+            ax.tick_params(axis='x', length=0)
+            ax.yaxis.set_major_locator(mticker.LogLocator(base=100))
+            ax.yaxis.set_major_formatter(mticker.FuncFormatter(_gate_label))
+            ax.yaxis.set_minor_locator(mticker.NullLocator())
+            ax.grid(True, axis='y', linestyle=':', linewidth=0.4)
+            ax.set_title(f"{row_label}ε = {err:g}   (median {100 * sub['saving'].median():+.0f}%)", fontsize=10)
+            if col == 0:
+                ax.set_ylabel('Total gates', fontsize=10)
+                ax.legend(loc='upper right', fontsize=7.5, frameon=False)
+    fig.suptitle(title, fontsize=12)
+    fig.text(0.5, 0.005, ('Under each group: median saving of QBlue (L = Large, M = Medium).  ' + note).strip(),
+             ha='center', va='bottom', fontsize=8, color='#555555')
+    fig.tight_layout(rect=(0, 0.03, 1, 0.97))
+    fig.savefig(out, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f'  saved {out.name}')
+
+
+def plot_summary(df: pd.DataFrame, panels: list[tuple[str, str]], out: Path) -> None:
+    """Median saving per size class across the (ε, t) settings, one panel per experiment."""
+    settings = sorted({(e, t) for e, t in zip(df['error'], df['time'])}, key=lambda s: (-s[1], s[0]))
+    labels = [f"{e:g}\n{T_NAMES.get(round(t, 4), f'{t:g}')}" for e, t in settings]
+    cols = 3
+    rows = -(-len(panels) // cols)
+    fig, axes = plt.subplots(rows, cols, figsize=(4.6 * cols, 3.4 * rows), squeeze=False)
+    for ax, (name, title) in zip(axes.flat, panels):
+        sub = df[df['experiment'] == name]
+        for size in [*SIZE_ORDER, 'all']:
+            group = sub if size == 'all' else sub[sub['size'] == size]
+            values = [100 * group[(group['error'] == e) & (group['time'] == t)]['saving'].median() for e, t in settings]
+            ax.plot(range(len(settings)), values, marker='o', markersize=4, linewidth=1.8 if size == 'all' else 1.4,
+                    linestyle='--' if size == 'all' else '-', color=SIZE_COLORS[size],
+                    label='All' if size == 'all' else SIZE_LABELS[size])
+        ax.axhline(0, color='#777777', linewidth=0.8)
+        ax.set_xticks(range(len(settings)))
+        ax.set_xticklabels(labels, fontsize=8)
+        ax.yaxis.set_major_formatter(mticker.PercentFormatter(decimals=0))
+        ax.set_title(title, fontsize=10)
+        ax.grid(True, axis='y', linestyle=':', linewidth=0.4)
+    for ax in axes.flat[len(panels):]:
+        ax.axis('off')
+    axes[0, 0].set_ylabel('Median gate saving', fontsize=9)
+    handles, names = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, names, loc='lower center', ncol=4, frameon=False, fontsize=9)
+    fig.text(0.01, 0.01, 'x-axis: ε, t', fontsize=8, color='#555555')
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
+    fig.savefig(out, dpi=150, bbox_inches='tight')
     plt.close(fig)
     print(f'  saved {out.name}')
 
@@ -83,102 +132,6 @@ def plot_compile_time(qb: pd.DataFrame, ph: pd.DataFrame | None, of: pd.DataFram
     ax.legend(fontsize=9)
     ax.grid(True, which='both', linestyle=':', linewidth=0.4)
     fig.tight_layout()
-    fig.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print(f'  saved {out.name}')
-
-def plot_gate_count(qb: pd.DataFrame, merged_ph: pd.DataFrame | None, merged_of: pd.DataFrame | None, out: Path, err_label: str='') -> None:
-    fig, ax = plt.subplots(figsize=(7, 5))
-    ax.scatter(qb['n_terms'], qb['qblue_full_total'], color='#4C72B0', alpha=0.4, s=12, linewidths=0, label='QBlue std')
-    if merged_ph is not None and (not merged_ph.empty):
-        ax.scatter(merged_ph['n_terms'], merged_ph['phoenix_fair_total'], color=COMPETITOR_COLORS['phoenix'], alpha=0.5, s=12, linewidths=0, label='Phoenix × r')
-    if merged_of is not None and (not merged_of.empty):
-        ax.scatter(merged_of['n_terms'], merged_of['openfermion_fair_total'], color=COMPETITOR_COLORS['openfermion'], alpha=0.5, s=12, linewidths=0, label='OpenFermion × r')
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlabel('Number of Pauli terms', fontsize=11)
-    ax.set_ylabel('Full-circuit total gates', fontsize=11)
-    title = f'Total gates vs. Hamiltonian size  ({err_label}, {T_LABEL_PI16})' if err_label else 'Total gates vs. Hamiltonian size'
-    ax.set_title(title, fontsize=12)
-    ax.legend(fontsize=9)
-    ax.grid(True, which='both', linestyle=':', linewidth=0.4)
-    fig.tight_layout()
-    fig.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    print(f'  saved {out.name}')
-
-def plot_gate_reduction(merged: pd.DataFrame, competitor_key: str, competitor_label: str, out: Path, t_label: str=T_LABEL_PI16) -> None:
-    fair_col = f'{competitor_key}_fair_total'
-    fair_pre_col = f'{competitor_key}_fair_pre_total'
-    if merged.empty or fair_col not in merged.columns or fair_pre_col not in merged.columns:
-        print(f'  [skip] {out.name}: no joined {competitor_label} rows')
-        return
-    merged = merged[(merged[fair_col] > 0) & (merged['qblue_pre_total'] > 0)].copy()
-    errs_present = [err for err in ERR_ORDER if err in merged['err'].dropna().unique()]
-    fig, axes = plt.subplots(1, len(errs_present), figsize=(5.2 * len(errs_present), 5), sharey=True)
-    if not isinstance(axes, np.ndarray):
-        axes = np.array([axes])
-    qblue_before = '#8DBBFF'
-    qblue_after = '#1F5FBF'
-    other_after = '#6C3DB8'
-    max_gate = 0.0
-    plotted = False
-    for ax, err in zip(axes, errs_present):
-        sub = merged[merged['err'] == err].copy()
-        if sub.empty:
-            ax.set_title(ERR_LABELS.get(err, str(err)))
-            continue
-        sub = sub.sort_values(['qblue_pre_total', 'dataset', 'input_name'], ascending=[False, True, True])
-        x = np.arange(1, len(sub) + 1)
-        qblue_pre = sub['qblue_pre_total'].to_numpy(dtype=float)
-        qblue_post = sub['qblue_full_total'].to_numpy(dtype=float)
-        other_post = sub[fair_col].to_numpy(dtype=float)
-        qblue_pre_s = _smooth_curve(qblue_pre)
-        qblue_post_s = _smooth_curve(qblue_post)
-        other_post_s = _smooth_curve(other_post)
-        x_qb_pre, y_qb_pre = _dense_curve(x, qblue_pre_s)
-        x_qb_post, y_qb_post = _dense_curve(x, qblue_post_s)
-        x_other_post, y_other_post = _dense_curve(x, other_post_s)
-        ax.plot(x_qb_pre, y_qb_pre, color=qblue_before, linewidth=2.0, linestyle='--', marker='o' if len(sub) == 1 else None, zorder=4)
-        ax.fill_between(x_qb_pre, 0, y_qb_pre, color=qblue_before, alpha=0.18, zorder=2)
-        ax.plot(x_qb_post, y_qb_post, color=qblue_after, linewidth=2.2, marker='o' if len(sub) == 1 else None, zorder=5)
-        ax.fill_between(x_qb_post, 0, y_qb_post, color=qblue_after, alpha=0.14, zorder=3)
-        ax.plot(x_other_post, -y_other_post, color=other_after, linewidth=2.2, marker='o' if len(sub) == 1 else None, zorder=5)
-        ax.fill_between(x_other_post, 0, -y_other_post, color=other_after, alpha=0.14, zorder=3)
-        plotted = True
-        max_gate = max(max_gate, qblue_pre.max(), qblue_post.max(), other_post.max())
-        ax.axhline(0, color='#777777', linestyle='--', linewidth=1.0, zorder=1)
-        ax.set_xlim((0.5, 1.5) if len(sub) == 1 else (1, len(sub)))
-        tick_positions = sorted(set([1, max(1, len(sub) // 2), len(sub)]))
-        ax.set_xticks(tick_positions)
-        ax.set_xticklabels([str(t) for t in tick_positions], fontsize=8, color='#555555')
-        ax.set_xlabel('Datasets (sorted by circuit size)', fontsize=9, color='#555555')
-        ax.set_title(f'{ERR_LABELS.get(err, str(err))}  (n={len(sub)})', fontsize=11)
-        ax.grid(True, axis='y', linestyle=':', linewidth=0.4)
-        ax.text(0.02, 0.93, 'QBlue', transform=ax.transAxes, fontsize=9, color='#444444')
-        ax.text(0.02, 0.05, competitor_label, transform=ax.transAxes, fontsize=9, color='#444444')
-        if ax is axes[0]:
-            ax.set_ylabel('Full-circuit total gates', fontsize=10)
-    if not plotted:
-        print(f'  [skip] {out.name}: no reduction data')
-        plt.close(fig)
-        return
-    linthresh = max(10.0, min(100000.0, max_gate / 10000.0))
-    ylim = max_gate * 1.08
-    for ax in axes:
-        ax.set_yscale('symlog', linthresh=linthresh)
-        ax.set_ylim(-ylim, ylim)
-        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda value, _: f'{abs(value) / 1000000000.0:.1f}B' if abs(value) >= 1000000000.0 else f'{abs(value) / 1000000.0:.1f}M' if abs(value) >= 1000000.0 else f'{abs(value) / 1000.0:.1f}K' if abs(value) >= 1000.0 else f'{int(abs(value))}'))
-    title = f'QBlue vs. {competitor_label}: before/after optimization gate counts  ({t_label})'
-    fig.suptitle(title, fontsize=12)
-    from matplotlib.patches import Patch
-    before_median_qb = merged['qblue_pre_total'].median()
-    after_median_qb = merged['qblue_full_total'].median()
-    after_median_other = merged[fair_col].median()
-    legend_handles = [Patch(color=qblue_before, label='QBlue before'), Patch(color=qblue_after, label='QBlue after'), Patch(color=other_after, label=f'{competitor_label} optimized')]
-    fig.legend(handles=legend_handles, loc='lower center', bbox_to_anchor=(0.5, 0.03), ncol=3, frameon=False, fontsize=8.5)
-    fig.text(0.5, 0.005, f'QBlue medians: before {before_median_qb:,.0f}, after {after_median_qb:,.0f} gates.  {competitor_label} median: {after_median_other:,.0f} gates.', ha='center', va='bottom', fontsize=8, color='#555555')
-    fig.tight_layout(rect=(0, 0.12, 1, 0.95))
     fig.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f'  saved {out.name}')
@@ -363,3 +316,23 @@ def plot_analog_vs_digital_polar(merged: pd.DataFrame, ibm_col: str, ind_col: st
     fig.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.15)
     plt.close(fig)
     print(f'  saved {out.name}')
+def plot_gate_count(qb: pd.DataFrame, merged_ph: pd.DataFrame | None, merged_of: pd.DataFrame | None, out: Path, err_label: str='') -> None:
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.scatter(qb['n_terms'], qb['qblue_full_total'], color='#4C72B0', alpha=0.4, s=12, linewidths=0, label='QBlue std')
+    if merged_ph is not None and (not merged_ph.empty):
+        ax.scatter(merged_ph['n_terms'], merged_ph['phoenix_fair_total'], color=COMPETITOR_COLORS['phoenix'], alpha=0.5, s=12, linewidths=0, label='Phoenix × r')
+    if merged_of is not None and (not merged_of.empty):
+        ax.scatter(merged_of['n_terms'], merged_of['openfermion_fair_total'], color=COMPETITOR_COLORS['openfermion'], alpha=0.5, s=12, linewidths=0, label='OpenFermion × r')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('Number of Pauli terms', fontsize=11)
+    ax.set_ylabel('Full-circuit total gates', fontsize=11)
+    title = f'Total gates vs. Hamiltonian size  ({err_label}, {T_LABEL_PI16})' if err_label else 'Total gates vs. Hamiltonian size'
+    ax.set_title(title, fontsize=12)
+    ax.legend(fontsize=9)
+    ax.grid(True, which='both', linestyle=':', linewidth=0.4)
+    fig.tight_layout()
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f'  saved {out.name}')
+

@@ -42,6 +42,8 @@ def get_performance_executable():
 def call_ocaml(file_name, error, time_value, path_flag):
     env = os.environ.copy()
     env.setdefault("QBLUE_API_PY", str(REPO_ROOT.parent / "extract_coq/src/networks/api.py"))
+    # MarQSim transition matrices depend only on the Hamiltonian; reuse them across jobs
+    env.setdefault("QBLUE_MARQSIM_CACHE", str(REPO_ROOT.parent / "results/.marqsim_cache"))
     # The OCaml bridge launches python3; use the runner's environment and dependencies.
     env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
     proc = subprocess.run(

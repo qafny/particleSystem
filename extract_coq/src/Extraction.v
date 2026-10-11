@@ -188,6 +188,7 @@ From QBlue Require Import QBlueMarQSim.
 Extract Inlined Constant GenPgc => "Bridge.get_matrix_pgc".
 Extract Constant nsampe_gatesize_est => "100".
 Extract Constant ngates_per_chunk => "3000".
+Extract Constant qdrift_sample_cap => "100000".
 
 
 Set Extraction Optimize.
