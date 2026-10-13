@@ -2632,8 +2632,6 @@ Proof.
     reflexivity.
   }
 
-
-Proof.
 Admitted.
 
 Theorem qdrift_round_bound :
