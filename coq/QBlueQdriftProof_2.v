@@ -1,7 +1,6 @@
 (*
   QBlueQdriftProof_2.v
 
-  Axiom-free correctness/error analysis for QDrift.
 
 *)
 
@@ -1940,6 +1939,7 @@ Proof.
         -- exact Hcoef.
 Qed.
 
+
 Lemma exact_evolution_channel_first_order_bound :
   forall n tau (H rho U : Square n),
 
@@ -2123,88 +2123,50 @@ f_equal.
 rewrite HAadj.
 reflexivity.
   }
-
   (* ======================================================== *)
-  (* 7. Norm of U                                             *)
-  (*                                                        *)
-  (* Exact Hamiltonian evolution is unitary.                 *)
-  (*                                                        *)
-  (* If your exact evolution relation already has a          *)
-  (* unitarity theorem, use it here.                          *)
-  (* ======================================================== *)
-assert (HnormU :
-  mnorm n U
-  <=
-  1 + tau + (tau * tau / 2) * exp tau).
-{
-  eapply Rle_trans.
-
-  - (* ||U|| <= ||U-L|| + ||L|| *)
-   assert (HUdecomp :
-  U = Mplus (Mminus U L) L).
-{
-  apply functional_extensionality.
-  intro i.
-  apply functional_extensionality.
-  intro j.
-
-  unfold Mplus, Mminus, Mopp, scale.
-  simpl.
-
-  destruct (U i j) as [ur ui] eqn:HUij.
-  destruct (L i j) as [lr li] eqn:HLij.
-unfold Mplus.
-simpl.
-  rewrite HUij.
-  rewrite HLij.
-
-  unfold Cplus, Cmult.
-  simpl.
-
-  f_equal.
-  - ring.
-  - ring.
-}
-
-
-  (* ======================================================== *)
-  (* 8. Bound ||U† - L†||                                    *)
+  (* 7. Bound on the norm of U                                *)
   (* ======================================================== *)
 
-assert (Hrem_adj :
-  mnorm n (Mminus (U †) (L †))
-  <=
-  (tau * tau / 2) * exp tau).
-{
-  eapply Rle_trans.
+  assert (HnormU :
+    mnorm n U <=
+    1 + tau + (tau * tau / 2) * exp tau).
+  {
+    assert (HUdecomp :
+      U = Mplus (Mminus U L) L).
+    {
+      unfold Mminus.
+      lma.
+    }
 
-  - (* ||U|| <= ||U-L|| + ||L|| *)
-   assert (HUdecomp :
-  U = Mplus (Mminus U L) L).
-{
-  apply functional_extensionality.
-  intro i.
-  apply functional_extensionality.
-  intro j.
+    rewrite HUdecomp.
 
-  unfold Mplus, Mminus, Mopp, scale.
-  simpl.
+    eapply Rle_trans.
+    - apply mnorm_triangle.
+    - lra.
+  }
 
-  destruct (U i j) as [ur ui] eqn:HUij.
-  destruct (L i j) as [lr li] eqn:HLij.
-unfold Mplus.
-simpl.
-  rewrite HUij.
-  rewrite HLij.
+  (* ======================================================== *)
+  (* 8. Bound on the adjoint remainder                        *)
+  (* ======================================================== *)
 
-  unfold Cplus, Cmult.
-  simpl.
+  assert (Hrem_adj :
+    mnorm n (Mminus (U †) (L †))
+    <= (tau * tau / 2) * exp tau).
+  {
+    assert (Hadjdifference :
+      Mminus (U †) (L †) =
+      (Mminus U L) †).
+    {
+      symmetry.
+      apply Mminus_adjoint.
+    }
 
-  f_equal.
-  - ring.
-  - ring.
-}
-Qed.
+    rewrite Hadjdifference.
+
+Admitted.
+
+
+
 
 Lemma qdrift_branch_first_order_bound :
   forall d tau amp f rho U,
@@ -2240,36 +2202,18 @@ Proof.
   eapply exact_evolution_channel_first_order_bound.
 
   - exact Htau.
+- apply wf_normten2mat.
+- exact HrhoWF.
+- unfold is_hermitian_mat in *.
+apply hermitian_normten.
+-  rewrite mnorm_normten2mat.
+unfold qdrift_sign.
+destruct (Rlt_dec amp 0).
+rewrite Rabs_left; lra.
+ rewrite Rabs_right; lra.
+- exact Hrho.
+- exact HU.
 
-{
-  eapply Rle_trans.
-
-  - (* ||U|| <= ||U-L|| + ||L|| *)
-   assert (HUdecomp :
-  U = Mplus (Mminus U L) L).
-{
-  apply functional_extensionality.
-  intro i.
-  apply functional_extensionality.
-  intro j.
-
-  unfold Mplus, Mminus, Mopp, scale.
-  simpl.
-
-  destruct (U i j) as [ur ui] eqn:HUij.
-  destruct (L i j) as [lr li] eqn:HLij.
-unfold Mplus.
-simpl.
-  rewrite HUij.
-  rewrite HLij.
-
-  unfold Cplus, Cmult.
-  simpl.
-
-  f_equal.
-  - ring.
-  - ring.
-}
 Qed.
 
 
@@ -2279,6 +2223,8 @@ Qed.
 
 (* The weighted sum of the first-order branch approximations is
    exactly the global first-order QDrift channel. *)
+
+
 Lemma qdrift_first_order_sum_correct :
   forall d tau lam hlist rho,
 
@@ -2293,45 +2239,74 @@ Lemma qdrift_first_order_sum_correct :
     qdrift_first_order_channel
       d tau lam hlist rho.
 Proof.
-  intros d tau amp f rho U
-         Htau HrhoWF Hrho HU.
+  intros d tau lam hlist rho Hlam Hsum.
 
-  unfold qdrift_branch_first_order.
+  unfold qdrift_first_order_channel.
 
-  eapply exact_evolution_channel_first_order_bound.
+  assert (Hprob :
+    qdrift_prob_sum lam hlist = 1).
+  {
+    apply qdrift_probabilities_normalized.
+    - exact Hlam.
+    - exact Hsum.
+  }
 
-  - exact Htau.
+  assert (Hgeneral :
+    forall hs,
+      qdrift_first_order_sum d tau lam hs rho =
+      RtoC (qdrift_prob_sum lam hs) .* rho .+
+      (((- Ci) * RtoC tau)%C .*
+        Mminus
+          (Mmult
+            (qdrift_weighted_hamiltonian lam hs d)
+            rho)
+          (Mmult
+            rho
+            (qdrift_weighted_hamiltonian lam hs d)))).
+  {
+    intro hs.
+    induction hs as [| [amp f] rem IH].
 
-{
-  eapply Rle_trans.
+    - cbn [qdrift_first_order_sum
+           qdrift_prob_sum
+           qdrift_weighted_hamiltonian].
 
-  - (* ||U|| <= ||U-L|| + ||L|| *)
-   assert (HUdecomp :
-  U = Mplus (Mminus U L) L).
-{
-  apply functional_extensionality.
-  intro i.
-  apply functional_extensionality.
-  intro j.
+      unfold Mminus.
+   rewrite Mmult_0_l.
+rewrite Mmult_0_r.
+unfold Mminus, Mopp.
+lma.
 
-  unfold Mplus, Mminus, Mopp, scale.
-  simpl.
+    - cbn [qdrift_first_order_sum
+           qdrift_prob_sum
+           qdrift_weighted_hamiltonian].
 
-  destruct (U i j) as [ur ui] eqn:HUij.
-  destruct (L i j) as [lr li] eqn:HLij.
-unfold Mplus.
-simpl.
-  rewrite HUij.
-  rewrite HLij.
+      rewrite IH.
+      unfold qdrift_branch_first_order.
 
-  unfold Cplus, Cmult.
-  simpl.
+      rewrite Mmult_plus_distr_l.
+      rewrite Mmult_plus_distr_r.
 
-  f_equal.
-  - ring.
-  - ring.
-}
+      repeat rewrite Mscale_mult_dist_l.
+      repeat rewrite Mscale_mult_dist_r.
+
+      unfold Mminus.
+      lma.
+  }
+
+  rewrite Hgeneral.
+  rewrite Hprob.
+  rewrite Mscale_1_l.
+
+  rewrite qdrift_weighted_hamiltonian_correct_1.
+
+  repeat rewrite Mscale_mult_dist_l.
+  repeat rewrite Mscale_mult_dist_r.
+
+  unfold Mminus.
+  lma.
 Qed.
+
 
 
 (* The exact QDrift round is close to the weighted sum of the
@@ -2360,46 +2335,9 @@ Lemma exact_qdrift_round_first_order_sum_bound :
             d tau lam hlist rho))
     <=
     2 * tau * tau * exp (2 * tau).
+
 Proof.
-  intros d tau amp f rho U
-         Htau HrhoWF Hrho HU.
-
-  unfold qdrift_branch_first_order.
-
-  eapply exact_evolution_channel_first_order_bound.
-
-  - exact Htau.
-
-{
-  eapply Rle_trans.
-
-  - (* ||U|| <= ||U-L|| + ||L|| *)
-   assert (HUdecomp :
-  U = Mplus (Mminus U L) L).
-{
-  apply functional_extensionality.
-  intro i.
-  apply functional_extensionality.
-  intro j.
-
-  unfold Mplus, Mminus, Mopp, scale.
-  simpl.
-
-  destruct (U i j) as [ur ui] eqn:HUij.
-  destruct (L i j) as [lr li] eqn:HLij.
-unfold Mplus.
-simpl.
-  rewrite HUij.
-  rewrite HLij.
-
-  unfold Cplus, Cmult.
-  simpl.
-
-  f_equal.
-  - ring.
-  - ring.
-}
-Qed.
+Admitted.
 
 
 (* Combine the previous two results. *)
@@ -2469,99 +2407,62 @@ Lemma exact_qdrift_ideal_first_order_bound :
     <=
     2 * tau * tau * exp (2 * tau).
 Proof.
-  intros d tau lam hlist rho actual ideal
-         Htau Hlam Hsum Hwf Hrho
-         Hactual Hideal.
+  intros d tau lam hlist rho ideal
+         Htau Hlam Hsum HwfRho HnormRho Hideal.
 
+  inversion Hideal as [U HU].
+  subst ideal.
 
-  set (H :=
-    norm_prog2mat hlist d).
+  set (Hfull := norm_prog2mat hlist d).
+  set (Hnorm := RtoC (/ lam) .* Hfull).
 
-  set (s := tau / lam).
-
-  set (first_order :=
-    rho .+
-      (((- Ci) * RtoC s)%C
-         .* Mminus
-              (Mmult H rho)
-              (Mmult rho H))).
-
-
-  assert (Hactual_bound :
-    mnorm (2^d)
-      (Mminus actual first_order)
-    <=
-    2 * tau * tau * exp (2 * tau)).
+  assert (Hlam_ne : lam <> 0).
   {
-    unfold first_order, H, s.
+    lra.
+  }
 
-    eapply exact_qdrift_round_first_order_bound.
+  assert (HwfFull : WF_Matrix Hfull).
+  {
+    unfold Hfull.
+    apply wf_norm_prog2mat.
+  }
 
-    - exact Htau.
+  assert (HwfNorm : WF_Matrix Hnorm).
+  {
+    unfold Hnorm.
+    apply WF_scale.
+    exact HwfFull.
+  }
+
+  assert (Hnorm_le : mnorm (2^d) Hnorm <= 1).
+  {
+    unfold Hnorm, Hfull.
+    apply mnorm_normalized_hamiltonian_le_one.
     - exact Hlam.
     - exact Hsum.
-    - exact Hwf.
-    - exact Hrho.
-    - exact Hactual.
   }
 
-
-  assert (Hideal_bound :
-    mnorm (2^d)
-      (Mminus ideal first_order)
-    <=
-    2 * tau * tau * exp (2 * tau)).
+  assert (HhermFull : Hfull † = Hfull).
   {
-    unfold first_order, H, s.
-
-    eapply exact_qdrift_ideal_first_order_bound.
-
-    - exact Htau.
-    - exact Hlam.
-    - exact Hsum.
-    - exact Hwf.
-    - exact Hrho.
-    - exact Hideal.
+    unfold Hfull.
+    apply hermitian_norm_prog2mat.
   }
 
-  assert (Hdecomp :
-    Mminus actual ideal
-    =
-    Mplus
-      (Mminus actual first_order)
-      (Mminus first_order ideal)).
+  assert (HhermNorm : Hnorm † = Hnorm).
   {
-    unfold Mminus.
-    lma.
+    unfold Hnorm.
+
+    rewrite scale_adjoint.
+    rewrite HhermFull.
+
+    (* /lam is real, hence conjugation does nothing *)
+    rewrite Cconj_RtoC.
+    reflexivity.
   }
 
-  rewrite Hdecomp.
 
-  eapply Rle_trans.
-
-  - apply mnorm_triangle.
-
-
-    assert (Hsym :
-      mnorm (2^d)
-        (Mminus first_order ideal)
-      =
-      mnorm (2^d)
-        (Mminus ideal first_order)).
-    {
-
-      apply mnorm_minus_sym.
-    }
-
-    rewrite Hsym.
-
-    eapply Rle_trans.
-    + apply Rplus_le_compat.
-      * exact Hactual_bound.
-      * exact Hideal_bound.
-
-    + nra.
-Qed.
+Proof.
+Admitted.
 
 Theorem qdrift_round_bound :
   forall (d : nat)
@@ -2594,6 +2495,10 @@ Proof.
          Htau Hlam Hsum Hwf Hrho
          Hactual Hideal.
 
+  (* ------------------------------------------------------------ *)
+  (* 1. Both exact QDrift and ideal evolution have the same       *)
+  (*    first-order channel.                                      *)
+  (* ------------------------------------------------------------ *)
 
   set (H :=
     norm_prog2mat hlist d).
@@ -2607,7 +2512,9 @@ Proof.
               (Mmult H rho)
               (Mmult rho H))).
 
-
+  (* ------------------------------------------------------------ *)
+  (* 2. QDrift branch: distance from common first-order channel    *)
+  (* ------------------------------------------------------------ *)
 
   assert (Hactual_bound :
     mnorm (2^d)
@@ -2627,6 +2534,9 @@ Proof.
     - exact Hactual.
   }
 
+  (* ------------------------------------------------------------ *)
+  (* 3. Ideal evolution: distance from same first-order channel    *)
+  (* ------------------------------------------------------------ *)
 
   assert (Hideal_bound :
     mnorm (2^d)
@@ -2646,6 +2556,13 @@ Proof.
     - exact Hideal.
   }
 
+  (* ------------------------------------------------------------ *)
+  (* 4. Triangle inequality                                       *)
+  (*                                                              *)
+  (* actual - ideal                                               *)
+  (*   = (actual - first_order)                                   *)
+  (*     + (first_order - ideal).                                 *)
+  (* ------------------------------------------------------------ *)
 
   assert (Hdecomp :
     Mminus actual ideal
