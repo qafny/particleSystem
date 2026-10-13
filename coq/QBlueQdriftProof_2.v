@@ -2631,8 +2631,62 @@ Proof.
     rewrite Cconj_RtoC.
     reflexivity.
   }
+ unfold qdrift_first_order_channel.
+assert (Hgen :
+  hamiltonian_generator (tau / lam) Hfull =
+  hamiltonian_generator tau Hnorm).
+{
+  unfold Hnorm, hamiltonian_generator.
+unfold Rdiv.
+lma.
+}
+assert (HU_norm :
+  exact_hamiltonian_evolution tau Hnorm U).
+{
+  unfold exact_hamiltonian_evolution in *.
+  rewrite <- Hgen.
+  exact HU.
+}
+assert (Hfirst :
+  rho .+
+    (- Ci * (tau / lam)%R .*
+      Mminus (Hfull × rho) (rho × Hfull))
+  =
+  rho .+
+    (- Ci * tau .*
+      Mminus (Hnorm × rho) (rho × Hnorm))).
+{
+  unfold Hnorm.
+  unfold Rdiv.
+rewrite Mscale_mult_dist_l.
+rewrite Mscale_mult_dist_r.
+unfold Rdiv.
+lma.
+}
+change
+  (mnorm (2^d)
+    (Mminus
+      (exact_evolution_channel (tau / lam) Hfull U rho)
+      (rho .+
+        (- Ci * (tau / lam)%R .*
+          Mminus (Hfull × rho) (rho × Hfull))))
+   <= 2 * tau * tau * exp (2 * tau)).
 
-Admitted.
+rewrite Hfirst.
+
+unfold exact_evolution_channel.
+
+fold (exact_evolution_channel tau Hnorm U rho).
+
+eapply exact_evolution_channel_first_order_bound.
+- exact Htau.
+- exact HwfNorm.
+- exact HwfRho.
+- exact HhermNorm.
+- exact Hnorm_le.
+- exact HnormRho.
+- exact HU_norm.
+Qed.
 
 Theorem qdrift_round_bound :
   forall (d : nat)
