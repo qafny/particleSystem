@@ -450,10 +450,6 @@ Qed.
 
 (* ================================================================ *)
 (* 8. Exact matrix exponential via operator-norm convergence        *)
-(*                                                                  *)
-(* We do not assume an exact matrix exponential as an axiom.        *)
-(* Instead, U is an exact exponential of A when the finite Taylor   *)
-(* partial sums converge to U in the operator norm mnorm.            *)
 (* ================================================================ *)
 
 
@@ -2311,18 +2307,169 @@ Qed.
 
 (* The exact QDrift round is close to the weighted sum of the
    first-order branch approximations. *)
+Lemma exact_qdrift_round_first_order_sum_bound_aux :
+  forall d tau lam hlist rho actual,
+    0 <= tau ->
+    lam > 0 ->
+    WF_Matrix rho ->
+    mnorm (2^d) rho <= 1 ->
+    exact_qdrift_round
+      d tau lam rho hlist actual ->
+    mnorm (2^d)
+      (Mminus
+         actual
+         (qdrift_first_order_sum
+            d tau lam hlist rho))
+    <=
+    (qdrift_sum_w hlist (length hlist) / lam)
+      * (2 * tau * tau * exp (2 * tau)).
+
+Proof.
+  intros d tau lam hlist rho actual
+         Htau Hlam HwfRho HnormRho Hround.
+
+  induction Hround as
+    [| amp f rem U rem_result HU Hrem IH].
+
+  - (* Empty Hamiltonian list *)
+    cbn [qdrift_first_order_sum qdrift_sum_w].
+    unfold Mminus.
+   
+replace (Zero .+ Mopp Zero)
+  with (@Zero (2^d) (2^d)).
+2: {
+  unfold Mopp, scale, Mplus, Zero.
+  prep_matrix_equality.
+  simpl.
+ unfold Cplus, Cmult, Copp.
+unfold C0.
+simpl.
+f_equal; ring.
+}
+rewrite mnorm_zero.
+simpl.
+nra.
+
+  - (* Nonempty Hamiltonian list *)
+    cbn [qdrift_first_order_sum qdrift_sum_w].
+
+    set (K := 2 * tau * tau * exp (2 * tau)).
+
+    assert (HK : 0 <= K).
+    {
+      unfold K.
+      assert (He : 0 < exp (2 * tau))
+        by apply exp_pos.
+      nra.
+    }
+
+    assert (Hw : 0 <= Rabs amp / lam).
+    {
+    unfold Rdiv.
+apply Rmult_le_pos.
+- apply Rabs_pos.
+- left.
+  apply Rinv_0_lt_compat.
+  exact Hlam.
+ 
+    }
+
+    assert (Hbranch :
+      mnorm (2^d)
+        (Mminus
+          (exact_evolution_channel tau
+            (normten2mat (qdrift_sign amp) d f)
+            U rho)
+          (qdrift_branch_first_order
+            d tau amp f rho))
+      <= K).
+    {
+      unfold K, qdrift_branch_first_order.
+      apply exact_evolution_channel_first_order_bound.
+      - exact Htau.
+      - apply wf_normten2mat.
+      - exact HwfRho.
+      - apply hermitian_normten.
+      - rewrite mnorm_normten2mat.
+        unfold qdrift_sign.
+        destruct (Rlt_dec amp 0).
+        + rewrite Rabs_left; lra.
+        + rewrite Rabs_right; lra.
+      - exact HnormRho.
+      - exact HU.
+    }
+
+    assert (Hdecomp :
+      Mminus
+        (Mplus
+          (RtoC (Rabs amp / lam) .*
+            exact_evolution_channel tau
+              (normten2mat (qdrift_sign amp) d f)
+              U rho)
+          rem_result)
+        (Mplus
+          (RtoC (Rabs amp / lam) .*
+            qdrift_branch_first_order
+              d tau amp f rho)
+          (qdrift_first_order_sum
+            d tau lam rem rho))
+      =
+      Mplus
+        (RtoC (Rabs amp / lam) .*
+          Mminus
+            (exact_evolution_channel tau
+              (normten2mat (qdrift_sign amp) d f)
+              U rho)
+            (qdrift_branch_first_order
+              d tau amp f rho))
+        (Mminus rem_result
+          (qdrift_first_order_sum
+            d tau lam rem rho))).
+    {
+      unfold Mminus.
+      lma.
+    }
+
+    rewrite Hdecomp.
+
+    eapply Rle_trans.
+    + apply mnorm_triangle.
+    + rewrite mnorm_scale.
+
+      eapply Rle_trans.
+      * apply Rplus_le_compat.
+        -- apply Rmult_le_compat_l.
+           ++ apply Rabs_pos.
+           ++ exact Hbranch.
+        -- exact IH.
+      * unfold K.
+        unfold Rdiv.
+        ring_simplify.
+      rewrite Rabs_right.
+2: {
+apply Rle_ge.
+exact Hw.
+}
+cbn [length].
+change
+  (2 * (Rabs amp / lam) * tau ^ 2 * exp (2 * tau) +
+   2 * tau ^ 2 * exp (2 * tau) *
+     qdrift_sum_w rem (length rem) * / lam <=
+   2 * tau ^ 2 * exp (2 * tau) * / lam *
+     (Rabs amp + qdrift_sum_w rem (length rem))).
+unfold Rdiv.
+apply Req_le.
+ring.
+Qed.
+
 Lemma exact_qdrift_round_first_order_sum_bound :
   forall d tau lam hlist rho actual,
 
     0 <= tau ->
-
     lam > 0 ->
-
     lam =
       qdrift_sum_w hlist (length hlist) ->
-
     WF_Matrix rho ->
-
     mnorm (2^d) rho <= 1 ->
 
     exact_qdrift_round
@@ -2335,9 +2482,34 @@ Lemma exact_qdrift_round_first_order_sum_bound :
             d tau lam hlist rho))
     <=
     2 * tau * tau * exp (2 * tau).
-
 Proof.
-Admitted.
+  intros d tau lam hlist rho actual
+         Htau Hlam Hsum HwfRho HnormRho Hround.
+
+  pose proof
+    (exact_qdrift_round_first_order_sum_bound_aux
+       d tau lam hlist rho actual
+       Htau Hlam HwfRho HnormRho Hround)
+    as Hbound.
+
+  rewrite <- Hsum in Hbound.
+
+  replace (lam / lam)%R with 1 in Hbound.
+  2: {
+unfold Rdiv.
+rewrite Rinv_r.
+- ring.
+- lra.
+  }
+
+  replace
+    (1 * (2 * tau * tau * exp (2 * tau)))%R
+    with
+    (2 * tau * tau * exp (2 * tau))%R
+    in Hbound by ring.
+
+  exact Hbound.
+Qed.
 
 
 (* Combine the previous two results. *)
