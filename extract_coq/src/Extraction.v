@@ -6,6 +6,7 @@ From QBlue Require Import QBlueSynthDigital.
 From QBlue Require Import QBlueQuantumWalk.
 From QBlue Require Import QBlueQubitization.
 From QBlue Require Import QBlueQSVT.
+From QBlue Require Import QBlueQSVT_updateQSP.
 From QBlue Require Import QBlueTTS_v4.
 
 Require Coq.extraction.Extraction.
@@ -228,6 +229,8 @@ Separate Extraction
   QBlueQubitization.build_qubitization_circuit
   QBlueQSVT.findDegree_qsvt
   QBlueQSVT.build_qsvt_circuit
+  QBlueQSVT_updateQSP.haah_qsp_solver
+  QBlueQSVT_updateQSP.build_qsvt_circuit
   QBlueCompile.translate_lowp2circ_qsvt
 
 (* gate decomposition pass *)
