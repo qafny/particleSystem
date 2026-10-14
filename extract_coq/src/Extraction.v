@@ -232,6 +232,9 @@ Separate Extraction
   QBlueQSVT_updateQSP.haah_qsp_solver
   QBlueQSVT_updateQSP.build_qsvt_circuit
   QBlueCompile.translate_lowp2circ_qsvt
+  QBlueCompile.translate_lowp2circ_qsvt_updateQSP
+  QBlueCompile.translate_lowp2IndiAna_qsvt_updateQSP
+  QBlueCompile.translate_lowp2IBMAna_qsvt_updateQSP
 
 (* gate decomposition pass *)
   ExtractionGateSet.decompose_to_voqc_gates

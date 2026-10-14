@@ -111,10 +111,21 @@ let tts_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t :
     let cir_ast = translate_lowp2circ_TTS_LCU err t lp nq in
     let cir_bf = ibmdigi_to_rzq nq cir_ast in
     let cc, ts = time_call (fun () -> ibmdigi_voqc_optimize nq cir_ast) in
-    (cc, cir_bf, ts, 1)
+    (cc, cir_bf, ts, 1, 0)
   with exn -> dbg "tts_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
+(* QSVT via updated Haah QSP -> IBMDigital *)
+let qsvt_updateQSP_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- QSVT (Haah QSP Update) -> IBMDigital circuits: ----";
+  try
+    (* Assuming a corresponding translation function or circuit builder from QBlueCompile / QBlueQSVT_updateQSP *)
+    let cir_ast = translate_lowp2circ_qsvt_updateQSP err t lp nq in
+    let cir_bf = ibmdigi_to_rzq nq cir_ast in
+    let cc, ts = time_call (fun () -> ibmdigi_voqc_optimize nq cir_ast) in
+    (cc, cir_bf, ts, 1, 0)
+  with exn -> dbg "qsvt_updateQSP_IBMDigital raise EXN: %s" (Printexc.to_string exn);
+    raise exn
 
 (* Qubitization -> IBMDigital; d = 2K+1 direct W applications via QSP. *)
 let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
@@ -350,8 +361,17 @@ let tts_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t :
   if verbose then dbg "---- TTS LCU -> IndiAnalog circuits: ----";
   try
     let cc, ts = time_call (fun () -> translate_lowp2IndiAna_TTS_LCU err t lp nq) in
-    (cc, ts, 1, 1)
+    (cc, ts, 1, 0)
   with exn -> dbg "tts_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+(* QSVT via updated Haah QSP -> Indiana Analog *)
+let qsvt_updateQSP_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- QSVT (Haah QSP Update) -> IndiAnalog circuits: ----";
+  try
+    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_qsvt_updateQSP err t lp nq) in
+    (cc, ts, 1, 0)
+  with exn -> dbg "qsvt_updateQSP_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
 (* 2nd-order trotterization; decompose to Indiana Analog *)
@@ -496,10 +516,22 @@ let tts_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : 
   try
     if check_2local nq lp then
       let cc, ts = time_call (fun () -> translate_lowp2IBMAna_TTS_LCU err t lp nq) in
-      (cc, ts, 1, 1)
+      (cc, ts, 1, 0)
     else
       failwith "IBM analog synthesis requires 2-local input terms"
   with exn -> dbg "tts_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
+    raise exn
+
+(* QSVT via updated Haah QSP -> IBM Analog *)
+let qsvt_updateQSP_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- QSVT (Haah QSP Update) -> IBMAnalog circuits: ----";
+  try
+    if check_2local nq lp then
+      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_qsvt_updateQSP err t lp nq) in
+      (cc, ts, 1, 0)
+    else
+      failwith "IBM analog synthesis requires 2-local input terms"
+  with exn -> dbg "qsvt_updateQSP_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
 (* 2nd-order trotterization; decompose to IBM Analog *)
