@@ -1935,7 +1935,6 @@ Proof.
         -- exact Hcoef.
 Qed.
 
-
 Lemma exact_evolution_channel_first_order_bound :
   forall n tau (H rho U : Square n),
 
@@ -2158,9 +2157,67 @@ reflexivity.
     }
 
     rewrite Hadjdifference.
+assert (Hadj_bound :
+  mnorm n ((Mminus U L) †) <=
+  mnorm n (Mminus U L)).
++ 
+apply mnorm_adjoint_le.
+
++ 
+eapply Rle_trans.
+- exact Hadj_bound.
+- exact Hrem.
+}
+pose proof (mnorm_adjoint_le n A) as HAadj_norm.
+
+assert (HnormUadj :
+  mnorm n (U†) <=
+  1 + tau + tau * tau / 2 * exp tau).
+{
+  eapply Rle_trans.
+  - apply mnorm_adjoint_le.
+  - exact HnormU.
+}
+
+
+  unfold exact_evolution_channel.
+
+  pose proof
+    (physical_first_order_channel_expansion
+       n tau H rho HwfH HwfRho) as Hexp.
+
+  set (F := rho .+ - Ci * tau .*
+    Mminus (H × rho) (rho × H)).
+
+  assert (HLexp :
+    L × (rho × L†) =
+    F .+ -1 .* (A × (rho × A))).
+  {
+    rewrite HLadj.
+    unfold L, A, F.
+    unfold Mopp.
+
+    assert (Hneg1 : Copp C1 = (-1)%C).
+    {
+      unfold C1, Copp.
+      simpl.
+      f_equal; lra.
+    }
+
+    rewrite Hneg1.
+    exact Hexp.
+  }
+
+
+  assert (Hquadratic :
+    mnorm n (A × (rho × A)) <= tau * tau).
+  {
+    unfold A.
+    apply mnorm_generator_rho_generator_tau;
+      assumption.
+  }
 
 Admitted.
-
 
 
 
@@ -2826,5 +2883,315 @@ Proof.
 
     + nra.
 Qed.
+
+
+Lemma exact_channel_difference :
+  forall n t (H U rho1 rho2 : Square n),
+    Mminus (exact_evolution_channel t H U rho1)
+           (exact_evolution_channel t H U rho2)
+    = U × (Mminus rho1 rho2 × U†).
+Proof.
+  intros n t H U rho1 rho2.
+  unfold exact_evolution_channel, Mminus, Mopp.
+
+rewrite Mmult_plus_distr_r.
+rewrite Mmult_plus_distr_l.
+rewrite Mscale_mult_dist_l.
+rewrite Mscale_mult_dist_r.
+reflexivity.
+Qed.
+
+Lemma exact_channel_contract_conditional :
+  forall n t (H U rho1 rho2 : Square n),
+    mnorm n U <= 1 ->
+    mnorm n (U†) <= 1 ->
+    mnorm n (Mminus (exact_evolution_channel t H U rho1)
+                        (exact_evolution_channel t H U rho2))
+      <= mnorm n (Mminus rho1 rho2).
+Proof.
+  intros n t H U rho1 rho2 HU HUadj.
+  rewrite exact_channel_difference.
+  eapply Rle_trans.
+  - apply mnorm_submult.
+  - eapply Rle_trans.
+    + apply Rmult_le_compat_l.
+      * apply mnorm_nonneg.
+      * apply mnorm_submult.
+    + pose proof (mnorm_nonneg n (Mminus rho1 rho2)) as Hnonneg.
+      pose proof (mnorm_nonneg n (U†)) as Hadjnonneg.
+      pose proof (mnorm_nonneg n U) as HUnonneg.
+      replace
+        (mnorm n U *
+          (mnorm n (Mminus rho1 rho2) * mnorm n (U†)))
+        with
+        (mnorm n (Mminus rho1 rho2) *
+          (mnorm n U * mnorm n (U†)))
+        by ring.
+
+      assert (Hprod :
+        mnorm n U * mnorm n (U†) <= 1).
+      {
+        nra.
+      }
+
+      eapply Rle_trans.
+      * apply Rmult_le_compat_l.
+        -- exact Hnonneg.
+        -- exact Hprod.
+      * nra.
+Qed.
+
+Lemma Mscale_minus_distr_complex :
+  forall n (c : C) (A B : Square n),
+    Mminus (c .* A) (c .* B)
+    =
+    c .* Mminus A B.
+Proof.
+  intros n c A B.
+  unfold Mminus.
+  lma.
+Qed.
+Lemma qdrift_term_contract_exact :
+  forall (d : nat) (tau p : R)
+         (M U rho1 rho2 : Square (2^d)),
+    WF_Matrix U ->
+    WF_Matrix rho1 ->
+    WF_Matrix rho2 ->
+    mnorm (2^d) U <= 1 ->
+    mnorm (2^d) (U†) <= 1 ->
+    mnorm (2^d)
+      (Mminus
+        (RtoC p .* exact_evolution_channel tau M U rho1)
+        (RtoC p .* exact_evolution_channel tau M U rho2))
+    <=
+    Rabs p * mnorm (2^d) (Mminus rho1 rho2).
+Proof.
+  intros d tau p M U rho1 rho2
+         HwfU Hwf1 Hwf2 HU HUadj.
+assert (Hscale :
+  forall (A B : Square (2 ^ d)),
+    Mminus (p .* A) (p .* B) =
+    p .* (Mminus A B)).
+{
+  intros A B.
+  unfold Mminus, Mopp.
+  rewrite Mscale_plus_distr_r.
+  repeat rewrite Mscale_assoc.
+  replace ((- C1 * RtoC p)%C)
+    with ((RtoC p * - C1)%C) by ring.
+  reflexivity.
+}
+
+rewrite Hscale.
+rewrite mnorm_scale.
+
+apply Rmult_le_compat_l.
+- apply Rabs_pos.
+- apply exact_channel_contract_conditional;
+    assumption.
+Qed.
+
+Lemma qdrift_round_ideal_norm_le :
+  forall (d : nat) (s : R)
+         (hlist : norm_prog)
+         (rho ideal : Square (2^d)),
+    WF_Matrix rho ->
+    exact_qdrift_round_ideal d s hlist rho ideal ->
+    (forall U,
+        exact_hamiltonian_evolution
+          s (norm_prog2mat hlist d) U ->
+        mnorm (2^d) U <= 1 /\
+        mnorm (2^d) (U†) <= 1) ->
+    mnorm (2^d) ideal <= mnorm (2^d) rho.
+Proof.
+  intros d s hlist rho ideal
+         HwfRho Hideal Hcontract.
+
+  inversion Hideal as [U Hevol].
+  subst.
+
+  destruct (Hcontract U Hevol) as [HU HUadj].
+
+  unfold exact_evolution_channel.
+
+  eapply Rle_trans.
+  - apply mnorm_submult.
+  - eapply Rle_trans.
+    + apply Rmult_le_compat_l.
+      * apply mnorm_nonneg.
+      * apply mnorm_submult.
+      + pose proof (mnorm_nonneg (2^d) rho) as Hrho.
+      pose proof (mnorm_nonneg (2^d) U) as HU0.
+      pose proof (mnorm_nonneg (2^d) (U†)) as HUadj0.
+
+      eapply Rle_trans.
+      * apply Rmult_le_compat_l.
+        -- exact HU0.
+        -- apply Rmult_le_compat_l.
+           ++ exact Hrho.
+           ++ exact HUadj.
+      * replace
+          (mnorm (2^d) U *
+             (1 * mnorm (2^d) rho * 1))
+          with
+          (mnorm (2^d) U * mnorm (2^d) rho)
+          by ring.
+        replace
+          (1 * mnorm (2^d) rho)
+          with
+          (1 * mnorm (2^d) rho)
+          by ring.
+        rewrite Rmult_1_r.
+nra.
+Qed.
+
+Inductive exact_qdrift_iter
+    (d : nat) (tau lam : R) (hlist : norm_prog)
+    : nat -> Square (2^d) -> Square (2^d) -> Prop :=
+
+| ExactQDriftIterZero :
+    forall rho,
+      exact_qdrift_iter d tau lam hlist 0 rho rho
+
+| ExactQDriftIterStep :
+    forall N rho mid out,
+      exact_qdrift_iter d tau lam hlist N rho mid ->
+      exact_qdrift_round d tau lam mid hlist out ->
+      exact_qdrift_iter d tau lam hlist (S N) rho out.
+
+
+Inductive exact_qdrift_ideal_iter
+    (d : nat) (s : R) (hlist : norm_prog)
+    : nat -> Square (2^d) -> Square (2^d) -> Prop :=
+
+| ExactQDriftIdealIterZero :
+    forall rho,
+      exact_qdrift_ideal_iter d s hlist 0 rho rho
+
+| ExactQDriftIdealIterStep :
+    forall N rho mid out,
+      exact_qdrift_ideal_iter d s hlist N rho mid ->
+      exact_qdrift_round_ideal d s hlist mid out ->
+      exact_qdrift_ideal_iter d s hlist (S N) rho out.
+
+Lemma exact_qdrift_ideal_iter_wf :
+  forall d s hlist N rho out,
+    (forall U,
+        exact_hamiltonian_evolution
+          s (norm_prog2mat hlist d) U ->
+        WF_Matrix U) ->
+    WF_Matrix rho ->
+    exact_qdrift_ideal_iter d s hlist N rho out ->
+    WF_Matrix out.
+Proof.
+  intros d s hlist N rho out HUwf Hrho Hiter.
+  induction Hiter.
+  - exact Hrho.
+  - inversion H as [U Hevol].
+    subst.
+    unfold exact_evolution_channel.
+    apply WF_mult.
+    + apply HUwf.
+      exact Hevol.
+    + apply WF_mult.
+      * apply IHHiter.
+  exact Hrho.
+      * apply WF_adjoint.
+        apply HUwf.
+        exact Hevol.
+Qed.
+
+Lemma exact_qdrift_ideal_iter_norm_le :
+  forall d s hlist N rho out,
+    WF_Matrix rho ->
+    (forall U,
+        exact_hamiltonian_evolution
+          s (norm_prog2mat hlist d) U ->
+        WF_Matrix U) ->
+    (forall U,
+        exact_hamiltonian_evolution
+          s (norm_prog2mat hlist d) U ->
+        mnorm (2^d) U <= 1 /\
+        mnorm (2^d) (U†) <= 1) ->
+    exact_qdrift_ideal_iter d s hlist N rho out ->
+    mnorm (2^d) out <= mnorm (2^d) rho.
+Proof.
+  intros d s hlist N rho out Hrho HUwf Hcontract Hiter.
+  induction Hiter.
+  - apply Rle_refl.
+  - eapply Rle_trans.
+    + eapply qdrift_round_ideal_norm_le.
+      * eapply exact_qdrift_ideal_iter_wf.
+        -- exact HUwf.
+        -- exact Hrho.
+        -- exact Hiter.
+      * exact H.
+      * exact Hcontract.
++ apply IHHiter.
+  exact Hrho.
+Qed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

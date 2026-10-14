@@ -34,7 +34,7 @@ Run: `./_build/default/performance.exe <file> [-e <float>] [-t <float>] [-p <int
   5. MarQSim (CNOT+SingleQ for P_gc) -> IBMDigital circuits
   6. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBMDigital circuits
   7. MarQSim (CNOT+SingleQ for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBMDigital circuits
-  8. QSVT -> IBMDigital circuits
+  8. QSVT (Updated Haah QSP) -> IBMDigital circuits
   9. Qubitization -> IBMDigital circuits
   0. Optimal among 1-9
   11. Trotterization (1st-order) -> Indiana Analog circuits
@@ -44,6 +44,7 @@ Run: `./_build/default/performance.exe <file> [-e <float>] [-t <float>] [-p <int
   15. MarQSim (CNOT+SingleQ for P_gc) -> Indiana Analog circuits
   16. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> Indiana Analog circuits
   17. Taylor-series LCU -> Indiana Analog circuits
+  18. QSVT (Updated Haah QSP) -> Indiana Analog circuits
   10. Optimal among 10-17
   21. Trotterization (1st-order) -> IBM Analog circuits
   22. Trotterization (2nd-order) -> IBM Analog circuits
@@ -52,6 +53,7 @@ Run: `./_build/default/performance.exe <file> [-e <float>] [-t <float>] [-p <int
   25. MarQSim (CNOT+SingleQ for P_gc) -> IBM Analog circuits
   26. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBM Analog circuits
   27. Taylor-series LCU -> IBM Analog circuits
+  28. QSVT (Updated Haah QSP) -> IBM Analog circuits
   20. Optimal among 20-27
 
 
