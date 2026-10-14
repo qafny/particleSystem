@@ -3132,6 +3132,152 @@ Proof.
 Qed.
 
 
+Lemma matrix_seq_cv_unique_mnorm :
+  forall n (F : nat -> Square n) (A B : Square n),
+    matrix_seq_cv F A ->
+    matrix_seq_cv F B ->
+    mnorm n (Mminus A B) = 0.
+Proof.
+  intros n F A B HA HB.
+
+  apply Rle_antisym.
+  2: {
+    apply mnorm_nonneg.
+  }
+
+  apply Rnot_lt_le.
+  intro Hpos.
+
+  set (eps := mnorm n (Mminus A B) / 3).
+
+  assert (Heps : eps > 0).
+  {
+    unfold eps.
+    lra.
+  }
+
+  unfold matrix_seq_cv in HA, HB.
+
+  destruct (HA eps Heps) as [NA HNA].
+  destruct (HB eps Heps) as [NB HNB].
+
+  set (N := Nat.max NA NB).
+
+  assert (HNA' : (NA <= N)%nat).
+  {
+    unfold N.
+    apply Nat.le_max_l.
+  }
+
+  assert (HNB' : (NB <= N)%nat).
+  {
+    unfold N.
+    apply Nat.le_max_r.
+  }
+
+  specialize (HNA N HNA').
+  specialize (HNB N HNB').
+
+  pose proof
+    (mnorm_minus_triangle n A (F N) B)
+    as Htriangle.
+
+  rewrite mnorm_minus_sym in HNA.
+
+  unfold eps in *.
+
+  lra.
+Qed.
+
+Lemma exact_hamiltonian_evolution_unique_mnorm :
+  forall n t (H U1 U2 : Square n),
+    exact_hamiltonian_evolution t H U1 ->
+    exact_hamiltonian_evolution t H U2 ->
+    mnorm n (Mminus U1 U2) = 0.
+Proof.
+  intros n t H U1 U2 HU1 HU2.
+
+  unfold exact_hamiltonian_evolution in *.
+  unfold matrix_exp_exact in *.
+
+  eapply matrix_seq_cv_unique_mnorm.
+  - exact HU1.
+  - exact HU2.
+Qed.
+
+Lemma exact_qdrift_round_exists :
+  forall d tau lam (rho : Square (2^d)) hlist,
+    (forall H : Square (2^d),
+        exists U : Square (2^d),
+          exact_hamiltonian_evolution tau H U) ->
+    exists out : Square (2^d),
+      exact_qdrift_round d tau lam rho hlist out.
+Proof.
+  intros d tau lam rho hlist Hex.
+  induction hlist as [| [amp f] rem IH].
+  - exists Zero.
+    constructor.
+  - destruct IH as [rem_result Hrem].
+    destruct
+      (Hex (normten2mat (qdrift_sign amp) d f))
+      as [U HU].
+
+    eexists.
+    eapply ExactQDriftCons.
+    + exact HU.
+    + exact Hrem.
+Qed.
+
+Lemma exact_qdrift_round_exists_wf :
+  forall d tau lam (rho : Square (2^d)) hlist,
+    (forall amp f,
+        exists U : Square (2^d),
+          exact_hamiltonian_evolution tau
+            (normten2mat (qdrift_sign amp) d f) U) ->
+    exists out : Square (2^d),
+      exact_qdrift_round d tau lam rho hlist out.
+Proof.
+  intros d tau lam rho hlist Hex.
+  induction hlist as [| [amp f] rem IH].
+  - exists Zero.
+    constructor.
+  - destruct IH as [rem_result Hrem].
+    destruct (Hex amp f) as [U HU].
+    eexists.
+    eapply ExactQDriftCons.
+    + exact HU.
+    + exact Hrem.
+Qed.
+
+Lemma exact_qdrift_round_change_input :
+  forall d tau lam hlist
+         (rho1 rho2 out1 : Square (2^d)),
+    exact_qdrift_round d tau lam rho1 hlist out1 ->
+    exists out2 : Square (2^d),
+      exact_qdrift_round d tau lam rho2 hlist out2.
+Proof.
+  intros d tau lam hlist rho1 rho2 out1 Hround.
+
+  induction Hround as
+    [| amp f rem U rem_result Hevol Hrem IH].
+
+  - exists Zero.
+    constructor.
+
+  - destruct IH as [rem_result2 Hrem2].
+
+    exists
+      ((Rabs amp / lam)%R .*
+         exact_evolution_channel tau
+           (normten2mat (qdrift_sign amp) d f)
+           U rho2
+       .+ rem_result2).
+
+    eapply ExactQDriftCons.
+    + exact Hevol.
+    + exact Hrem2.
+Qed.
+
 
 
 
