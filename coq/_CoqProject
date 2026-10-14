@@ -29,6 +29,7 @@ QBlueQuantumWalk_opt.v
 QBlueQubitization_opt.v
 QBlueQSVT.v
 QBlueQSVT_opt.v
+QBlueQSVT_updateQSP.v
 
 QBlueHamiltonian.v
 QBlueMatrixExp.v
