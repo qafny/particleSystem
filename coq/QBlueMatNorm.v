@@ -387,3 +387,124 @@ Proof.
   reflexivity.
 Qed.
 
+
+Lemma vnorm_dual_converse :
+  forall n (x : Vector n) (b : R),
+    0 <= b ->
+    (forall y : Vector n,
+       norm y <= 1 ->
+       Cmod ⟨y, x⟩ <= b) ->
+    norm x <= b.
+Proof.
+  intros n x b Hb Hbound.
+  destruct (Req_dec (norm x) 0) as [Hz | Hnz].
+  - rewrite Hz.
+    exact Hb.
+  - assert (Hxpos : 0 < norm x).
+    { pose proof (norm_ge_0 x). lra. }
+
+    set (y := RtoC (/ norm x) .* x).
+
+    assert (Hy : norm y = 1).
+    {
+      unfold y.
+      rewrite norm_scale, Cmod_R.
+      rewrite Rabs_right.
+      - field. lra.
+      - left. apply Rinv_0_lt_compat. exact Hxpos.
+    }
+
+    specialize (Hbound y).
+    assert (Hy1 : norm y <= 1) by lra.
+    specialize (Hbound Hy1).
+
+    (* Here we need to simplify the inner product of
+       the normalized vector with x. *)
+    unfold y in Hbound.
+    rewrite inner_product_scale_l in Hbound.
+    rewrite Cmod_mult in Hbound.
+
+
+rewrite Cconj_R in Hbound.
+rewrite Cmod_R in Hbound.
+rewrite Rabs_right in Hbound.
+2:{
+  left.
+  apply Rinv_0_lt_compat.
+  exact Hxpos.
+}
+
+
+assert (Hself :
+  Cmod ⟨ x, x ⟩ = norm x * norm x).
+{
+  unfold norm.
+  rewrite sqrt_sqrt.
+  - 
+unfold Cmod.
+rewrite norm_real.
+
+rewrite pow_i.
+rewrite Rplus_0_r.
+ rewrite <- Rsqr_pow2.
+  rewrite sqrt_Rsqr_abs.
+  rewrite Rabs_right.
+  + reflexivity.
+  + apply Rle_ge.
+    apply inner_product_ge_0.
++ lia.
+- apply inner_product_ge_0.
+}
+
+rewrite Hself in Hbound.
+replace (/ norm x * (norm x * norm x))
+  with (norm x) in Hbound
+  by (field; exact Hnz).
+exact Hbound.
+Qed.
+
+Lemma mnorm_adjoint_le :
+  forall n (M : Square n),
+    mnorm n (M †) <= mnorm n M.
+Proof.
+  intros n M.
+  apply mnorm_least.
+  intros v Hv.
+
+  apply vnorm_dual_converse.
+  - apply mnorm_nonneg.
+  - intros w Hw.
+    rewrite inner_product_adjoint_move.
+
+    eapply Rle_trans.
+    + apply Cauchy_Schwartz_ver2.
+    + eapply Rle_trans.
+      * apply Rmult_le_compat_r.
+        -- apply norm_ge_0.
+        -- apply mnorm_upper.
+           exact Hw.
+      * 
+replace (mnorm n M) with (mnorm n M * 1) at 2 by ring.
+apply Rmult_le_compat_l.
+ apply mnorm_nonneg.
+ exact Hv.
+Qed.
+
+Lemma mnorm_adjoint :
+  forall n (M : Square n),
+    mnorm n (M †) = mnorm n M.
+Proof.
+  intros n M.
+  apply Rle_antisym.
+  - apply mnorm_adjoint_le.
+  - rewrite <- (adjoint_involutive n n M).
+
+repeat rewrite adjoint_involutive.
+
+pose proof (mnorm_adjoint_le n (M†)) as H.
+rewrite (adjoint_involutive n n M) in H.
+exact H.
+Qed.
+
+
+
