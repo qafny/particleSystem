@@ -228,11 +228,19 @@ let translation_lowprog_optimize (lp : lowprog) (nqbit : int) (err : float) (t :
   let (c1, c_bf, _, r, npau) = lowprog_to_circ ~verbose:false lp nqbit err t !best_path in
   (c1, c_bf, !ts_tot, r, npau)
 
-let summarize_analog_counts (cc : ugate list) (r : int) (npau : int) : int * int =
-  let ntot = r * (List.length cc) in
-  let nq1 = ntot - npau in
-  (* # single-qubits, multiple-qubits  *)
-  (nq1, npau)
+(* Pulses by support: a pulse exp(-i a P) acts on the qubits where P is not
+   the identity. Identity pulses are a global phase and are not counted.
+   [reps] is how many times [cc] repeats: r for the Indiana Trotter paths (one
+   step), the sample-cap factor for QDrift/MarQSim, 1 when [cc] is the whole
+   evolution (IBM analog). *)
+let summarize_analog_counts (nqbit : int) (cc : ugate list) (reps : int) : int * int =
+  let support (_, f) =
+    let rec go i n = if i = nqbit then n else go (i + 1) (if f i = Coq_paulii then n else n + 1) in
+    go 0 0 in
+  let (n1, nm) = List.fold_left (fun (n1, nm) g ->
+      match support g with 0 -> (n1, nm) | 1 -> (n1 + 1, nm) | _ -> (n1, nm + 1)) (0, 0) cc in
+  (* # single-qubit, multi-qubit pulses *)
+  (reps * n1, reps * nm)
 
 let translation_lowprog_IndiAnalog (lp : lowprog) (nqbit : int) (err : float) (t : float) =
   let best_path = ref 100 in
@@ -241,7 +249,7 @@ let translation_lowprog_IndiAnalog (lp : lowprog) (nqbit : int) (err : float) (t
   for flag_path = 11 to 18 do
     let (cc, ts, r, npau) = lowprog_to_IndiAnalog ~verbose:true lp nqbit err t flag_path in
 	(* currently use number of pauli strings *)
-	let (nq1, score) = summarize_analog_counts cc nqbit npau in
+	let (nq1, score) = summarize_analog_counts nqbit cc r in
     ts_tot := !ts_tot +. ts;
 	dbg "Path flag: %d; # Single-bit gates: %d; # multi-bit gates: %d.\n" flag_path nq1 score;
     if score < !best_score then
@@ -260,7 +268,7 @@ let translation_lowprog_IBMAnalog (lp : lowprog) (nqbit : int) (err : float) (t 
   for flag_path = 21 to 28 do
     let (cc, ts, r, npau) = lowprog_to_IBMAnalog ~verbose:true lp nqbit err t flag_path in
     (* currently use number of pauli strings *)
-    let (nq1, score) = summarize_analog_counts cc nqbit npau in
+    let (nq1, score) = summarize_analog_counts nqbit cc 1 in
     ts_tot := !ts_tot +. ts;
     dbg "Path flag: %d; # Single-bit gates: %d; # multi-bit gates: %d.\n" flag_path nq1 score;
     if score < !best_score then

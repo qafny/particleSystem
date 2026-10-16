@@ -76,9 +76,14 @@ def main():
         out.mkdir(parents=True, exist_ok=True)
         label = f"t = {time_value}"
         style.T_LABEL_PI16 = label
-        flower = all_rows.copy()
-        flower["qblue_full_total"] = flower.qblue_pre_total
-        style.plot_qdrift_vs_std_polar(flower, out / "fig_qdrift_vs_std_polar.png", t_label=label)
+        # cheapest circuit (after VOQC) of each group per program and error bound
+        groups = []
+        for name, paths in (("std", [1, 2]), ("qdrift", [3, 6, 7])):
+            members = all_rows[all_rows.path_flag.isin(paths)]
+            group = members.loc[members.groupby(["file_name", "error"]).qblue_full_total.idxmin()].copy()
+            group["pipeline"] = name
+            groups.append(group)
+        style.plot_qdrift_vs_std_polar(style.pd.concat(groups), out / "fig_qdrift_vs_std_polar.png", t_label=label)
         std = all_rows[all_rows.path_flag == 1]
         for error, subset in std.groupby("error"):
             available = {name: frame[(frame.time == time_value) & (frame.error == error) & (frame.path_flag == 1)]
@@ -90,9 +95,10 @@ def main():
                                     out / f"tab2_compile_time_err{error}.png", err_label=str(error))
         analog = all_rows[all_rows.path_flag == 11].copy()
         analog["path_flag"] = 1
-        columns = KEY + ["single_qubit_gates_bfopt", "multi_qubit_gates_bfopt"]
+        # digital after VOQC (the comparison accounts for gate-level optimization)
+        columns = KEY + ["single_qubit_gates", "multi_qubit_gates"]
         matched = std.merge(analog[columns], on=KEY, suffixes=("_ibm", "_ind"), validate="one_to_one")
-        for column, label in [("single_qubit_gates_bfopt", "1-qubit"), ("multi_qubit_gates_bfopt", "multi-qubit")]:
+        for column, label in [("single_qubit_gates", "1-qubit"), ("multi_qubit_gates", "multi-qubit")]:
             style.plot_analog_vs_digital_polar(matched, column + "_ibm", column + "_ind", label,
                 out / f"tab_analog_vs_digital_{label}_polar.png")
 

@@ -9,7 +9,9 @@ E3  Best QBlue algorithm vs QBlue first-order Trotter.
 S6  Algorithms inside QBlue, and analog vs digital targets.
 
 Gate counts are totals (single-qubit + CX) unless a title says CX. Savings are
-1 - ours / theirs; positive means QBlue uses fewer gates.
+the reduction of whichever side uses fewer: 1 - ours / theirs when QBlue uses
+fewer (positive), -(1 - theirs / ours) when the baseline does (negative). So
+-60% means the baseline uses 60% fewer gates than QBlue; values stay in (-100%, 100%).
 """
 
 import argparse
@@ -53,9 +55,14 @@ def pct(v):
     return f"{100 * v:.1f}%"
 
 
+def reduction(ours, theirs):
+    """Gate reduction of the side that uses fewer: positive for QBlue, negative for the baseline."""
+    return 1 - ours / theirs if ours <= theirs else -(1 - theirs / ours)
+
+
 def savings(triples):
-    """(file, ours, theirs) -> (file, 1 - ours / theirs)."""
-    return [(f, 1 - o / t) for f, o, t in triples if t > 0]
+    """(file, ours, theirs) -> (file, reduction)."""
+    return [(f, reduction(o, t)) for f, o, t in triples if t > 0 and o > 0]
 
 
 def by_size(pairs):
@@ -102,6 +109,40 @@ def latex(title, settings, measure):
             cells += [f"{100 * statistics.mean(g):.1f}\\%", f"{100 * statistics.median(g):.1f}\\%"] if g else ["--", "--"]
         lines.append(f"{eps:g} & {t_label.get(t, f'{t:g}')} & " + " & ".join(cells) + r" \\")
     return lines + [r"\bottomrule", r"\end{tabular}", ""]
+
+
+def si(value):
+    for limit, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
+        if value >= limit:
+            return f"{value / limit:.3g}{suffix}"
+    return f"{value:.0f}"
+
+
+def gate_table(title, settings, pairs):
+    """Average 1-qubit and 2-qubit gates per size class and setting.
+    pairs(eps, t) -> list of (file, (q1, q2), (p1, p2))."""
+    md = [f"### {title}\n", "| set | ε | t | QBlue 1q | QBlue 2q | PHOENIX 1q | PHOENIX 2q | 1q saving | 2q saving | n |",
+          "|---|---|---|---|---|---|---|---|---|---|"]
+    t_label = {0.7854: r"$\pi/4$", 0.1963: r"$\pi/16$"}
+    tex = [r"% " + title, r"\begin{tabular}{lll" + "r" * 6 + "}", r"\toprule",
+           r" & & & \multicolumn{2}{c}{QBlue} & \multicolumn{2}{c}{PHOENIX} & \multicolumn{2}{c}{Saving} \\",
+           r"\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}",
+           r"Set & $\epsilon$ & $t$ & 1-qubit & 2-qubit & 1-qubit & 2-qubit & 1-qubit & 2-qubit \\", r"\midrule"]
+    for s in SIZES:
+        for eps, t in settings:
+            rows = [(q, p) for f, q, p in pairs(eps, t) if size_class(f) == s]
+            if not rows:
+                continue
+            mean = [statistics.mean(v) for v in zip(*[(*q, *p) for q, p in rows])]
+            save = [reduction(mean[0], mean[2]), reduction(mean[1], mean[3])]
+            md.append(f"| {SIZE_LABELS[s]} | {eps:g} | {t:g} | " + " | ".join(si(v) for v in mean)
+                      + f" | {pct(save[0])} | {pct(save[1])} | {len(rows)} |")
+            tex.append(f"{SIZE_LABELS[s]} & {eps:g} & {t_label.get(t, f'{t:g}')} & "
+                       + " & ".join(si(v) for v in mean) + " & "
+                       + " & ".join(f"{100 * v:.1f}\\%" for v in save) + r" \\")
+        tex.append(r"\midrule" if s != SIZES[-1] else r"\bottomrule")
+    md += ["", "Averages over the programs of each set; savings compare the averages.", ""]
+    return md, tex + [r"\end{tabular}", ""]
 
 
 def main():
@@ -231,7 +272,7 @@ def main():
         for eps, t in settings:
             for f, ours, theirs in measure(eps, t):
                 rows.append({"experiment": name, "file_name": f, "size": size_class(f), "error": eps, "time": t,
-                             "ours": ours, "theirs": theirs, "saving": 1 - ours / theirs if theirs else ""})
+                             "ours": ours, "theirs": theirs, "saving": reduction(ours, theirs) if theirs and ours else ""})
         if name == "E2":
             md += ["### E2 (steps). QBlue's second-order step count divided by OpenFermion's\n",
                    "| ε | t | median ratio | max | min | n |", "|---|---|---|---|---|---|"]
@@ -240,6 +281,88 @@ def main():
                 md.append(f"| {eps:g} | {t:g} | {statistics.median(v):.2f} | {max(v):.2f} | {min(v):.2f} | {len(v)} |"
                           if v else f"| {eps:g} | {t:g} | – | – | – | 0 |")
             md.append("")
+    def gates(row):
+        return float(row["single_qubit_gates"]), float(row["multi_qubit_gates"])
+
+    def vs_phoenix(first_order):
+        def pairs(eps, t):
+            out = []
+            for f in files:
+                p = 1 if first_order else best(f, eps, t)[0]
+                if p is not None and (f, p, eps, t) in q and (f, 1, eps, t) in phx:
+                    out.append((f, gates(q[(f, p, eps, t)]), gates(phx[(f, 1, eps, t)])))
+            return out
+        return pairs
+
+    for title, first_order in (("G1. Average gates: QBlue (selected algorithm) vs PHOENIX first order, QBlue's step count", False),
+                               ("G2. Average gates: QBlue first order vs PHOENIX first order, same step count", True)):
+        g_md, g_tex = gate_table(title, settings, vs_phoenix(first_order))
+        md += g_md
+        tex += g_tex
+    # Table 5: edge of IBM digital over IBM analog (first-order Trotter, 2-local programs).
+    # A 2-qubit analog pulse is taken to run 20% faster than a CX, so it costs 0.8.
+    def digital_edge(eps, t, optimized):
+        out = []
+        for f in files:
+            d, a = q.get((f, 1, eps, t)), q.get((f, 21, eps, t))
+            if d and a:
+                out.append((reduction(total_1q(d, optimized), float(a["single_qubit_gates"])),
+                            reduction(cx(d, not optimized), 0.8 * float(a["multi_qubit_gates"]))))
+        return out
+
+    def total_1q(row, optimized):
+        return float(row["single_qubit_gates" if optimized else "single_qubit_gates_bfopt"])
+
+    head = " | ".join(f"ε={e:g}, t={t:g}" for e, t in settings)
+    md += ["### T5. IBM digital vs IBM analog (first-order Trotter, 2-local programs): digital saving\n",
+           "Positive: digital uses fewer. 2-qubit analog pulses count 0.8 (20% faster than a CX).\n",
+           f"| digital | gates | {head} |", "|---|---|" + "---|" * len(settings)]
+    t_label = {0.7854: r"$\pi/4$", 0.1963: r"$\pi/16$"}
+    tex += [r"% T5. IBM digital vs IBM analog (first-order Trotter, 2-local programs)",
+            r"\begin{tabular}{ll" + "r" * len(settings) + "}", r"\toprule",
+            r"Digital & Terms & " + " & ".join(f"{e:g}, {t_label.get(t, f'{t:g}')}" for e, t in settings) + r" \\",
+            r"\midrule"]
+    for optimized in (True, False):
+        name = "optimized" if optimized else "not optimized"
+        per_setting = [digital_edge(eps, t, optimized) for eps, t in settings]
+        for k, terms in ((0, "1-qubit"), (1, "2-qubit")):
+            cells = [statistics.mean(v[k] for v in s) if s else None for s in per_setting]
+            md.append(f"| {name} | {terms} | " + " | ".join(pct(c) if c is not None else "–" for c in cells) + " |")
+            tex.append(f"{name.capitalize()} & {terms} & "
+                       + " & ".join(f"{100 * c:.0f}\\%" if c is not None else "--" for c in cells) + r" \\")
+    n5 = len(digital_edge(*settings[0], True))
+    md += ["", f"n = {n5} programs.", ""]
+    tex += [r"\bottomrule", r"\end{tabular}", ""]
+
+    # Table 6: Indiana analog (path 11) vs IBM digital after VOQC (path 1), first-order Trotter.
+    def analog_edge(eps, t, s, k):
+        out = []
+        for f in files:
+            d, a = q.get((f, 1, eps, t)), q.get((f, 11, eps, t))
+            if d and a and size_class(f) == s:
+                ours, theirs = ((a["single_qubit_gates"], d["single_qubit_gates"]) if k == 0
+                                else (a["multi_qubit_gates"], d["multi_qubit_gates"]))
+                if float(theirs) > 0:
+                    out.append(reduction(float(ours), float(theirs)))
+        return out
+
+    md += ["### T6. Indiana analog vs IBM digital (first-order Trotter, digital after VOQC): analog saving, median\n",
+           "Positive: Indiana analog uses fewer. 1-qubit = 1-qubit gates / pulses; multi-qubit = CX / multi-qubit pulses.\n",
+           f"| set | terms | {head} |", "|---|---|" + "---|" * len(settings)]
+    tex += [r"% T6. Indiana analog vs IBM digital (first-order Trotter, digital after VOQC): analog saving, median",
+            r"\begin{tabular}{ll" + "r" * len(settings) + "}", r"\toprule",
+            r"Set & Terms & " + " & ".join(f"{e:g}, {t_label.get(t, f'{t:g}')}" for e, t in settings) + r" \\",
+            r"\midrule"]
+    for s in SIZES:
+        for k, terms in ((0, "1-qubit"), (1, "multi-qubit")):
+            cells = [analog_edge(eps, t, s, k) for eps, t in settings]
+            cells = [statistics.median(c) if c else None for c in cells]
+            md.append(f"| {SIZE_LABELS[s]} | {terms} | " + " | ".join(pct(c) if c is not None else "–" for c in cells) + " |")
+            tex.append(f"{SIZE_LABELS[s]} & {terms} & "
+                       + " & ".join(f"{100 * c:.0f}\\%" if c is not None else "--" for c in cells) + r" \\")
+    md.append("")
+    tex += [r"\bottomrule", r"\end{tabular}", ""]
+
     md += ["### Which algorithm is cheapest\n", "| ε | t | " + " | ".join(DIGITAL.values()) + " |",
            "|---|---|" + "---|" * len(DIGITAL)]
     for eps, t in settings:
