@@ -11,7 +11,7 @@ dir_ml_ori=extracted
 dir_ml="../ml"
 
 # root modules to extract
-modules="QBlueCompile"
+modules="QBlueCompile QBlueTTS_v4 QBlueQuantumWalk QBlueQubitization QBlueQSVT"
 
 
 cd $dir_src

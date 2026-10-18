@@ -23,6 +23,7 @@ from pathlib import Path
 from benchmark import ROOT
 
 DIGITAL = {1: "Trotter-1", 2: "Trotter-2", 3: "QDrift", 6: "MarQSim (CNOT)", 7: "MarQSim (CNOT+1q)"}
+LCU = {8: "QSVT", 9: "QSP", 30: "Taylor series", 31: "Quantum walk"}
 SIZES = ("small", "middle", "large")
 SIZE_LABELS = {"small": "Small", "middle": "Medium", "large": "Large"}
 
@@ -229,6 +230,18 @@ def main():
                     for f in files if (f, ours + offset, eps, t) in q and (f, base, eps, t) in q]
         return measure
 
+    def lcu_vs_trotter(methods):
+        """(file, best Trotter-family total, best total among the given LCU paths)"""
+        def measure(eps, t):
+            out = []
+            for f in files:
+                pt, trot = best(f, eps, t)
+                pl, lcu = best(f, eps, t, methods)
+                if pt is not None and pl is not None:
+                    out.append((f, trot, lcu))
+            return out
+        return measure
+
     experiments = [
         ("E0", "Best QBlue algorithm vs OpenFermion (second order, OpenFermion's step count)",
          "QBlue picks the cheapest of Trotter-1, Trotter-2, QDrift, MarQSim at its own error bounds. "
@@ -260,6 +273,14 @@ def main():
         ("S6f", "Indiana analog vs IBM digital, QDrift (multi-qubit terms)", "", pair(3, 3, 10, cx)),
         ("S6g", "IBM analog vs IBM digital, Trotter-1 (multi-qubit terms; 2-local Hamiltonians)", "",
          pair(1, 1, 20, cx)),
+        ("L0", "Trotter-based vs LCU: best Trotter-family algorithm vs best LCU method",
+         "Positive: the Trotter family (Trotter-1/2, QDrift, MarQSim) uses fewer gates; negative: LCU does. "
+         "LCU = QSVT, QSP, Taylor series, quantum walk, each at its own error budget.", lcu_vs_trotter(LCU)),
+    ] + [(f"L{i}", f"Best Trotter-family algorithm vs {name}", "", lcu_vs_trotter({p: name}))
+         for i, (p, name) in enumerate(LCU.items(), 1)] + [
+        ("L5", "Best LCU method vs QBlue first-order Trotter", "Positive: LCU uses fewer gates.",
+         lambda e, t: [(f, ours, total(q[(f, 1, e, t)])) for f in files
+                       for p, ours in [best(f, e, t, LCU)] if p is not None and (f, 1, e, t) in q]),
     ]
 
     md = ["# Results\n",
@@ -372,6 +393,18 @@ def main():
             if p is not None:
                 counts[p] += 1
         md.append(f"| {eps:g} | {t:g} | " + " | ".join(str(counts[p]) for p in DIGITAL) + " |")
+    md.append("")
+    every = {**DIGITAL, **LCU}
+    md += ["### Which algorithm is cheapest, including LCU (programs with every path compiled)\n",
+           "| ε | t | " + " | ".join(every.values()) + " | n |", "|---|---|" + "---|" * (len(every) + 1)]
+    for eps, t in settings:
+        counts, n = defaultdict(int), 0
+        for f in files:
+            if all((f, p, eps, t) in q for p in LCU):
+                p, _ = best(f, eps, t, every)
+                counts[p] += 1
+                n += 1
+        md.append(f"| {eps:g} | {t:g} | " + " | ".join(str(counts[p]) for p in every) + f" | {n} |")
     md.append("")
     (args.csv_dir / "tables.md").write_text("\n".join(md), encoding="utf-8")
     (args.csv_dir / "tables.tex").write_text("\n".join(tex), encoding="utf-8")

@@ -6,7 +6,6 @@ From QBlue Require Import QBlueSynthDigital.
 From QBlue Require Import QBlueQuantumWalk.
 From QBlue Require Import QBlueQubitization.
 From QBlue Require Import QBlueQSVT.
-From QBlue Require Import QBlueQSVT_updateQSP.
 From QBlue Require Import QBlueTTS_v4.
 
 Require Coq.extraction.Extraction.
@@ -119,6 +118,21 @@ Extract Constant QBlue.QBlueQuantumWalk.findK_qwalk =>
     done;
     !best)".
 
+(* QSVT / QSP phase solvers run in Python (extract_coq/src/networks/qsp_phases.py) *)
+Extract Constant QBlue.QBlueQSVT.qsvt_phases => "Bridge.qsvt_phases".
+Extract Constant QBlue.QBlueQubitization.gqsp_complement => "Bridge.gqsp_complement".
+(* native bit operations; the generic Coq definitions recurse once per unit of
+   the argument under ExtrOcamlNatInt *)
+Extract Inlined Constant Nat.lxor => "(lxor)".
+Extract Inlined Constant Nat.land => "(land)".
+Extract Inlined Constant Nat.shiftr => "(lsr)".
+Extract Inlined Constant Nat.testbit => "(fun a n -> (a lsr n) land 1 = 1)".
+Extract Inlined Constant Nat.even => "(fun n -> n land 1 = 0)".
+Extract Constant Nat.log2 => "(fun n -> let rec go k m = if m <= 1 then k else go (k + 1) (m lsr 1) in go 0 n)".
+Extract Constant Nat.pow => "(fun a b -> let rec go acc k = if k <= 0 then acc else go (acc * a) (k - 1) in go 1 b)".
+Extract Constant Nat.modulo => "(fun a b -> if b = 0 then a else a mod b)".
+Extract Constant Nat.div => "(fun a b -> if b = 0 then 0 else a / b)".
+
 Extract Inlined Constant PI => "Float.pi".
 Extract Inlined Constant QBlueUtility.Reqb => "Stdlib.( = )".
 Extract Inlined Constant ChangeRotationBasis.Rltb => "Stdlib.( < )".
@@ -197,8 +211,6 @@ Cd "./extracted".
 Separate Extraction
   QBlueSynth.check_2local
 
-  QBlueTTS_v4.TTS_LCU1
-
   QBlueMarQSim.get_trans_CNOT
   QBlueMarQSim.get_trans_mixed
   QBlueMarQSim.get_trans_MarQdrift
@@ -208,33 +220,23 @@ Separate Extraction
   QBlueCompile.translate_lowp2circ_2ndTrotter 
   QBlueCompile.translate_lowp2circ_qdrift
   QBlueCompile.translate_lowp2circ_marqsim
-  QBlueCompile.translate_lowp2circ_TTS_LCU
-  QBlueCompile.translate_lowp2circ_qwalk
   QBlueCompile.translate_lowp2IndiAna_stdTrotter
   QBlueCompile.translate_lowp2IndiAna_2ndTrotter
   QBlueCompile.translate_lowp2IndiAna_qdrift
   QBlueCompile.translate_lowp2IndiAna_marqsim
-  QBlueCompile.translate_lowp2IndiAna_TTS_LCU
   QBlueCompile.translate_lowp2IBMAna_stdTrotter
   QBlueCompile.translate_lowp2IBMAna_std_2ndTrotter
   QBlueCompile.translate_lowp2IBMAna_qdrift
   QBlueCompile.translate_lowp2IBMAna_marqsim
-  QBlueCompile.translate_lowp2IBMAna_TTS_LCU
-  QBlueQuantumWalk.build_qwalk_lcu_circuit
-  QBlueQuantumWalk.build_state_prep
-  QBlueQuantumWalk.build_inner_prep
-  QBlueQuantumWalk.build_outer_prep
-  QBlueQuantumWalk.findK_qwalk
-  QBlueQubitization.findDegree_qsp
-  QBlueQubitization.build_qubitization_circuit
-  QBlueQSVT.findDegree_qsvt
-  QBlueQSVT.build_qsvt_circuit
-  QBlueQSVT_updateQSP.haah_qsp_solver
-  QBlueQSVT_updateQSP.build_qsvt_circuit
-  QBlueCompile.translate_lowp2circ_qsvt
-  QBlueCompile.translate_lowp2circ_qsvt_updateQSP
-  QBlueCompile.translate_lowp2IndiAna_qsvt_updateQSP
-  QBlueCompile.translate_lowp2IBMAna_qsvt_updateQSP
+  QBlueQuantumWalk.to_ucom
+  QBlueQuantumWalk.qwalk_circuit
+  QBlueQuantumWalk.qwalk_pieces
+  QBlueTTS_v4.taylor_circuit
+  QBlueTTS_v4.taylor_pieces
+  QBlueQubitization.qsp_circuit
+  QBlueQubitization.qsp_pieces
+  QBlueQSVT.qsvt_circuit
+  QBlueQSVT.qsvt_pieces
 
 (* gate decomposition pass *)
   ExtractionGateSet.decompose_to_voqc_gates

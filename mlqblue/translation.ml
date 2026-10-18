@@ -81,104 +81,92 @@ let trotterStd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   with exn -> dbg "trotterStd_IBMDigital raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
-(* Quantum Walk -> IBMDigital; gate counts derived analytically since
-   materialising n_copies(2^j, W) would overflow the heap. *)
-let qwalk_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- Quantum Walk -> IBMDigital circuits: ----";
+(* LCU methods -> IBM digital circuits (QBlueQSVT.v, QBlueQubitization.v,
+   QBlueTTS_v4.v, QBlueQuantumWalk.v). *_pieces describe a circuit as distinct pieces with multiplicities;
+   each piece is compiled once (in chunks of lcu_chunk gates, 1000 by default,
+   QBLUE_LCU_CHUNK to change) and its counts are multiplied. Returns
+   (1q, CX, 1q before VOQC, CX before VOQC, time, total qubits, segments). *)
+let lcu_chunk =
+  try int_of_string (Sys.getenv "QBLUE_LCU_CHUNK") with Not_found | Failure _ -> 1000
+
+let rec split_chunks acc cur n = function
+  | [] -> List.rev (if cur = [] then acc else List.rev cur :: acc)
+  | g :: rest ->
+    if n = lcu_chunk then split_chunks (List.rev cur :: acc) [g] 1 rest
+    else split_chunks acc (g :: cur) (n + 1) rest
+
+let count_lcu_piece_uncached nq (piece : QBlueQuantumWalk.gl) =
+  List.fold_left (fun (s1, s2, s3, s4) chunk ->
+      let u = QBlueQuantumWalk.to_ucom chunk in
+      let raw = ibmdigi_to_rzq nq u and opt = ibmdigi_voqc_optimize nq u in
+      let cx_raw = voqc_count_CX nq raw and cx_opt = voqc_count_CX nq opt in
+      (s1 + voqc_count_total nq opt - cx_opt, s2 + cx_opt,
+       s3 + voqc_count_total nq raw - cx_raw, s4 + cx_raw))
+    (0, 0, 0, 0) (split_chunks [] [] 0 piece)
+
+(* The heavy pieces (SELECT, walk, block encoding) do not depend on the error
+   bound or time, so with QBLUE_LCU_CACHE set their counts are stored on disk,
+   keyed by the exact gates, qubit count, chunk size and target, and reused by
+   the other jobs of the same program. *)
+let count_lcu_piece nq (piece : QBlueQuantumWalk.gl) =
+  match Sys.getenv_opt "QBLUE_LCU_CACHE" with
+  | None | Some "" -> count_lcu_piece_uncached nq piece
+  | Some dir ->
+    let key = Digest.to_hex (Digest.string
+        (Marshal.to_string (nq, lcu_chunk, !target_a2a, piece) [Marshal.No_sharing])) in
+    let path = Filename.concat dir (key ^ ".counts") in
+    (try
+       let ic = open_in path in
+       let r = Scanf.sscanf (input_line ic) "%d %d %d %d" (fun a b c d -> (a, b, c, d)) in
+       close_in ic; r
+     with _ ->
+       let (a, b, c, d) as r = count_lcu_piece_uncached nq piece in
+       (try
+          if not (Sys.file_exists dir) then Sys.mkdir dir 0o755;
+          let tmp = Filename.temp_file ~temp_dir:dir "counts" ".tmp" in
+          let oc = open_out tmp in
+          Printf.fprintf oc "%d %d %d %d\n" a b c d;
+          close_out oc;
+          Sys.rename tmp path
+        with Sys_error _ -> ());
+       r)
+
+(* qubits a piece touches: 1 + its highest qubit index. Counting a piece on its
+   own width keeps its cached counts independent of the method's total width. *)
+let piece_width (piece : QBlueQuantumWalk.gl) =
+  let open ExtractionGateSet in
+  let rec go m = function
+    | Coq_useq (a, b) -> go (go m a) b
+    | Coq_uapp (_, _, qs) -> List.fold_left max m qs in
+  1 + List.fold_left go 0 piece
+
+let lcu_IBMDigital ?(verbose=false) name pieces (lp : lowprog) (nq : int) (err : float) (t : float) =
+  if verbose then dbg "---- %s -> IBMDigital circuits: ----" name;
   let ts = Unix.gettimeofday () in
-  let nterm = Stdlib.List.length lp in
-  let n_in  = PeanoNat.Nat.log2_up nterm in
-  let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
-  let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
-  let n_out = PeanoNat.Nat.log2_up (k + 1) in
-  let w_sq  = 16 * n_in + nterm * 4 * nq in  (* 1Q per W: 4PREP + 2R0 + 2SELECT *)
-  let w_mq  = 6 * n_in + nterm * 2 * (2 * nq - 1) in  (* CX per W: 4PREP + 2R0 + 2SELECT *)
-  let apps  = (1 lsl n_out) - 1 in  (* binary decomp: sum 2^j *)
-  let nq1   = 2 * n_out + k * n_out + apps * w_sq in
-  let nqm   = 2 * n_out + k * n_out + apps * w_mq in
-  if verbose then dbg "QWalk: nterm=%d K=%d n_in=%d n_out=%d -> 1Q=%d CX=%d" nterm k n_in n_out nq1 nqm;
-  let nqt = max 2 (n_in + nq + n_out + 2) in
-  let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
-  let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
-  let cc  = List.init nq1 u1_gate @ List.init nqm cx_gate in
-  let npau = 0 in (* TBD: placehold to remember the number of pauli strings *)
-  (cc, cc, Unix.gettimeofday () -. ts, 1, npau)
+  let (((nq_total, segments), degree), parts) = pieces err t nq lp in
+  let total = List.fold_left (fun (a, b, c, d) (mult, piece) ->
+      let (p1, p2, p3, p4) = count_lcu_piece (piece_width piece) piece in
+      (a + mult * p1, b + mult * p2, c + mult * p3, d + mult * p4)) (0, 0, 0, 0) parts in
+  let (n1, n2, n3, n4) = total in
+  if verbose then
+    dbg "%s: %d qubits, %d segment(s), degree/order %d -> 1Q=%d CX=%d (before VOQC 1Q=%d CX=%d)"
+      name nq_total segments degree n1 n2 n3 n4;
+  (n1, n2, n3, n4, Unix.gettimeofday () -. ts, nq_total, segments)
 
-(* Taylor series LCU simulation; decompose to IBM digital *)
-let tts_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- TTS LCU -> IBMDigital circuits: ----";
-  try
-    let cir_ast = translate_lowp2circ_TTS_LCU err t lp nq in
-    let cir_bf = ibmdigi_to_rzq nq cir_ast in
-    let cc, ts = time_call (fun () -> ibmdigi_voqc_optimize nq cir_ast) in
-    (cc, cir_bf, ts, 1, 0)
-  with exn -> dbg "tts_IBMDigital raise EXN: %s" (Printexc.to_string exn);
-    raise exn
+let lcu_path_name = function
+  | 8 -> "QSVT" | 9 -> "QSP (generalized QSP on the qubitization walk)"
+  | 30 -> "Taylor series LCU" | 31 -> "Quantum walk (qubitization + Jacobi-Anger LCU)"
+  | p -> failwith (Printf.sprintf "path %d is not an LCU method" p)
 
-(* QSVT via updated Haah QSP -> IBMDigital *)
-let qsvt_updateQSP_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- QSVT (Haah QSP Update) -> IBMDigital circuits: ----";
-  try
-    (* Assuming a corresponding translation function or circuit builder from QBlueCompile / QBlueQSVT_updateQSP *)
-    let cir_ast = translate_lowp2circ_qsvt_updateQSP err t lp nq in
-    let cir_bf = ibmdigi_to_rzq nq cir_ast in
-    let cc, ts = time_call (fun () -> ibmdigi_voqc_optimize nq cir_ast) in
-    (cc, cir_bf, ts, 1, 0)
-  with exn -> dbg "qsvt_updateQSP_IBMDigital raise EXN: %s" (Printexc.to_string exn);
-    raise exn
+let lcu_pieces = function
+  | 8 -> QBlueQSVT.qsvt_pieces | 9 -> QBlueQubitization.qsp_pieces
+  | 30 -> QBlueTTS_v4.taylor_pieces | 31 -> QBlueQuantumWalk.qwalk_pieces
+  | p -> failwith (Printf.sprintf "path %d is not an LCU method" p)
 
-(* Qubitization -> IBMDigital; d = 2K+1 direct W applications via QSP. *)
-let qubitization_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- Qubitization -> IBMDigital circuits: ----";
-  let ts    = Unix.gettimeofday () in
-  let nterm = Stdlib.List.length lp in
-  let n_in  = PeanoNat.Nat.log2_up nterm in
-  let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
-  let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
-  let d     = 2 * k + 1 in
-  let w_sq  = 16 * n_in + nterm * 4 * nq in
-  let w_mq  = 6 * n_in + nterm * 2 * (2 * nq - 1) in
-  (* d+1 phase gates + d W apps + PREP + PREP† *)
-  let nq1   = (d + 1) + d * w_sq + 2 * (3 * n_in) in
-  let nqm   = d * w_mq + 2 * n_in in
-  if verbose then dbg "Qubitization: nterm=%d K=%d d=%d -> 1Q=%d CX=%d" nterm k d nq1 nqm;
-  let nqt = max 2 (n_in + nq + 2) in
-  let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
-  let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
-  let npau = 0 in (* TBD: placehold to remember the number of pauli strings *)
-  let cc = List.init nq1 u1_gate @ List.init nqm cx_gate in
-  (cc, cc, Unix.gettimeofday () -. ts, 1, npau)
+let is_lcu_path p = List.mem p [8; 9; 30; 31]
 
-
-(* QSVT -> IBMDigital; d = 2K+1 direct block-encoding applications. *)
-let qsvt_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- QSVT -> IBMDigital circuits: ----";
-  let ts    = Unix.gettimeofday () in
-  let nterm = Stdlib.List.length lp in
-  let n_in  = PeanoNat.Nat.log2_up nterm in
-  let lam   = Stdlib.List.fold_left (fun a x -> a +. abs_float (fst (fst x))) 0.0 lp in
-  let k     = QBlueQuantumWalk.findK_qwalk (lam *. t) err in
-  let d     = 2 * k + 1 in
-  (* SELECT oracle cost *)
-  let sel_sq  = nterm * 2 * nq in
-  let sel_mq  = nterm * (2 * nq - 1) in
-  (* reflect_ancilla_phase cost *)
-  let ref_sq  = 2 * n_in + 3 in
-  let ref_mq  = 2 * n_in in
-  (* PREP + PREP† cost *)
-  let prep_sq = 2 * (3 * n_in) in
-  let prep_mq = 2 * n_in in
-  
-  (* Total gates: prep + d * SELECT + (d + 1) * reflect *)
-  let nq1   = prep_sq + d * sel_sq + (d + 1) * ref_sq in
-  let nqm   = prep_mq + d * sel_mq + (d + 1) * ref_mq in
-  if verbose then dbg "QSVT: nterm=%d K=%d d=%d -> 1Q=%d CX=%d" nterm k d nq1 nqm;
-  let nqt = max 2 (n_in + nq + 2) in
-  let u1_gate  i = App1 (FullGateSet.FullGateSet.U_U1 0.0, i mod nqt) in
-  let cx_gate  i = let c = i mod (nqt-1) in App2 (FullGateSet.FullGateSet.U_CX, c, (c+1) mod nqt) in
-  let cc = List.init nq1 u1_gate @ List.init nqm cx_gate in
-  let npau = 0 in (* TBD: placehold to remember the number of pauli strings *)
-  (cc, cc, Unix.gettimeofday () -. ts, 1, npau)
+let lcu_counts ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) (path : int) =
+  lcu_IBMDigital ~verbose (lcu_path_name path) (lcu_pieces path) lp nq err t
 
 (* 2nd-order trotterization; decompose to IBM digital *)
 let trotter2nd_IBMDigital ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
@@ -356,24 +344,6 @@ let trotterStd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : floa
   with exn -> dbg "trotterStd_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
-(* Taylor series LCU simulation; decompose to Indiana Analog *)
-let tts_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- TTS LCU -> IndiAnalog circuits: ----";
-  try
-    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_TTS_LCU err t lp nq) in
-    (cc, ts, 1, 0)
-  with exn -> dbg "tts_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
-    raise exn
-
-(* QSVT via updated Haah QSP -> Indiana Analog *)
-let qsvt_updateQSP_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- QSVT (Haah QSP Update) -> IndiAnalog circuits: ----";
-  try
-    let cc, ts = time_call (fun () -> translate_lowp2IndiAna_qsvt_updateQSP err t lp nq) in
-    (cc, ts, 1, 0)
-  with exn -> dbg "qsvt_updateQSP_IndiAnalog raise EXN: %s" (Printexc.to_string exn);
-    raise exn
-
 (* 2nd-order trotterization; decompose to Indiana Analog *)
 let trotter2nd_IndiAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) = 
   if verbose then dbg "---- Trotterization (2nd-order) -> IndiAnalog circuits: ----";
@@ -508,30 +478,6 @@ let trotterStd_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float
     else
       failwith "IBM analog synthesis requires 2-local input terms"
   with exn -> dbg "trotterStd_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
-    raise exn
-
-(* Taylor series LCU simulation; decompose to IBM Analog *)
-let tts_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- TTS LCU -> IBMAnalog circuits: ----";
-  try
-    if check_2local nq lp then
-      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_TTS_LCU err t lp nq) in
-      (cc, ts, 1, 0)
-    else
-      failwith "IBM analog synthesis requires 2-local input terms"
-  with exn -> dbg "tts_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
-    raise exn
-
-(* QSVT via updated Haah QSP -> IBM Analog *)
-let qsvt_updateQSP_IBMAnalog ?(verbose=false) (lp : lowprog) (nq : int) (err : float) (t : float) =
-  if verbose then dbg "---- QSVT (Haah QSP Update) -> IBMAnalog circuits: ----";
-  try
-    if check_2local nq lp then
-      let cc, ts = time_call (fun () -> translate_lowp2IBMAna_qsvt_updateQSP err t lp nq) in
-      (cc, ts, 1, 0)
-    else
-      failwith "IBM analog synthesis requires 2-local input terms"
-  with exn -> dbg "qsvt_updateQSP_IBMAnalog raise EXN: %s" (Printexc.to_string exn);
     raise exn
 
 (* 2nd-order trotterization; decompose to IBM Analog *)

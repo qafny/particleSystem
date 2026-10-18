@@ -202,3 +202,41 @@ let get_matrix_pgc list_coef cnot_matrix singleq_matrix =
           match singleq_matrix_json with
           | Some s -> with_temp_json_arg s (fun s_arg -> run (Some s_arg))
           | None -> run None))
+
+(* python3 api.py <name> <args...>; each argument is passed through a temp file *)
+let call_api (name : string) (args : string list) : string =
+  let python_bin =
+    match find_python_path "python3" with Some p -> p | None -> "/usr/bin/python3"
+  in
+  let api_path = find_api_path () in
+  let rec with_args acc = function
+    | [] ->
+        let py_args = Array.of_list (python_bin :: api_path :: name :: List.rev acc) in
+        let ic = Unix.open_process_args_in python_bin py_args in
+        let output = read_all ic in
+        (match Unix.close_process_in ic with
+         | Unix.WEXITED 0 -> String.trim output
+         | Unix.WEXITED code -> failwith (Printf.sprintf "python api %s failed with exit code %d" name code)
+         | Unix.WSIGNALED s | Unix.WSTOPPED s ->
+             failwith (Printf.sprintf "python api %s stopped by signal %d" name s))
+    | a :: rest -> with_temp_json_arg a (fun path -> with_args (path :: acc) rest)
+  in
+  with_args [] args
+
+let parse_float_list (s : string) : float list =
+  let idx = ref 0 in
+  let l = parse_json_float_list s idx in
+  skip_ws s idx;
+  if !idx <> String.length s then failwith "invalid JSON: trailing data";
+  l
+
+(* QBlueQSVT.qsvt_phases: symmetric QSP phases for Chebyshev coefficients *)
+let qsvt_phases (coeffs : float list) (parity : int) : float list =
+  parse_float_list (call_api "qsvt_phases" [ string_of_json_float_list coeffs; string_of_int parity ])
+
+(* QBlueQubitization.gqsp_complement: Q = (real parts, imaginary parts) with
+   |P|^2 + |Q|^2 = 1 on the unit circle, for P = re + i im *)
+let gqsp_complement (re : float list) (im : float list) : float list * float list =
+  let l = parse_float_list (call_api "gqsp_complement" [ string_of_json_float_list re; string_of_json_float_list im ]) in
+  let n = List.length l / 2 in
+  (List.filteri (fun i _ -> i < n) l, List.filteri (fun i _ -> i >= n) l)
