@@ -240,9 +240,7 @@ Proof.
     + destruct k as [| k']; simpl; ring.
 Qed.
 
-(* Given a one-step first-order bound and a validated step-count
-   budget, the global error is within tolerance.  The first two
-   hypotheses are proof obligations, NOT assumed global axioms. *)
+
 Theorem first_order_budget_bridge :
   forall (N : nat) (t C1 err actual_error : R),
     (0 < N)%nat ->
@@ -280,9 +278,6 @@ Proof.
   field_simplify; try lra.
 Qed.
 
-(* Instantiation using the actual step-count functions.  These
-   results make the remaining numerical and semantic obligations
-   explicit rather than hiding them behind an axiom. *)
 (* The fully explicit version is independent of symbolic positivity. *)
 Theorem trotter_first_order_accuracy_if_budget :
   forall err t d p actual_error,
@@ -489,15 +484,7 @@ assert (Hpow : mnorm n (matrix_power A k) <= 1).
     nra.
 Qed.
 
-(* NEXT REQUIRED THEOREMS, deliberately not declared here:
-   1. matrix_exp_exact and its unitary/semigroup properties;
-   2. local Lie-Trotter commutator operator-norm bound;
-   3. local Strang double-commutator operator-norm bound;
-   4. matrix_power telescope and global error accumulation;
-   5. semantics of generated norm_prog as a product of unitaries;
-   6. step-count rounding and budget inequalities;
-   7. final operator-norm error <= err.
- *)
+
 
 
 
