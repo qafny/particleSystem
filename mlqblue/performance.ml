@@ -43,22 +43,22 @@ let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_pa
 
     else if flag_path = 10 then
       let (cc, tc, r, npau) = translation_lowprog_IndiAnalog lp nqbit err t in
-      let (nq1, nqm) = summarize_analog_counts cc r npau in
+      let (nq1, nqm) = summarize_analog_counts nqbit cc r in
       (nq1, nqm, nq1, nqm, tc, npau, r)
 
 	else if flag_path > 10 && flag_path < 20 then 
 	  let (cc, tc, r, npau) = lowprog_to_IndiAnalog ~verbose:true lp nqbit err t flag_path in
-      let (nq1, nqm) = summarize_analog_counts cc r npau in
+      let (nq1, nqm) = summarize_analog_counts nqbit cc r in
 	  (nq1, nqm, nq1, nqm, tc, npau, r)
 
     else if flag_path = 20 then
       let (cc, tc, r, npau) = translation_lowprog_IBMAnalog lp nqbit err t in
-      let (nq1, nqm) = summarize_analog_counts cc r npau in
+      let (nq1, nqm) = summarize_analog_counts nqbit cc 1 in
       (nq1, nqm, nq1, nqm, tc, npau, r)
 
     else
 	  let (cc, tc, r, npau) = lowprog_to_IBMAnalog ~verbose:true lp nqbit err t flag_path in
-      let (nq1, nqm) = summarize_analog_counts cc r npau in
+      let (nq1, nqm) = summarize_analog_counts nqbit cc 1 in
       (nq1, nqm, nq1, nqm, tc, npau, r)
 
 

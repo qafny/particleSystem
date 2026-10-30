@@ -219,9 +219,9 @@ def plot_qdrift_vs_std_polar(qb: pd.DataFrame, out: Path, t_label: str=T_LABEL_P
             ax.text(center_rad, label_r, label, ha=ha, va=va, fontsize=7.5, color=color, fontweight='bold')
         ax.set_title(ERR_LABELS.get(err, str(err)), fontsize=11, pad=10)
     from matplotlib.lines import Line2D
-    legend_handles = [Line2D([0], [0], color='#888888', linewidth=1.5, linestyle='--', label='Trotter (before optimization)'), Line2D([0], [0], color='#888888', linewidth=1.8, linestyle='-', label='QDrift (before optimization)')] + [plt.Rectangle((0, 0), 1, 1, color=DATASET_COLORS[ds], alpha=0.6, label=DATASET_LABELS[ds]) for ds in datasets]
+    legend_handles = [Line2D([0], [0], color='#888888', linewidth=1.5, linestyle='--', label='Standard group (best of 1st, 2nd order)'), Line2D([0], [0], color='#888888', linewidth=1.8, linestyle='-', label='QDrift group (best of QDrift, MarQSim)')] + [plt.Rectangle((0, 0), 1, 1, color=DATASET_COLORS[ds], alpha=0.6, label=DATASET_LABELS[ds]) for ds in datasets]
     fig.legend(handles=legend_handles, loc='lower center', bbox_to_anchor=(0.5, 0.0), ncol=len(legend_handles), frameon=False, fontsize=8.5)
-    fig.suptitle(f'QDrift vs. Standard Trotterization: gate reduction  ({t_label})', fontsize=12)
+    fig.suptitle(f'QDrift group vs. standard Trotterization: gate reduction after optimization  ({t_label})', fontsize=12)
     fig.tight_layout(rect=(0, 0.0, 1, 0.95))
     fig.savefig(out, dpi=150, bbox_inches='tight', pad_inches=0.15)
     plt.close(fig)
