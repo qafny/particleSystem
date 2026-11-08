@@ -79,20 +79,32 @@ Definition qsvt_segment (nbit : nat) (lp : lowprog) (tau eta delta : R) (L : qsv
      (seq 0 (dc + 2))
   ++ [H r; H s].
 
+(* segments of lambda t_seg <= qsvt_tau_max keep the polynomial degree (and
+   the phase computation) bounded for long times; each segment is one OAA'd
+   QSVT block *)
+Definition qsvt_tau_max : R := 50.
+
+Definition qsvt_segments (lp : lowprog) (t : R) : nat :=
+  Nat.max 1 (ceilR_N (lcu_lambda lp * t / qsvt_tau_max)).
+
+(* e^{-iHt} up to a global phase: r segments, error err / r each *)
 Definition qsvt_circuit (err t : R) (nbit : nat) (lp0 : lowprog) : gl :=
   let lp := lcu_terms lp0 in
-  let tau := lcu_lambda lp * t in
+  let r := qsvt_segments lp t in
+  let tau := lcu_lambda lp * t / INR r in
+  let e := err / (8 * INR r) in
   let L := qsvt_alloc nbit (idx_width lp) in
-  let A := qsvt_segment nbit lp tau (err / 8) (err / 8) L in
-  oaa A (vl_idx L ++ [vl_f L; vl_r L; vl_s L]) (vl_work L).
+  let A := qsvt_segment nbit lp tau e e L in
+  repeat_gl r (oaa A (vl_idx L ++ [vl_f L; vl_r L; vl_s L]) (vl_work L)).
 
 (* ---------------------------------------------------------------------- *)
 (* Resource accounting (see QBlueQuantumWalk.v)                            *)
 
 Definition qsvt_pieces (err t : R) (nbit : nat) (lp0 : lowprog) : lcu_report :=
   let lp := lcu_terms lp0 in
-  let tau := lcu_lambda lp * t in
-  let K := findK_qwalk tau (err / 8) in
+  let r := qsvt_segments lp t in
+  let tau := lcu_lambda lp * t / INR r in
+  let K := findK_qwalk tau (err / (8 * INR r)) in
   let dc := if Nat.even K then K else S K in
   let a := idx_width lp in
   let L := qsvt_alloc nbit a in
@@ -101,6 +113,6 @@ Definition qsvt_pieces (err t : R) (nbit : nat) (lp0 : lowprog) : lcu_report :=
   let ph := proj_phase L 1 1 in
   let ends := [H (vl_r L); H (vl_s L); U1 (- (PI / 2)) (vl_s L); H (vl_r L); H (vl_s L)] in
   let R := refl0 (vl_idx L ++ [vl_f L; vl_r L; vl_s L]) (vl_work L) [] in
-  (* OAA uses the segment three times *)
-  (qsvt_nqubits nbit a, 1%nat, S dc,
-   [(3 * dc, U); (3, cU); (3 * (dc + 2), ph); (3, ends); (2, R)]%nat).
+  (* OAA uses each of the r segments three times *)
+  (qsvt_nqubits nbit a, r, S dc,
+   [(3 * r * dc, U); (3 * r, cU); (3 * r * (dc + 2), ph); (3 * r, ends); (2 * r, R)]%nat).

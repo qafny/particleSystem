@@ -8,7 +8,7 @@ RESUME ?=
 QBLUE_FLAGS ?= -arch a2a -sort
 export QBLUE_FLAGS
 
-.PHONY: all build extract qblue phoenix openfermion thirdparty bounds tables plot clean
+.PHONY: all build extract qblue lcu phoenix openfermion thirdparty bounds tables plot clean
 
 # Keep plotting after all experiments, including when make uses -j.
 all: qblue
@@ -23,11 +23,16 @@ extract:
 	cp extract_coq/ml/*.ml mlqblue/qbluelib/
 
 build:
-	cd mlqblue && dune build performance.exe
+	cd mlqblue && dune build performance.exe lcucheck/lcucheck.exe
 
 qblue: build
 	mkdir -p results
 	cd mlqblue && "$(PYTHON)" gen_result_threaded.py --input job.csv --output ../results/qblue_results.csv --workers $(WORKERS) --allow-job-errors $(if $(RESUME),--resume)
+
+# LCU vs Trotter-based at tighter errors and longer times (mlqblue/job_lcu.csv)
+lcu: build
+	mkdir -p results
+	cd mlqblue && "$(PYTHON)" gen_result_threaded.py --input job_lcu.csv --output ../results/lcu_results.csv --workers $(WORKERS) --allow-job-errors $(if $(RESUME),--resume)
 
 # Standalone baseline targets reuse existing QBlue results, or create them.
 results/qblue_results.csv:
@@ -52,6 +57,6 @@ plot: tables
 
 clean:
 	rm -rf mlqblue/_build mlqblue/__pycache__ scripts/__pycache__ results/plots
-	rm -f results/qblue_results.csv results/phoenix_results.csv results/openfermion_results.csv
+	rm -f results/qblue_results.csv results/lcu_results.csv results/phoenix_results.csv results/openfermion_results.csv
 	rm -f results/bounds_results.csv results/tables.md results/tables.tex results/savings.csv
 	rm -f results/.qblue_results.* results/.qblue_results.csv.*.tmp results/.phoenix_results.csv.*.tmp results/.openfermion_results.csv.*.tmp
