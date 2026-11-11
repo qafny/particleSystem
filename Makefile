@@ -8,7 +8,10 @@ RESUME ?=
 QBLUE_FLAGS ?= -arch a2a -sort
 export QBLUE_FLAGS
 
-.PHONY: all build extract qblue lcu phoenix openfermion thirdparty bounds tables plot clean
+# PennyLane baseline for the LCU run; its own environment, kept out of .venv
+PL_PYTHON ?= $(HOME)/pl-venv/bin/python
+
+.PHONY: all build extract qblue lcu pennylane phoenix openfermion thirdparty bounds tables plot clean
 
 # Keep plotting after all experiments, including when make uses -j.
 all: qblue
@@ -33,6 +36,11 @@ qblue: build
 lcu: build
 	mkdir -p results
 	cd mlqblue && "$(PYTHON)" gen_result_threaded.py --input job_lcu.csv --output ../results/lcu_results.csv --workers $(WORKERS) --allow-job-errors $(if $(RESUME),--resume)
+
+# PennyLane GQSP + qubitization on the same programs, errors and times as `lcu`
+pennylane:
+	mkdir -p results
+	"$(PL_PYTHON)" -W ignore scripts/pennylane_lcu.py --input mlqblue/job_lcu.csv --output results/pennylane_lcu.csv --workers $(WORKERS)
 
 # Standalone baseline targets reuse existing QBlue results, or create them.
 results/qblue_results.csv:

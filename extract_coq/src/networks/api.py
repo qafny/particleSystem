@@ -69,13 +69,8 @@ def main() -> None:
         print(json.dumps(mat))
         return
 
-    # phase angles for the QSP-based LCU methods; they depend only on the
-    # polynomial, so they share the cache (keyed with the function name)
-    if name == "qsvt_phases":
-        import qsp_phases
-        print(json.dumps(_cached(sys.argv[1:], lambda: qsp_phases.qsvt_phases(
-            _read_json_arg(sys.argv[2]), int(_read_json_arg(sys.argv[3]))))))
-        return
+    # the GQSP complementary polynomial; it depends only on the polynomial,
+    # so it shares the cache (keyed with the function name)
     if name == "gqsp_complement":
         import qsp_phases
         print(json.dumps(_cached(sys.argv[1:], lambda: qsp_phases.gqsp_complement(

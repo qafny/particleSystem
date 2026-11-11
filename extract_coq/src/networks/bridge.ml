@@ -230,10 +230,6 @@ let parse_float_list (s : string) : float list =
   if !idx <> String.length s then failwith "invalid JSON: trailing data";
   l
 
-(* QBlueQSVT.qsvt_phases: symmetric QSP phases for Chebyshev coefficients *)
-let qsvt_phases (coeffs : float list) (parity : int) : float list =
-  parse_float_list (call_api "qsvt_phases" [ string_of_json_float_list coeffs; string_of_int parity ])
-
 (* QBlueQubitization.gqsp_complement: Q = (real parts, imaginary parts) with
    |P|^2 + |Q|^2 = 1 on the unit circle, for P = re + i im *)
 let gqsp_complement (re : float list) (im : float list) : float list * float list =

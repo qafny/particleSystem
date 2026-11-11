@@ -4,7 +4,8 @@ qsvt_phases(cheb, parity)
     Symmetric QSP phases (Wx convention) with Re <0|U_Phi(x)|0> = f(x), where f
     has the given Chebyshev coefficients and parity; Newton iteration on the
     reduced phases (Dong, Lin, Ni, Wang, "Efficient phase-factor evaluation in
-    quantum signal processing", 2021).
+    quantum signal processing", 2021). Reference implementation, not used by
+    the compiler: QBlueQSVT.qsvt_phases defines the same algorithm in Coq.
 
 gqsp_complement(re, im)
     The complementary polynomial for generalized QSP; the angles themselves are

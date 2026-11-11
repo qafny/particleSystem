@@ -118,8 +118,8 @@ Extract Constant QBlue.QBlueQuantumWalk.findK_qwalk =>
     done;
     !best)".
 
-(* QSVT / QSP phase solvers run in Python (extract_coq/src/networks/qsp_phases.py) *)
-Extract Constant QBlue.QBlueQSVT.qsvt_phases => "Bridge.qsvt_phases".
+(* the GQSP complementary polynomial is computed in Python
+   (extract_coq/src/networks/qsp_phases.py); qsvt_phases is defined in Coq *)
 Extract Constant QBlue.QBlueQubitization.gqsp_complement => "Bridge.gqsp_complement".
 (* native bit operations; the generic Coq definitions recurse once per unit of
    the argument under ExtrOcamlNatInt *)
