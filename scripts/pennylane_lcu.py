@@ -11,6 +11,10 @@ QSP path (9). Three counts per (program, error, time):
                  poly_approx: smallest N >= lambda t with |J_{N+1}(lambda t)| <=
                  eps/2) and runs one segment; the identity term is dropped (a
                  global phase), so lambda is the one-norm without it.
+  pl_est_exact   The same model at the smallest degree N whose truncation error
+                 max_theta |e^{-i lambda t cos theta} - sum_{|k|<=N} ...| really is
+                 <= eps (computed by FFT). poly_approx's single-term rule misses
+                 eps in most settings, by up to ~7x; this needs <= ~7% more degree.
   pl_est_qbpoly  The same resource model at QBlue's segments and degree: r
                  segments of GQSP(W, d+ = K, d- = K), with QBlue's terms
                  (identity included), lambda, r and K.
@@ -95,6 +99,29 @@ def qblue_qsp_params(terms, t, eps):
 
 # ---- resource estimator -------------------------------------------------------
 
+def truncation_error(tau, N):
+    """max over theta of |e^{-i tau cos theta} - sum_{|k|<=N} (-i)^|k| J_|k|(tau) e^{ik theta}|,
+    from an FFT of the tail (Jacobi-Anger)"""
+    M = N + 80 + N // 5
+    k = np.arange(N + 1, M + 1)
+    c = (-1j) ** (k % 4) * jv(k, tau)
+    G = 1 << int(np.ceil(np.log2(16 * M)))
+    a = np.zeros(G, complex)
+    a[k] = c
+    a[-k] = c
+    return float(np.abs(np.fft.ifft(a) * G).max())
+
+
+def exact_degree(tau, eps, start):
+    """smallest N >= start with truncation_error(tau, N) <= eps (error falls monotonically past tau)"""
+    N = start
+    while truncation_error(tau, N) > eps:
+        N += max(1, N // 200)
+    while N > start and truncation_error(tau, N - 1) <= eps:
+        N -= 1
+    return N
+
+
 def est_walk(terms, n, drop_identity):
     import pennylane.estimator as qre
     if drop_identity:
@@ -126,6 +153,13 @@ def run_estimator(terms, n, settings):
                            gate_set=EST_GATES)
         rows.append(dict(error=eps, time=t, method="pl_est", one_norm=lam, segments=1, poly_degree=2 * deg,
                          **dict(zip(["qubits", "single_qubit_gates", "multi_qubit_gates", "t_gates"], est_counts(res))),
+                         seconds=time.time() - t0))
+        t0 = time.time()
+        N = exact_degree(lam * t, eps, deg)
+        res = qre.estimate(qre.GQSP(walk, d_plus=N, d_minus=N), gate_set=EST_GATES)
+        rows.append(dict(error=eps, time=t, method="pl_est_exact", one_norm=lam, segments=1, poly_degree=2 * N,
+                         **dict(zip(["qubits", "single_qubit_gates", "multi_qubit_gates", "t_gates"], est_counts(res))),
+                         message=f"poly_approx degree error {truncation_error(lam * t, deg):.3g}",
                          seconds=time.time() - t0))
         t0 = time.time()
         _, r, _, _, K = qblue_qsp_params(terms, t, eps)

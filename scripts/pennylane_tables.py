@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from tables import SIZES, LCU, size_class, total, reduction, pct  # noqa: E402
 
 PL = {"pl_est": "PennyLane estimator (its own degree)",
+      "pl_est_exact": "PennyLane estimator at the degree that really meets the error",
       "pl_est_qbpoly": "PennyLane estimator at QBlue's degree",
       "pl_circuit": "PennyLane circuit at QBlue's degree"}
 SIDES = {"QSP": [9], "QSVT": [8], "best LCU": list(LCU)}
