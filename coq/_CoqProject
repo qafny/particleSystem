@@ -20,6 +20,7 @@ QBlueSynthDigitalProof.v
 QBlueTTS_v4.v
 QBlueMarQSim.v
 QBlueQuantumWalk.v
+QBlueQSPCore.v
 QBlueQubitization.v
 QBlueQSVT.v
 QBlueQSVT_updateQSP.v
