@@ -18,14 +18,18 @@ let find_python_path exe_name =
     with Unix.Unix_error _ -> false
   in
   let path_env = try Sys.getenv "PATH" with Not_found -> "" in
-  let dirs = String.split_on_char ':' path_env in
+  let dirs = String.split_on_char (if Sys.win32 then ';' else ':') path_env in
+  let names = if Sys.win32 then [ exe_name ^ ".exe"; "python.exe" ] else [ exe_name ] in
   let rec loop = function
     | [] -> None
-    | dir :: rest ->
-        let candidate = Filename.concat dir exe_name in
-        if is_executable candidate then Some candidate else loop rest
+    | dir :: rest -> (
+        match List.find_opt is_executable (List.map (Filename.concat dir) names) with
+        | Some candidate -> Some candidate
+        | None -> loop rest)
   in
-  loop dirs
+  match Sys.getenv_opt "QBLUE_PYTHON" with
+  | Some p -> Some p
+  | None -> loop dirs
 
 let file_exists path =
   try Unix.(stat path).st_kind = S_REG with Unix.Unix_error _ -> false
@@ -202,3 +206,37 @@ let get_matrix_pgc list_coef cnot_matrix singleq_matrix =
           match singleq_matrix_json with
           | Some s -> with_temp_json_arg s (fun s_arg -> run (Some s_arg))
           | None -> run None))
+
+(* python3 api.py <name> <args...>; each argument is passed through a temp file *)
+let call_api (name : string) (args : string list) : string =
+  let python_bin =
+    match find_python_path "python3" with Some p -> p | None -> "/usr/bin/python3"
+  in
+  let api_path = find_api_path () in
+  let rec with_args acc = function
+    | [] ->
+        let py_args = Array.of_list (python_bin :: api_path :: name :: List.rev acc) in
+        let ic = Unix.open_process_args_in python_bin py_args in
+        let output = read_all ic in
+        (match Unix.close_process_in ic with
+         | Unix.WEXITED 0 -> String.trim output
+         | Unix.WEXITED code -> failwith (Printf.sprintf "python api %s failed with exit code %d" name code)
+         | Unix.WSIGNALED s | Unix.WSTOPPED s ->
+             failwith (Printf.sprintf "python api %s stopped by signal %d" name s))
+    | a :: rest -> with_temp_json_arg a (fun path -> with_args (path :: acc) rest)
+  in
+  with_args [] args
+
+let parse_float_list (s : string) : float list =
+  let idx = ref 0 in
+  let l = parse_json_float_list s idx in
+  skip_ws s idx;
+  if !idx <> String.length s then failwith "invalid JSON: trailing data";
+  l
+
+(* QBlueQubitization.gqsp_complement: Q = (real parts, imaginary parts) with
+   |P|^2 + |Q|^2 = 1 on the unit circle, for P = re + i im *)
+let gqsp_complement (re : float list) (im : float list) : float list * float list =
+  let l = parse_float_list (call_api "gqsp_complement" [ string_of_json_float_list re; string_of_json_float_list im ]) in
+  let n = List.length l / 2 in
+  (List.filteri (fun i _ -> i < n) l, List.filteri (fun i _ -> i >= n) l)

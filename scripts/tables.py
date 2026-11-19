@@ -23,6 +23,7 @@ from pathlib import Path
 from benchmark import ROOT
 
 DIGITAL = {1: "Trotter-1", 2: "Trotter-2", 3: "QDrift", 6: "MarQSim (CNOT)", 7: "MarQSim (CNOT+1q)"}
+LCU = {8: "QSVT", 9: "QSP", 30: "Taylor series", 31: "Quantum walk"}
 SIZES = ("small", "middle", "large")
 SIZE_LABELS = {"small": "Small", "middle": "Medium", "large": "Large"}
 
@@ -93,7 +94,7 @@ def table(title, note, settings, measure):
 
 def latex(title, settings, measure):
     """booktabs table: mean and median saving per size class and overall."""
-    t_label = {0.7854: r"$\pi/4$", 0.1963: r"$\pi/16$"}
+    t_label = {0.7854: r"$\pi/4$", 0.1963: r"$\pi/16$", 3.1416: r"$\pi$", 12.5664: r"$4\pi$"}
     head = " & ".join(rf"\multicolumn{{2}}{{c}}{{{SIZE_LABELS.get(s, s)}}}" for s in (*SIZES, "All"))
     lines = [r"% " + title, r"\begin{tabular}{ll" + "rr" * 4 + "}", r"\toprule",
              rf"$\epsilon$ & $t$ & {head} \\",
@@ -123,7 +124,7 @@ def gate_table(title, settings, pairs):
     pairs(eps, t) -> list of (file, (q1, q2), (p1, p2))."""
     md = [f"### {title}\n", "| set | ε | t | QBlue 1q | QBlue 2q | PHOENIX 1q | PHOENIX 2q | 1q saving | 2q saving | n |",
           "|---|---|---|---|---|---|---|---|---|---|"]
-    t_label = {0.7854: r"$\pi/4$", 0.1963: r"$\pi/16$"}
+    t_label = {0.7854: r"$\pi/4$", 0.1963: r"$\pi/16$", 3.1416: r"$\pi$", 12.5664: r"$4\pi$"}
     tex = [r"% " + title, r"\begin{tabular}{lll" + "r" * 6 + "}", r"\toprule",
            r" & & & \multicolumn{2}{c}{QBlue} & \multicolumn{2}{c}{PHOENIX} & \multicolumn{2}{c}{Saving} \\",
            r"\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}",
@@ -143,6 +144,63 @@ def gate_table(title, settings, pairs):
         tex.append(r"\midrule" if s != SIZES[-1] else r"\bottomrule")
     md += ["", "Averages over the programs of each set; savings compare the averages.", ""]
     return md, tex + [r"\end{tabular}", ""]
+
+
+def lcu_section(q):
+    """LCU vs Trotter-based tables for results/lcu_results.csv (make lcu)."""
+    settings = sorted({(k[2], k[3]) for k in q}, key=lambda s: (s[1], -s[0]))
+    files = sorted({k[0] for k in q})
+
+    def best(f, eps, t, paths):
+        options = {p: total(q[(f, p, eps, t)]) for p in paths if (f, p, eps, t) in q}
+        if not options:
+            return None, None
+        p = min(options, key=options.get)
+        return p, options[p]
+
+    def vs(methods):
+        def measure(eps, t):
+            out = []
+            for f in files:
+                pt, trot = best(f, eps, t, DIGITAL)
+                pl, lcu = best(f, eps, t, methods)
+                if pt is not None and pl is not None:
+                    out.append((f, trot, lcu))
+            return out
+        return measure
+
+    def lcu_vs_t1(eps, t):
+        return [(f, ours, total(q[(f, 1, eps, t)])) for f in files
+                for p, ours in [best(f, eps, t, LCU)] if p is not None and (f, 1, eps, t) in q]
+
+    experiments = [("X0", "Longer times / tighter errors: best Trotter-family algorithm vs best LCU method",
+                    "From results/lcu_results.csv. Positive: the Trotter family uses fewer gates; negative: LCU does.",
+                    vs(LCU))]
+    experiments += [(f"X{i}", f"Longer times / tighter errors: best Trotter-family algorithm vs {name}", "",
+                     vs({p: name})) for i, (p, name) in enumerate(LCU.items(), 1)]
+    experiments += [("X5", "Longer times / tighter errors: best LCU method vs QBlue first-order Trotter",
+                     "Positive: LCU uses fewer gates.", lcu_vs_t1)]
+    md, tex, rows = ["## LCU vs Trotter-based: longer times and tighter errors\n"], [], []
+    for name, title, note, measure in experiments:
+        md += table(f"{name}. {title}", note, settings, measure)
+        tex += latex(f"{name}. {title}", settings, measure)
+        for eps, t in settings:
+            for f, ours, theirs in measure(eps, t):
+                rows.append({"experiment": name, "file_name": f, "size": size_class(f), "error": eps, "time": t,
+                             "ours": ours, "theirs": theirs, "saving": reduction(ours, theirs) if theirs and ours else ""})
+    every = {**DIGITAL, **LCU}
+    md += ["### X6. Which algorithm is cheapest (longer times / tighter errors)\n",
+           "| ε | t | " + " | ".join(every.values()) + " | n |", "|---|---|" + "---|" * (len(every) + 1)]
+    for eps, t in settings:
+        counts, n = defaultdict(int), 0
+        for f in files:
+            p, _ = best(f, eps, t, every)
+            if p is not None and all((f, l, eps, t) in q for l in LCU):
+                counts[p] += 1
+                n += 1
+        md.append(f"| {eps:g} | {t:g} | " + " | ".join(str(counts[p]) for p in every) + f" | {n} |")
+    md.append("")
+    return md, tex, rows
 
 
 def main():
@@ -229,6 +287,18 @@ def main():
                     for f in files if (f, ours + offset, eps, t) in q and (f, base, eps, t) in q]
         return measure
 
+    def lcu_vs_trotter(methods):
+        """(file, best Trotter-family total, best total among the given LCU paths)"""
+        def measure(eps, t):
+            out = []
+            for f in files:
+                pt, trot = best(f, eps, t)
+                pl, lcu = best(f, eps, t, methods)
+                if pt is not None and pl is not None:
+                    out.append((f, trot, lcu))
+            return out
+        return measure
+
     experiments = [
         ("E0", "Best QBlue algorithm vs OpenFermion (second order, OpenFermion's step count)",
          "QBlue picks the cheapest of Trotter-1, Trotter-2, QDrift, MarQSim at its own error bounds. "
@@ -260,6 +330,14 @@ def main():
         ("S6f", "Indiana analog vs IBM digital, QDrift (multi-qubit terms)", "", pair(3, 3, 10, cx)),
         ("S6g", "IBM analog vs IBM digital, Trotter-1 (multi-qubit terms; 2-local Hamiltonians)", "",
          pair(1, 1, 20, cx)),
+        ("L0", "Trotter-based vs LCU: best Trotter-family algorithm vs best LCU method",
+         "Positive: the Trotter family (Trotter-1/2, QDrift, MarQSim) uses fewer gates; negative: LCU does. "
+         "LCU = QSVT, QSP, Taylor series, quantum walk, each at its own error budget.", lcu_vs_trotter(LCU)),
+    ] + [(f"L{i}", f"Best Trotter-family algorithm vs {name}", "", lcu_vs_trotter({p: name}))
+         for i, (p, name) in enumerate(LCU.items(), 1)] + [
+        ("L5", "Best LCU method vs QBlue first-order Trotter", "Positive: LCU uses fewer gates.",
+         lambda e, t: [(f, ours, total(q[(f, 1, e, t)])) for f in files
+                       for p, ours in [best(f, e, t, LCU)] if p is not None and (f, 1, e, t) in q]),
     ]
 
     md = ["# Results\n",
@@ -317,7 +395,7 @@ def main():
     md += ["### T5. IBM digital vs IBM analog (first-order Trotter, 2-local programs): digital saving\n",
            "Positive: digital uses fewer. 2-qubit analog pulses count 0.8 (20% faster than a CX).\n",
            f"| digital | gates | {head} |", "|---|---|" + "---|" * len(settings)]
-    t_label = {0.7854: r"$\pi/4$", 0.1963: r"$\pi/16$"}
+    t_label = {0.7854: r"$\pi/4$", 0.1963: r"$\pi/16$", 3.1416: r"$\pi$", 12.5664: r"$4\pi$"}
     tex += [r"% T5. IBM digital vs IBM analog (first-order Trotter, 2-local programs)",
             r"\begin{tabular}{ll" + "r" * len(settings) + "}", r"\toprule",
             r"Digital & Terms & " + " & ".join(f"{e:g}, {t_label.get(t, f'{t:g}')}" for e, t in settings) + r" \\",
@@ -373,6 +451,24 @@ def main():
                 counts[p] += 1
         md.append(f"| {eps:g} | {t:g} | " + " | ".join(str(counts[p]) for p in DIGITAL) + " |")
     md.append("")
+    every = {**DIGITAL, **LCU}
+    md += ["### Which algorithm is cheapest, including LCU (programs with every path compiled)\n",
+           "| ε | t | " + " | ".join(every.values()) + " | n |", "|---|---|" + "---|" * (len(every) + 1)]
+    for eps, t in settings:
+        counts, n = defaultdict(int), 0
+        for f in files:
+            if all((f, p, eps, t) in q for p in LCU):
+                p, _ = best(f, eps, t, every)
+                counts[p] += 1
+                n += 1
+        md.append(f"| {eps:g} | {t:g} | " + " | ".join(str(counts[p]) for p in every) + f" | {n} |")
+    md.append("")
+    lcu_path = args.csv_dir / "lcu_results.csv"
+    if lcu_path.exists():
+        l_md, l_tex, l_rows = lcu_section(load(lcu_path))
+        md += l_md
+        tex += l_tex
+        rows += l_rows
     (args.csv_dir / "tables.md").write_text("\n".join(md), encoding="utf-8")
     (args.csv_dir / "tables.tex").write_text("\n".join(tex), encoding="utf-8")
     with (args.csv_dir / "savings.csv").open("w", newline="") as target:

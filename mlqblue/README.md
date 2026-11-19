@@ -34,27 +34,29 @@ Run: `./_build/default/performance.exe <file> [-e <float>] [-t <float>] [-p <int
   5. MarQSim (CNOT+SingleQ for P_gc) -> IBMDigital circuits
   6. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBMDigital circuits
   7. MarQSim (CNOT+SingleQ for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBMDigital circuits
-  8. QSVT (Updated Haah QSP) -> IBMDigital circuits
-  9. Qubitization -> IBMDigital circuits
-  0. Optimal among 1-9
+  8. QSVT (projector phases on the block encoding) -> IBMDigital circuits
+  9. QSP (generalized QSP on the qubitization walk) -> IBMDigital circuits
+  30. Taylor-series LCU -> IBMDigital circuits
+  31. Quantum walk (qubitization walk + Jacobi-Anger LCU) -> IBMDigital circuits
+  0. Optimal among the Trotter-family paths 1-7
   11. Trotterization (1st-order) -> Indiana Analog circuits
   12. Trotterization (2nd-order) -> Indiana Analog circuits
   13. qdrift -> Indiana Analog circuits
   14. MarQSim (CNOT for P_gc) -> Indiana Analog circuits
   15. MarQSim (CNOT+SingleQ for P_gc) -> Indiana Analog circuits
   16. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> Indiana Analog circuits
-  17. Taylor-series LCU -> Indiana Analog circuits
-  18. QSVT (Updated Haah QSP) -> Indiana Analog circuits
-  10. Optimal among 10-17
+  10. Optimal among 11-16
   21. Trotterization (1st-order) -> IBM Analog circuits
   22. Trotterization (2nd-order) -> IBM Analog circuits
   23. qdrift -> IBM Analog circuits
   24. MarQSim (CNOT for P_gc) -> IBM Analog circuits
   25. MarQSim (CNOT+SingleQ for P_gc) -> IBM Analog circuits
   26. MarQSim (CNOT for P_gc; 0.6 P_gc + 0.4 P_qdrift) -> IBM Analog circuits
-  27. Taylor-series LCU -> IBM Analog circuits
-  28. QSVT (Updated Haah QSP) -> IBM Analog circuits
-  20. Optimal among 20-27
+  20. Optimal among 21-26
+
+  The LCU methods (8, 9, 30, 31) are defined in `coq/QBlueTTS_v4.v`, `QBlueQuantumWalk.v`, `QBlueQubitization.v` and `QBlueQSVT.v` and compile to digital circuits only;
+  their QSP/QSVT phase angles come from `extract_coq/src/networks/qsp_phases.py`. For these paths the
+  `trotter_step` column is the number of time segments and `compilation_terms` is the total qubit count (with ancillas).
 
 
 

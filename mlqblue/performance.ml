@@ -35,7 +35,14 @@ let analyze_one_circuit (str_input : string) (err : float) (t :  float) (flag_pa
       let (nq1_bf, nqm_bf) = summarize_counts cir_bf nqbit r in
       (nq1, nqm, nq1_bf, nqm_bf, tc, npau, r)
 
-	else if flag_path > 0 && flag_path < 10  
+	else if Translation.is_lcu_path flag_path then
+      (* counts are already for the whole circuit; r = number of segments,
+         the compilation_terms column holds the total qubit count (ancillas included) *)
+      let (nq1, nqm, nq1_bf, nqm_bf, tc, nq_total, segments) =
+        Translation.lcu_counts ~verbose:true lp nqbit err t flag_path in
+      (nq1, nqm, nq1_bf, nqm_bf, tc, nq_total, segments)
+
+	else if flag_path > 0 && flag_path < 10
       then let (cc, cir_bf, tc, r, npau) = lowprog_to_circ ~verbose:true lp nqbit err t flag_path in
       let (nq1, nqm) = summarize_counts cc nqbit r in
       let (nq1_bf, nqm_bf) = summarize_counts cir_bf nqbit r in

@@ -1,5 +1,9 @@
 import subprocess
 import json
+try:
+    import resource
+except ImportError:  # not available on Windows
+    resource = None
 import csv
 import argparse
 import os
@@ -26,7 +30,15 @@ CSV_FIELDS = [
 ]
 
 REPO_ROOT = Path(__file__).resolve().parent
-PERFORMANCE_EXE = REPO_ROOT / "_build" / "default" / "performance.exe"
+PERFORMANCE_EXE = Path(os.environ.get("QBLUE_PERFORMANCE_EXE",
+                                      REPO_ROOT / "_build" / "default" / "performance.exe"))
+
+
+def _unlimited_stack():
+    """OCaml 4 native code keeps list operations on the system stack; the LCU
+    paths build gate lists of millions of entries, so lift the 8 MB default."""
+    if resource is not None:
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
 
 def get_performance_executable():
@@ -44,6 +56,8 @@ def call_ocaml(file_name, error, time_value, path_flag):
     env.setdefault("QBLUE_API_PY", str(REPO_ROOT.parent / "extract_coq/src/networks/api.py"))
     # MarQSim transition matrices depend only on the Hamiltonian; reuse them across jobs
     env.setdefault("QBLUE_MARQSIM_CACHE", str(REPO_ROOT.parent / "results/.marqsim_cache"))
+    # LCU piece gate counts do not depend on the error bound or time; reuse them across jobs
+    env.setdefault("QBLUE_LCU_CACHE", str(REPO_ROOT.parent / "results/.lcu_cache"))
     # The OCaml bridge launches python3; use the runner's environment and dependencies.
     env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
     proc = subprocess.run(
@@ -62,7 +76,8 @@ def call_ocaml(file_name, error, time_value, path_flag):
         text=True,
         capture_output=True,
         env=env,
-        check=False
+        check=False,
+        preexec_fn=_unlimited_stack if resource is not None else None,
     )
 
     if proc.returncode != 0:

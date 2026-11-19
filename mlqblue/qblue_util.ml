@@ -3,7 +3,8 @@
 let target_a2a = ref false
 
 let with_timeout (exp_info : int -> exn) (seconds : int) (f : unit -> 'a) : 'a =
-  if seconds <= 0 then f ()
+  (* no SIGALRM on Windows; the job runner enforces its own timeout there *)
+  if seconds <= 0 || Sys.win32 then f ()
   else
     let old_handler =
       Sys.signal Sys.sigalrm (Sys.Signal_handle (fun _ -> raise (exp_info seconds)))

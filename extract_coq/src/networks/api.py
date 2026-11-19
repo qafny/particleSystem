@@ -69,6 +69,14 @@ def main() -> None:
         print(json.dumps(mat))
         return
 
+    # the GQSP complementary polynomial; it depends only on the polynomial,
+    # so it shares the cache (keyed with the function name)
+    if name == "gqsp_complement":
+        import qsp_phases
+        print(json.dumps(_cached(sys.argv[1:], lambda: qsp_phases.gqsp_complement(
+            _read_json_arg(sys.argv[2]), _read_json_arg(sys.argv[3])))))
+        return
+
     raise ValueError(f"unknown function: {name}")
 
 

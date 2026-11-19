@@ -16,11 +16,7 @@ Require Import QBlue.QBlueTrotter.
 Require Import QBlue.QBlueQdrift.
 Require Import QBlue.QBlueSynthDigital.
 Require Import QBlue.QBlueSynth.
-Require Import QBlue.QBlueTTS_v4.
 Require Import QBlue.QBlueMarQSim.
-Require Import QBlue.QBlueQuantumWalk.
-Require Import QBlue.QBlueQSVT.
-Require Import QBlue.QBlueQSVT_updateQSP.
 
 
 Module EG := ExtractionGateSet.
@@ -181,62 +177,6 @@ Definition translate_lowp2circ_marqsim (err t : R) (lp : lowprog) (nbit : nat)
     (translate_marqsim_ibmdigi prob_init f_mat) f_opt nch (capped_samples N) ns []
   end.
 
-Definition translate_lowp2circ_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U := 
-  TTS_LCU1 err t nbit lp.
-
-
-Definition translate_lowp2circ_qwalk (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
-  let nterm        := length lp in
-  let n_inner_anc  := Nat.log2_up nterm in
-  (* Compute |alpha_j| and lambda = sum |alpha_j| *)
-  let coeffs       := map (fun term => Rabs (fst (fst term))) lp in
-  let lam          := fold_left Rplus coeffs R0 in
-  let tau          := (lam * t)%R in
-  (* Gap 3 fix: Bessel-tail truncation *)
-  let K            := QBlueQuantumWalk.findK_qwalk tau err in
-  let n_outer_anc  := Nat.log2_up (S K) in
-  let aux          := n_inner_anc + nbit in
-  let outer_base   := aux + 1 in
-  (* Gap 2 fix: coefficient-weighted inner PREP *)
-  let inner_PREP   := QBlueQuantumWalk.build_inner_prep coeffs lam n_inner_anc in
-  (* SELECT oracle *)
-  let circ_list    := map (build_cntlV lp n_inner_anc nbit) (seq 0 nterm) in
-  let SELECT       := fold_left EG.useq circ_list EG.SKIP in
-  (* Gap 1 fix: Bessel-weighted outer PREPARE *)
-  let outer_PREP   := QBlueQuantumWalk.build_outer_prep tau K outer_base n_outer_anc in
-  QBlueQuantumWalk.build_qwalk_lcu_circuit
-    inner_PREP SELECT outer_PREP tau n_inner_anc aux K outer_base n_outer_anc.
-
-
-Definition translate_lowp2circ_qsvt (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
-  let nterm        := length lp in
-  let n_inner_anc  := Nat.log2_up nterm in
-  (* Compute |alpha_j| and lambda = sum |alpha_j| *)
-  let coeffs       := map (fun term => Rabs (fst (fst term))) lp in
-  let lam          := fold_left Rplus coeffs R0 in
-  let tau          := (lam * t)%R in
-  let aux          := n_inner_anc + nbit in
-  (* coefficient-weighted inner PREP *)
-  let inner_PREP   := QBlueQuantumWalk.build_inner_prep coeffs lam n_inner_anc in
-  (* SELECT oracle *)
-  let circ_list    := map (build_cntlV lp n_inner_anc nbit) (seq 0 nterm) in
-  let SELECT       := fold_left EG.useq circ_list EG.SKIP in
-  QBlueQSVT.build_qsvt_circuit inner_PREP SELECT tau err n_inner_anc aux.
-
-
-Definition translate_lowp2circ_qsvt_updateQSP (err t : R) (lp : lowprog) (nbit : nat) : EG.ucom EG.U :=
-  let nterm        := length lp in
-  let n_inner_anc  := Nat.log2_up nterm in
-  let coeffs       := map (fun term => Rabs (fst (fst term))) lp in
-  let lam          := fold_left Rplus coeffs R0 in
-  let tau          := (lam * t)%R in
-  let aux          := n_inner_anc + nbit in
-  let inner_PREP   := QBlueQuantumWalk.build_inner_prep coeffs lam n_inner_anc in
-  let circ_list    := map (build_cntlV lp n_inner_anc nbit) (seq 0 nterm) in
-  let SELECT       := fold_left EG.useq circ_list EG.SKIP in
-  QBlueQSVT.build_qsvt_circuit inner_PREP SELECT tau err n_inner_anc aux.
-
-
 (* Translate to Indiana Analog by chunks *)
 Fixpoint translate_lowp2IndiAna_chunks_acc (t : R) (lp : lowprog) (ist nbit : nat) (scale : R)
   (* (lp : lowprog) (ist nbit : nat) (scale t : R) (sp_size : nat) *)
@@ -342,24 +282,6 @@ Definition translate_lowp2IndiAna_marqsim (err t : R) (lp : lowprog) (nbit : nat
     (translate_marqsim_indiAna prob_init f_mat) nch (capped_samples N) ns []
   end.
 
-Definition translate_lowp2IndiAna_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let prog := tts_analog_lowprog err t nbit lp in
-  synth_analog_indiana R1 nbit prog.
-
-Definition translate_lowp2IndiAna_qsvt_updateQSP (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let nterm        := length lp in
-  let n_inner_anc  := Nat.log2_up nterm in
-  let coeffs       := map (fun term => Rabs (fst (fst term))) lp in
-  let lam          := fold_left Rplus coeffs R0 in
-  let tau          := (lam * t)%R in
-  let aux          := n_inner_anc + nbit in
-  let inner_PREP   := QBlueQuantumWalk.build_inner_prep coeffs lam n_inner_anc in
-  let circ_list    := map (build_cntlV lp n_inner_anc nbit) (seq 0 nterm) in
-  let SELECT       := fold_left EG.useq circ_list EG.SKIP in
-  let _ := QBlueQSVT_updateQSP.build_qsvt_circuit
-             inner_PREP SELECT tau err n_inner_anc aux in
-  synth_analog_indiana tau nbit lp.
-  
 (* Translate to IBM Analog *)
 Definition translate_lowp2IBMAna_stdTrotter (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
   let lowp : lowprog := norm_prog2lowprog (trotter err t nbit (lowprog2norm_prog lp)) in
@@ -377,25 +299,6 @@ Definition translate_lowp2IBMAna_marqsim (err t : R) (lp : lowprog) (nbit : nat)
 (f_mat : nat -> list R) : list ugate :=  
 let lowp : lowprog := trotter_marqsim err t lp nbit f_mat in 
   synth_analog_ibm t nbit lowp.
-
-Definition translate_lowp2IBMAna_TTS_LCU (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let prog := tts_analog_lowprog err t nbit lp in
-  synth_analog_ibm R1 nbit prog.
-
-Definition translate_lowp2IBMAna_qsvt_updateQSP (err t : R) (lp : lowprog) (nbit : nat) : list ugate :=
-  let nterm        := length lp in
-  let n_inner_anc  := Nat.log2_up nterm in
-  let coeffs       := map (fun term => Rabs (fst (fst term))) lp in
-  let lam          := fold_left Rplus coeffs R0 in
-  let tau          := (lam * t)%R in
-  let aux          := n_inner_anc + nbit in
-  let inner_PREP   := QBlueQuantumWalk.build_inner_prep coeffs lam n_inner_anc in
-  let circ_list    := map (build_cntlV lp n_inner_anc nbit) (seq 0 nterm) in
-  let SELECT       := fold_left EG.useq circ_list EG.SKIP in
-  let _ := QBlueQSVT_updateQSP.build_qsvt_circuit
-             inner_PREP SELECT tau err n_inner_anc aux in
-  synth_analog_ibm tau nbit lp.
-
 
 (* The following optimization would be in ocaml
 Record Pipeline := {

@@ -1,149 +1,116 @@
-(* Define the Taylor series simulation and LCU (Linear Combination of Unitaries) *)
-From SQIR Require Import ExtractionGateSet.
-Require Import QuantumLib.Complex.
+(*************************************************************************)
+(* QBlueTTS_v4.v                                                         *)
+(* Truncated Taylor series LCU (Berry, Childs, Cleve, Kothari, Somma   *)
+(* 2015) with oblivious amplitude amplification per segment.            *)
+(* Built from the shared LCU blocks in QBlueQuantumWalk.v.               *)
+(*************************************************************************)
 
+Require Import Coq.Lists.List.
+Require Import Coq.Reals.Reals.
+Require Import Coq.Reals.Ratan.
+Require Import Coq.Arith.PeanoNat.
+Require Import QuantumLib.Complex.
 Require Import QBlue.QBlueUtility.
 Require Import QBlue.QBlueSyntax.
-Require Import QBlue.QBlueParTransJwt.
-Require Import QBlue.QBlueSynthDigital.
+Require Import QBlue.QBlueQuantumWalk.
+From SQIR Require Import ExtractionGateSet.
+Import ListNotations.
 
+Local Open Scope R_scope.
 
-(* Use "Lecture Notes on Quantum Algorithms" by Andrew M. Childs, Chapter 28.3
-   lambda = 1-norm of H = sum_j |alpha_j|
-   r = ceil(lambda * t / ln 2); tau = t / r so that lambda * tau <= ln 2
-   K = truncation order s.t. (ln2)^{K+1}/(K+1)! <= err / (4 * r) *)
-Definition ham_one_norm (lp : lowprog) : R :=
-  fold_left (fun (acc : R) (x : lowprog_ten) => Rplus acc (Cmod (fst x))) lp 0%R.
+(* ---------------------------------------------------------------------- *)
+(* 1. Truncated Taylor series (Berry, Childs, Cleve, Kothari, Somma 2015)  *)
 
+Fixpoint fact_R (k : nat) : R := match k with O => 1 | S k' => INR k * fact_R k' end.
 
-Definition get_nseg (t : R) (lp : lowprog) : nat :=
-  let lambda := ham_one_norm lp in
-  ceilR_N (lambda * t / ln 2).
+Definition exp_tail (x : R) (K : nat) : R :=
+  fold_left Rplus (map (fun k => pow x k / fact_R k) (seq (S K) 40)) 0.
 
-
-(* Find smallest K s.t. (ln2)^{K+1}/(K+1)! <= bound.
-   aux tracks the current term value; fuel bounds recursion depth. *)
-Fixpoint findK_upto (fuel : nat) (bound aux : R) (k : nat) : nat :=
+Fixpoint taylor_K_aux (fuel K : nat) (x delta : R) : nat :=
   match fuel with
-  | O => k
-  | S fuel' =>
-      if Rltb aux bound || Reqb aux bound then k
-      else findK_upto fuel' bound (aux * (ln 2) / INR (k + 2)) (S k)
+  | O => K
+  | S f => if Rle_dec (exp_tail x K) delta then K else taylor_K_aux f (S K) x delta
   end.
 
-(* r segments, per-segment bound = err / (4 * r) from Childs eq. (28.11)
-   since e^{lambda*tau} <= e^{ln2} = 2, giving factor of 4 in denominator *)
-Definition findK_tau (err : R) (r : nat) : nat :=
-  let bound := (err / (4 * INR r))%R in
-  findK_upto 64 bound (ln 2) 0.
+(* smallest K >= 1 with sum_{k > K} x^k / k! <= delta *)
+Definition taylor_K (x delta : R) : nat := Nat.max 1 (taylor_K_aux 60 0 x delta).
 
-(* Split (a + ib) * P into a*P + b*(i*P) with real coefficients for digital synth.
-   Ci * (0, im) = (-im, 0) so the imaginary part becomes a real amplitude. *)
-Definition realify_lowprog_term (ten : lowprog_ten) : lowprog :=
-  let (c, f) := ten in
-  let re := fst c in
-  let im := snd c in
-  let real_part :=
-    if Reqb re R0 then nil else [(RtoC re, f)] in
-  let imag_part :=
-    if Reqb im R0 then nil else [(Cmult Ci (R0, im), f)] in
-  real_part ++ imag_part.
+Record taylor_layout := { tl_u : list nat; tl_idx : list (list nat); tl_pad : nat; tl_work : list nat }.
 
-Fixpoint realify_lowprog (lp : lowprog) : lowprog :=
-  match lp with
+Definition taylor_alloc (nbit a K : nat) : taylor_layout :=
+  let u := qrange nbit K in
+  let idx := map (fun i => qrange (nbit + K + i * a) a) (seq 0 K) in
+  let p := (nbit + K + K * a)%nat in
+  {| tl_u := u; tl_idx := idx; tl_pad := p; tl_work := qrange (S p) (K + K * a) |}.
+
+Definition taylor_nqubits (nbit a K : nat) : nat := (nbit + 2 * (K + K * a) + 1)%nat.
+
+(* unary register: u_i = 1 iff k > i, amplitudes al_k *)
+Definition unary_prep (al : list R) (u : list nat) : gl :=
+  let r i := sqrt (fold_left Rplus (map (fun v => v * v) (skipn i al)) 0) in
+  match u with
   | [] => []
-  | t :: tl => realify_lowprog_term t ++ realify_lowprog tl
+  | u0 :: _ =>
+      Ry (ry_angle_cos (nth 0 al 0)) u0 ::
+      flat_map (fun i =>
+        let ri := r i in
+        let c := if Rlt_dec 0 ri then rmin1 (nth i al 0 / ri) else 1 in
+        cry (ry_angle_cos c) (nth (i - 1) u O) (nth i u O)) (seq 1 (length u - 1))
   end.
 
+(* <0|A|0> = (1/2) sum_{k <= K} (-i tau H)^k / k!, x = lambda tau *)
+Definition taylor_segment (nbit : nat) (lp : lowprog) (x : R) (K : nat) (L : taylor_layout) : gl :=
+  let beta := map (fun k => pow x k / fact_R k) (seq 0 (S K)) in
+  let B := fold_left Rplus beta 0 in
+  let al := map (fun b => sqrt (b / B)) beta in
+  let up := unary_prep al (tl_u L) in
+  [Ry (pad_angle B) (tl_pad L)] ++ up ++ map (fun q => U1 (- (PI / 2)) q) (tl_u L)
+  ++ flat_map (fun reg => prep lp reg) (tl_idx L)
+  ++ flat_map (fun i => select nbit lp (nth i (tl_idx L) []) (tl_work L) [nth i (tl_u L) O])
+             (seq 0 K)
+  ++ flat_map (fun reg => inv_gl (prep lp reg)) (tl_idx L)
+  ++ inv_gl up.
 
-(* H^0 = I, H^k = H * H^{k-1} via plus_app_plus *)
-Fixpoint cal_lowp_power (nqubit k : nat) (lp : lowprog) : lowprog :=
-  match k with
-  | 0 => [(C1, fun _ => paulii)]
-  | S k' => plus_app_plus nqubit lp (cal_lowp_power nqubit k' lp)
-  end.
+(* the segment without its K controlled SELECTs (resource accounting) *)
+Definition taylor_segment_rest (nbit : nat) (lp : lowprog) (x : R) (K : nat) (L : taylor_layout) : gl :=
+  let beta := map (fun k => pow x k / fact_R k) (seq 0 (S K)) in
+  let B := fold_left Rplus beta 0 in
+  let al := map (fun b => sqrt (b / B)) beta in
+  let up := unary_prep al (tl_u L) in
+  [Ry (pad_angle B) (tl_pad L)] ++ up ++ map (fun q => U1 (- (PI / 2)) q) (tl_u L)
+  ++ flat_map (fun reg => prep lp reg) (tl_idx L)
+  ++ flat_map (fun reg => inv_gl (prep lp reg)) (tl_idx L)
+  ++ inv_gl up.
 
+Definition taylor_segments (lp : lowprog) (t : R) : nat :=
+  Nat.max 1 (ceilR_N (lcu_lambda lp * t / ln 2)).
 
-(* k-th Taylor coefficient: c_k = (-i)^k * t^k / k! *)
-Definition taylor_coeff (t : R) (k : nat) : C :=
-  Cmult (Cpow (Copp Ci) k) (RtoC (pow t k / INR (factor k))).
+(* e^{-iHt} up to the global phase (-1)^r: r OAA'd segments *)
+Definition taylor_circuit (err t : R) (nbit : nat) (lp0 : lowprog) : gl :=
+  let lp := lcu_terms lp0 in
+  let r := taylor_segments lp t in
+  let x := lcu_lambda lp * t / INR r in
+  let K := taylor_K x (err / (4 * INR r)) in
+  let L := taylor_alloc nbit (idx_width lp) K in
+  let A := taylor_segment nbit lp x K L in
+  repeat_gl r (oaa A (tl_u L ++ concat (tl_idx L) ++ [tl_pad L]) (tl_work L)).
 
-(* Truncated Taylor series sum_{k=0}^{K} c_k * H^k as lowprog *)
-Fixpoint taylor_exp (t : R) (nqubit K : nat) (lp : lowprog) : lowprog :=
-  match K with
-  | 0 => mult_ampli_hplus (taylor_coeff t 0) (cal_lowp_power nqubit 0 lp)
-  | S k' =>
-      let term_K := mult_ampli_hplus (taylor_coeff t K) (cal_lowp_power nqubit K lp) in
-      term_K ++ taylor_exp t nqubit k' lp
-  end.
+(* ---------------------------------------------------------------------- *)
+(* Resource accounting (see QBlueQuantumWalk.v)                            *)
 
+Definition taylor_pieces (err t : R) (nbit : nat) (lp0 : lowprog) : lcu_report :=
+  let lp := lcu_terms lp0 in
+  let r := taylor_segments lp t in
+  let x := lcu_lambda lp * t / INR r in
+  let K := taylor_K x (err / (4 * INR r)) in
+  let a := idx_width lp in
+  let L := taylor_alloc nbit a K in
+  let R := refl0 (tl_u L ++ concat (tl_idx L) ++ [tl_pad L]) (tl_work L) [] in
+  (* the K controlled SELECTs are the same gates on relabelled registers, so one
+     stands for all of them; it is counted on a canonical layout (control nbit,
+     index register, then work) that does not move with K, so its cached counts
+     are reused across error bounds and times *)
+  let sel := select nbit lp (qrange (S nbit) a) (qrange (S nbit + a) a) [nbit] in
+  (taylor_nqubits nbit a K, r, K,
+   [(3 * r, taylor_segment_rest nbit lp x K L); (3 * r * K, sel); (2 * r, R)]%nat).
 
-(* Binary index nl encoded as tensor product of projectors for SELECT oracle *)
-Fixpoint cntl2pauli_helper (nl : list nat) : lowprog :=
-  match nl with
-  | [] => [(C1, fun _ => paulii)]
-  | b :: tl =>
-      let proj := if b =? 1 then projector else projector0 in
-      plus_ten_plus 1%nat (length tl) proj (cntl2pauli_helper tl)
-  end.
-
-(* Synthesise lowprog terms sequentially into SQIR circuit *)
-Fixpoint LCU_digital_ibm (nqubit : nat) (vi : lowprog) : ucom ExtractionGateSet.U :=
-  match vi with
-  | [] => ExtractionGateSet.SKIP
-  | (amp, f) :: tl =>
-      ExtractionGateSet.useq
-        (synth_digital_ibm_apauli (fst amp) nqubit f)
-        (LCU_digital_ibm nqubit tl)
-  end.
-
-(* Controlled-V_j block: I + |j><j| (x) (V_j - I) for the j-th LCU term *)
-Definition build_cntlV (lp : lowprog) (nqcn nqv idx : nat) : ucom ExtractionGateSet.U :=
-  match nth_error lp idx with
-  | None => ExtractionGateSet.SKIP
-  | Some vi =>
-      let nl      := cnt2bin idx nqcn in
-      let control := cntl2pauli_helper nl in
-      let vm1     := vi :: (Copp C1, fun _ => paulii) :: nil in
-      let t2      := plus_ten_plus nqcn nqv control vm1 in
-      LCU_digital_ibm (nqcn + nqv)
-        (realify_lowprog ((C1, fun _ => paulii) :: t2))
-  end.
-
-(* Per-segment Taylor lowprog (time step tau, truncation K). *)
-Definition tts_segment_taylor (err t : R) (nbit : nat) (input : lowprog) : lowprog :=
-  let nseg := get_nseg t input in
-  let tau := (t / INR nseg)%R in
-  let K := findK_tau err nseg in
-  taylor_exp tau nbit K input.
-
-(* Taylor lowprog for analog synthesis (coefficients already include tau). *)
-Definition tts_analog_lowprog (err t : R) (nbit : nat) (input : lowprog) : lowprog :=
-  realify_lowprog (tts_segment_taylor err t nbit input).
-
-(* One LCU segment: H^{(x)m} . SELECT . H^{(x)m}
-   m = log2(#terms) control qubits; SELECT applies each controlled-V_j *)
-Definition build_circuit_seg (nqv : nat) (input : lowprog) : ucom ExtractionGateSet.U :=
-  let input' := realify_lowprog input in
-  let nterm    := length input' in
-  let nqcn     := Nat.log2_up nterm in
-  let select   := fold_left ExtractionGateSet.useq
-                    (map (build_cntlV input' nqcn nqv) (seq 0 nterm))
-                    ExtractionGateSet.SKIP in
-  let hadamard := fold_left
-                    (fun acc i => ExtractionGateSet.useq acc (ExtractionGateSet.H i))
-                    (seq 0 nqcn) ExtractionGateSet.SKIP in
-  ExtractionGateSet.useq (ExtractionGateSet.useq hadamard select) hadamard.
-
-
-(* LCU Taylor series simulation of e^{-itH} to within error err.
-   Splits [0,t] into r segments of length tau = t/r,
-   builds Taylor LCU circuit for each segment, composes r copies. *)
-Definition TTS_LCU1 (err t : R) (nbit : nat) (input : lowprog) : ucom ExtractionGateSet.U :=
-  let nseg     := get_nseg t input in
-  let tau      := (t / INR nseg)%R in
-  let K        := findK_tau err nseg in
-  let prog_seg := taylor_exp tau nbit K input in
-  let circ_seg := build_circuit_seg nbit prog_seg in
-  fold_left (fun acc _ => ExtractionGateSet.useq acc circ_seg)
-    (seq 0 nseg) ExtractionGateSet.SKIP.
