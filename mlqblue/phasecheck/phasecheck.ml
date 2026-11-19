@@ -4,7 +4,7 @@
    (gate counts do not depend on them), so this is the check that every
    benchmark circuit has valid phases.
    usage: phasecheck.exe <job csv> <data dir> [lbfgs]   (one JSON line per polynomial)
-   With "lbfgs", also prints the phases of Ian's Dong-Lin L-BFGS alone
+   With "lbfgs", also prints the phases of the Dong-Lin L-BFGS alone
    (before qsvt_phases' Newton refinement), to show how far it gets. *)
 open QBlueSyntax
 

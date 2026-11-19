@@ -155,7 +155,7 @@ Fixpoint armijo (fuel : nat) (d : nat) (xs target x r : list R) (f0 gr step : R)
 Definition dl_hist_size : nat := 10.
 Definition dl_maxit : nat := 500.
 
-(* Ian's L-BFGS loop. Pairs with s.y <= 0 are dropped (they would make the
+(* The L-BFGS loop. Pairs with s.y <= 0 are dropped (they would make the
    inverse-Hessian estimate indefinite); a non-descent direction or a failed
    line search restarts from an empty history, and a failed search with an
    empty history stops. *)

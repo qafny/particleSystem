@@ -33,7 +33,7 @@ Local Open Scope R_scope.
      Re <0| e^{i phi_0 Z} prod_{k=1..d} (W(x) e^{i phi_k Z}) |0> = f(x)
    at the floor(d/2)+1 positive Chebyshev nodes (to qsp_tol), which determine
    a parity-p polynomial of degree <= d.
-   Ian's Dong-Lin L-BFGS (QBlueQSVT_updateQSP.donglin_reduced) runs first.
+   the Dong-Lin L-BFGS (QBlueQSVT_updateQSP.donglin_reduced) runs first.
    It often stalls short of qsp_tol (around 1e-5 on targets with |f| close
    to 1), so Newton steps from its result finish the job (qsp_newton returns
    at once when the residual is already met). Newton from a half-converged

@@ -45,7 +45,7 @@ def main():
     ap.add_argument("--output", default=str(ROOT / "results/qsvt_phase_check.csv"))
     ap.add_argument("--tol", type=float, default=1e-10, help="largest acceptable phase error")
     ap.add_argument("--lbfgs", action="store_true",
-                    help="also score Ian's Dong-Lin L-BFGS alone, before the Newton refinement")
+                    help="also score the Dong-Lin L-BFGS alone, before the Newton refinement")
     args = ap.parse_args()
 
     cmd = [str(EXE), args.jobs, args.data] + (["lbfgs"] if args.lbfgs else [])
@@ -83,7 +83,7 @@ def main():
     if args.lbfgs:
         lb = np.array([r["lbfgs_error"] for r in rows])
         alone = int(np.sum(np.isfinite(lb) & (lb <= args.tol)))
-        print(f"Ian's L-BFGS alone: within {args.tol:g} on {alone} of {len(rows)}; "
+        print(f"L-BFGS alone: within {args.tol:g} on {alone} of {len(rows)}; "
               f"median error {np.nanmedian(lb):.1e}, worst {np.nanmax(lb):.1e}, non-finite {int(np.sum(~np.isfinite(lb)))}")
     print(f"solve time: median {np.median(secs):.3f} s, max {max(secs):.2f} s, total {sum(secs):.0f} s")
     print(f"wrote {args.output}")
