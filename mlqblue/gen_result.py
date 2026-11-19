@@ -30,7 +30,8 @@ CSV_FIELDS = [
 ]
 
 REPO_ROOT = Path(__file__).resolve().parent
-PERFORMANCE_EXE = REPO_ROOT / "_build" / "default" / "performance.exe"
+PERFORMANCE_EXE = Path(os.environ.get("QBLUE_PERFORMANCE_EXE",
+                                      REPO_ROOT / "_build" / "default" / "performance.exe"))
 
 
 def _unlimited_stack():

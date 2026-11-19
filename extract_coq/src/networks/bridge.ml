@@ -18,14 +18,18 @@ let find_python_path exe_name =
     with Unix.Unix_error _ -> false
   in
   let path_env = try Sys.getenv "PATH" with Not_found -> "" in
-  let dirs = String.split_on_char ':' path_env in
+  let dirs = String.split_on_char (if Sys.win32 then ';' else ':') path_env in
+  let names = if Sys.win32 then [ exe_name ^ ".exe"; "python.exe" ] else [ exe_name ] in
   let rec loop = function
     | [] -> None
-    | dir :: rest ->
-        let candidate = Filename.concat dir exe_name in
-        if is_executable candidate then Some candidate else loop rest
+    | dir :: rest -> (
+        match List.find_opt is_executable (List.map (Filename.concat dir) names) with
+        | Some candidate -> Some candidate
+        | None -> loop rest)
   in
-  loop dirs
+  match Sys.getenv_opt "QBLUE_PYTHON" with
+  | Some p -> Some p
+  | None -> loop dirs
 
 let file_exists path =
   try Unix.(stat path).st_kind = S_REG with Unix.Unix_error _ -> false

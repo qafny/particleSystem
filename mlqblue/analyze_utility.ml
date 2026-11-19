@@ -26,7 +26,7 @@ let rec count_U1_ocaml (c : coq_U ucom) : int =
 (* -2 read files of strings *)
 let read_string_file (filename : string) : string =
   dbg "Analyzing %s:" filename;
-  let ic = open_in filename in
+  let ic = open_in_bin filename in
   let n = in_channel_length ic in
   let s = really_input_string ic n in
   close_in ic; s
